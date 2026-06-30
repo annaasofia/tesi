@@ -9,6 +9,6 @@
 
 
 * Arrivo al CERN e procedure di registrazione.
-* Controllo casella email
+* Controllo casella email.
 * Configurazione dell'ambiente di lavoro sul computer dell'ufficio.
 * Sincronizzazione della repository del logbook.
