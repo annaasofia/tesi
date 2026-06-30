@@ -2,8 +2,8 @@
 
 ## Giorno 1 - 01/07/2026
 
-1) cern access card  
-2) ufficio  
+1) cern access card building 33   
+2) ufficio 9/1-016  
 3) registrazione dispositivi  
 4) building 61 - cartes de legitimation
 
