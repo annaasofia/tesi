@@ -85,11 +85,35 @@ A look at the forward-thinking applications and experiments active at the time o
 ## Performance of short and long bent crystals for the TWOCRYST experiment at the Large Hadron Collider
 *in European Physics Journal*
 
-_This paper reports the results of the validation of three bent silicon crystals (one for splitting and two for precession) supplied by INFN-Ferrara for TWOCRYST._  
+_This paper reports the results of the validation of three bent silicon crystals (one for splitting and two for precession) supplied by INFN-Ferrara for TWOCRYST, using a 180 GeV beam (30% $\pi^+$, 70% protons)._  
 
 Although the bend angle remains constant across different momenta (i.e., the phenomenon is non-dispersive), the channelling acceptance and efficiency still depend on the particle momentum. Crystals with lengths in the range of 5 to 10 cm, bent to angles between 5 and 15 mrad, are under consideration for measurements of the electric and magnetic dipole moments of short-lived charmed baryons, such as the $\Lambda^+_c$ (The resulting spin rotation within the crystal’s strong effective electromagnetic fields enables measurements of the baryons’ electric and magnetic dipole moments).  
-Such large deflection angles over short distances cannot be achieved using conventional magnets. TWOCRYST has been installed in the LHC to carry out beam tests in the TeV energy range.
+Such large deflection angles over short distances cannot be achieved using conventional magnets. TWOCRYST has been installed in the LHC to carry out beam tests in the TeV energy range.  
+![alt text](image-3.png)
 
+**Channeling:** when a charged particle has a small incident angle $\theta_{in}$ relative to the crystallographic planes or axes, it experiences the effect of a continuous potential that traps the particle between the planes (planar and axial channeling, respectively).  
+($\theta_{in}\leq \theta_L=\sqrt{2U_0/p\beta c}$ where $U_0$ potential well depth)
+![alt text](image-2.png)
+(5) amorphus scattering: between an incoming particle and a lattice atom  
+(2) dechanneling: when an initially channeled particle escapes the potential well before reaching the end of the crystal, predominantly caused by multiple scattering with the atomic nuclei   
+(3) volume capture: allows a particle initially outside the channeling condition to enter channeling, by losing energy through scattering   
+(4) volume reflection: can occur when a particle approaches the crystal bending plane close to the tangent, casuing particles to be reflected in a direction opposite to the bending direction of the crystal
+
+
+When the crystal is bended, the effective potential-well depth decreases with increased bending per unit length, scaling with a factor $(1-\rho_{crit}/\rho)^2$ where $\rho$ is the bending radius; so the critical angle becomes $\theta_L=(1-\rho_{crit}/\rho)\sqrt{2U_0/E}$
+
+
+What they measured: channeling efficiency $\epsilon_{ch}=N_{ch}/N_{tot} \times 100$  
+
+**Experimental setup:**
+- TCCS (Target Collimator Crystal for Splitting): A short (4 mm) crystal with a small bend angle (50 $\mu$ rad). It is bent using a U-shaped metallic holder, a well-established technique used for LHC beam collimation. Its purpose is to split protons from the main LHC beam halo.
+- TCCP (Target Collimator Crystal for Precession): A significantly longer (70 mm) crystal with a much larger bend angle (6.9 mrad). Like the TCCS, it uses a mechanically clamped metallic holder. Its purpose is to channel and induce spin precession in the charmed baryons.
+- TCCPA (Target Collimator Crystal for Precession - Anodic): A novel crystal of similar length (70.5 mm) but bent to an even larger angle (13.3 mrad). Instead of mechanical clamping, it is bent using an anodic bonding technique, where the silicon wafer is permanently bonded to a curved glass substrate using high voltage and temperature. This method was hypothesized to provide more uniform bending.
+
+**Analysis:**  
+1. the reference data, collected without interactions with the crystal, are used to find the relative positions of the tracking detectors, the alignment parameters are determined via the minimisation of a $\chi^2$ calculated using the tracks of the alignment dataset.
+2. the data recorded with crystals in amorphous orientation are used to find the edge of each crystal in the deflection plane $x$, and also verifies the measured width of each crystal.
+3. the high statistics channelling data, collected with the crystal in the channelling orientation, are used to determine the channelling efficiency for the three crystals: $N_{tot}$ only includes particles with the potential to be channeled, so with incoming angle within one Lindhard angle, $N_{ch}$ is identified from their deflection angle $\Delta\theta_x$.
 
 
 
