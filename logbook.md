@@ -12,6 +12,7 @@ books/articles to read:
 data to look at:  
 - [recoDataSimple_8430_xtalMerging.root](https://cernbox.cern.ch/files/spaces/eos/user/p/pahermes/018_crystals/260701_Anna_Background_Infos/recoDataSimple_8430_xtalMerging.root)
 
+-> code to open them [open.py](./recoDataSimple/open.py)
 
 
 
