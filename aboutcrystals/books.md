@@ -129,4 +129,26 @@ What they measured: channeling efficiency $\epsilon_{ch}=N_{ch}/N_{tot} \times 1
 ## New direction for bent crystals
 *in Cern Courier*
 
+1963) crystal channeling predicted in simulations and experimentally confirmed  
+1965. theoretical foundations  
+1976) bent crystals for beam control  
+1992. first xperimental demonstration of the effect by measuring the magnetic moment of the $\Sigma^+$, using a bent silicon crystals to induce spinh precession (substituting massive conventional magnets)  
+
+1993. SPS @ CERN
+2023) crystal collimation part of LHC
+
+new frontiers:
+- using bent crystals in the LHC not just to steer beams, but also to probe the spin of short-lived particles
+- 
+
+
+The TWOCRYST collaboration is exploring whether the technique can be extended to study the spin of short-lived charm baryons.  
+The lightest charm baryon, the $Λ_c^+c$ (udc), has an extremely short lifetime of roughly 200 femtoseconds. Even at 1 TeV, it only travels a few centimetres before decaying. The magnetic fields needed to study its spin precession cannot be provided by conventional magnets, but are well within reach if bent crystals are used. If produced at a fixed target, a clean sample of its decays to a proton, a kaon and a pion can be obtained via tracking and invariant-mass reconstruction, with decay angles yielding spin information.
+
+_why?_  
+Unique opportunity to explore QCD at the interface between heavy and light quarks. Measurements of its spin precession would also provide exceptional sensitivity to a possible electric dipole moment – a potential signature of physics beyond the Standard Model.
+
+_why measuring spin precession is important?_  
+Measurements of spin precession have long played a central role in particle physics, providing deep insights into fundamental interactions and symmetries. The anomalous magnetic moments of the proton and neutron – measured in the 1930s and 1940s – remained unexplained for decades until the emergence of the quark model in the 1960s. While conventional magnet-based techniques remain highly effective for relatively long-lived particles such as the muon, particles as short-lived as charm baryons have so far remained experimentally inaccessible. The results from TWOCRYST suggest that bent crystals may allow the first direct experimental probe of electromagnetic dipole moments in charm baryons, opening a new window on QCD dynamics and offering a sensitive test for physics beyond the Standard Model.
+
 
