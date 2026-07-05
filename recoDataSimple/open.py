@@ -1,17 +1,27 @@
 import ROOT
+import sys
 
-file_remoto = ROOT.TFile.Open("root://eosuser.cern.ch//eos/user/p/pahermes/018_crystals/260701_Anna_Background_Infos/recoDataSimple_8430_xtalMerging.root")
-# https://cernbox.cern.ch/files/spaces/eos/user/p/pahermes/018_crystals/260701_Anna_Background_Infos/recoDataSimple_8430_xtalMerging.root
+f = ROOT.TFile.Open("root://eosuser.cern.ch//eos/user/p/pahermes/018_crystals/260701_Anna_Background_Infos/recoDataSimple_8430_xtalMerging.root")
+#df = ROOT.RDataFrame("simpleEvent", "root://eosuser.cern.ch//eos/user/p/pahermes/018_crystals/260701_Anna_Background_Infos/recoDataSimple_8430_xtalMerging.root")
 
-#df = ROOT.RDataFrame("nome_del_tree", "root://eosuser.cern.ch//eos/user/t/tuousername/data/miofile.root")
+if not f or f.IsZombie():
+    print("Error: file has not opened correctly.")
+    sys.exit(1)
 
-# Esempio: fai un istogramma di una variabile
-#h = df.Histo1D("mia_variabile")
-#h.Draw()
+tree = f.Get("simpleEvent")
 
-if not file_remoto or file_remoto.IsZombie():
-    print("Errore: impossibile accedere al file remoto.")
-#else:
-    # Prendi il tree e analizza
-    #tree = file_remoto.Get("nome_del_tree")
-    #print(f"Il tree contiene {tree.GetEntries()} eventi.")
+if not tree:
+    print("Error: tree not found.")
+    sys.exit(2)
+
+
+#columns = df.GetColumnNames()
+#for col in columns:
+#    print(col)
+
+# Crea una visualizzazione in stile tabella delle prime 5 righe
+#df.Display(["variabile1", "variabile2"], 5).Print()
+
+# 3. Vuoi fare un grafico/istogramma di una variabile al volo?
+#istogramma = df.Histo1D("variabile1")
+#istogramma.Draw() # Lo disegna a schermo
