@@ -29,7 +29,10 @@ data to look at:
 
 
 
-
-
-
 ## WEEK 2
+
+what type of data analysis can i do?  
+- isolate clean events (`singleTrackEvent == 1`) and check $\chi^2$ (`chi2_x`, `chi2_y`)
+- how is the beam arriving to the detector: `thetaIn_y` vs `thetaIn_x`, `d0_y` vs `d0_x`
+- $\Delta\theta_x=\theta_{out}-\theta_{in}$ of `singleTrackEvent` (where are the peaks? i expect 0 and some $\mu$ rad)
+- crystal acceptance $\Delta\theta_x$ vs $\theta_{in,x}$
