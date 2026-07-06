@@ -17,7 +17,7 @@ for col in columns:
 
 # tabella delle prime 5 righe
 #df.Display(["GonioPos.x", "GonioPos.y", "GonioPos.z"], 5).Print()
-#df.Display(["Event.run", "SingleTrack", "MultiHit"], 15).Print()
+df.Display(["Event.run", "Event.evtnum", "Event.nuclear", "Event.nuclearRaw"], 15).Print()
 
 # istogramma di una variabile
 #histo = df.Histo1D("Tracks.d0_y")
