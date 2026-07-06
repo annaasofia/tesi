@@ -25,7 +25,7 @@ data to look at:
 - time and date are `Char_t` so characters
 - some leaves are `TLeafI` so integers, others `TLeafD` so double
 
--> code to open them [open.py](./recoDataSimple/open.py)
+-> code to open them [open.py](./recoDataSimple/open.py) or [open_as_df.py](./recoDataSimple/open_as_df.py)
 
 
 
