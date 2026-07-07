@@ -115,7 +115,7 @@ What they measured: channeling efficiency $\epsilon_{ch}=N_{ch}/N_{tot} \times 1
 2. the data recorded with crystals in amorphous orientation are used to find the edge of each crystal in the deflection plane $x$, and also verifies the measured width of each crystal.
 3. the high statistics channelling data, collected with the crystal in the channelling orientation, are used to determine the channelling efficiency for the three crystals: $N_{tot}$ only includes particles with the potential to be channeled, so with incoming angle within one Lindhard angle, $N_{ch}$ is identified from their deflection angle $\Delta\theta_x$.
 
-![alt text](image-5.png)
+![alt text](image-5.png)   
 (1) channeling: entered at almost 0 degrees, within the critical angle, they successfully entered the potential well and were and were steered by the full bend of the crystal, by 50 $\mu$ rad  
 (2) dechanneling: entered almost 0 but escaped the potential well, but they might still receive a partial bend, that's why they smear vertically down the $y$ axis between the full bend and the zero  
 (3) amorphous scattering: entered too steeply and just crashed through the silicon as it it were a normal block of material, they exit with zero deflection  
