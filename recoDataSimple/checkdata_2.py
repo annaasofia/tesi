@@ -39,15 +39,15 @@ print(f"{((df.Count().GetValue() - df_clean.Count().GetValue())/df.Count().GetVa
 df_phys = df_clean.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")
 
 # HISTOGRAMS PRE CUT
-h_theta_before = df_phys.Histo1D(("h_theta_before", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 200, -150, 150), "thetaIn_x")
-h_defl_before = df_phys.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 200, -2000, max_value), "Deltatheta_x") 
+h_theta_before = df_phys.Histo1D(("h_theta_before", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
+h_defl_before = df_phys.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, max_value), "Deltatheta_x") 
 h_scan = df_phys.Histo2D(("h_scan", "Angular deflection of the particles as a function of the incident angle; Incident angle #theta_{In, x} [#murad]; Deflection #Delta#theta_{x} [#murad]", 500, -150, 150, 500, -2000, max_value), "thetaIn_x", "Deltatheta_x")
 
 # FINDING THETA 0
 df_theta0a = df_phys.Filter("Deltatheta_x > 5000")
-h_theta0a = df_theta0a.Histo1D(("h_theta0a", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 200, -150, 150), "thetaIn_x")
+h_theta0a = df_theta0a.Histo1D(("h_theta0a", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
 df_theta0b = df_phys.Filter("Deltatheta_x < 5000")
-h_theta0b = df_theta0b.Histo1D(("h_theta0b", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 200, -150, 150), "thetaIn_x")
+h_theta0b = df_theta0b.Histo1D(("h_theta0b", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
 
 # LINDHARD CUT
 # only keeping events whose theta_in is within +/- 0.5 * theta_L
@@ -60,9 +60,9 @@ N_tot = df_cut.Count().GetValue()
 print(f"{(N_tot/df_clean.Count().GetValue()*100):.2f}% events selected after the +/- 1/2 theta_L cut ({(N_tot/df.Count().GetValue()*100):.2f}% of the total).")
 print("="*50)
 
-# bin width circa 50 urad
-h_theta_cut = df_cut.Histo1D(("h_theta_cut", "#theta_{in,x} after filtering ; #theta_{x} [#murad]; Counts", 200, -150, 150), "thetaIn_x")
-h_defl_cut = df_cut.Histo1D(("h_defl_cut", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 500, -2000, max_value), "Deltatheta_x")
+h_theta_cut = df_cut.Histo1D(("h_theta_cut", "#theta_{in,x} after filtering ; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
+# bin width circa 20 urad
+h_defl_cut = df_cut.Histo1D(("h_defl_cut", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, max_value), "Deltatheta_x")
 h_cut_value = h_defl_cut.GetValue()
 
 # GAUSSIAN FIT
@@ -74,9 +74,9 @@ fit_sigma = 0.0
     
 if N_tot > 0:
     # fitting only right side of the peak (cleanest one)
-    fit_min = deflection_peak - 500
-    # fit_max = deflection_peak + 500
-    fit_max = max_value
+    fit_min = deflection_peak - 25
+    fit_max = deflection_peak + 500
+    # fit_max = max_value
     gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
     gaus_fit.SetLineColor(ROOT.kRed)
     
@@ -147,5 +147,7 @@ legend.AddText(f"Cut at #pm #theta_{{L}}/2 (#theta_{{0}} = {theta_0:.2f} #murad)
 legend.AddText(f"#epsilon_{{ch}} = {eff_ch:.1f} #pm {eff_err:.1f} %")
 legend.AddText(f"Fit mean: {fit_mean:.1f} #murad")
 legend.Draw()
+
+print(f"#sigma = {fit_sigma:.2f}, so bin width should be = {3.49*fit_sigma/math.pow(N_tot,1/3)}")
 
 c1.Update()
