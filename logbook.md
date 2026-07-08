@@ -1,5 +1,10 @@
 # Traineeship al CERN
 
+1. [week 1](#week-1)
+2. [week 2](#week-2)  
+    - [measuring the channeling efficiency](#measure-the-channeling-efficiency)
+3. [week 3](#week-3)
+
 ## WEEK 1  
 
 books/articles to read: 
@@ -54,12 +59,21 @@ what to do next:
 - look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf)  
     | | | TCCP | TCCPA |
     |-|-|-----|-------|
+    |length|[mm]|70|70.5|
+    |width|[mm]|8|22.5|
+    |height|[mm]|2|2|
     |bend radius $\rho$ | [m]|10|5.3|
     |bend angle $\theta_b$ | [mrad]|7.0|13.3|
     |$\theta_L$ @ 180 GeV/c | [$\mu$ rad]|12.9|12.5|  
 $\theta_L = (1-\frac{\rho_c}{\rho})\sqrt{\frac{2U_0}{E}}$ where: $\rho_c=\frac{E}{U'(x_c)}$, $U'(x_c)=5.7$ GeV/cm, $U_0=16$ eV for Silicon (110) 
-- measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$, by doing a gaussian fit only from the right side of the peak, where $N_{ch}$ are identified from $\Delta\theta_x$ and $N_{tot}$ are considered from the ones that entered the crystal within the angle $\pm\frac{1}{2}\theta_L$, so those with the potential to be channeled.  
-- _considering the torsion_ $\tau_y$ _correction:_ the effect of torsion (the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$)) must be accounted for when measuring the channelling efficiency. The different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$. So when filtering the data, instead of choosing particles with $|\theta_{in,x}|\leq\frac{1}{2}\theta_L$, we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$.
-    - in [checkdata_2.py](./recoDataSimple/checkdata_2.py) we treat the crystal as if it were ideal, with negligible torsion, and find a single global $\theta_{optimal}$ from the peak of the angular scan.
-    - what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$.
+
+### Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
+
+- center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
+    - in [checkdata_2.py](./recoDataSimple/checkdata_2.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan
+    - what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$ $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py)
+- $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
+    - to filter spatially those who entered the crystal, look at `d0` variables, and considering the width and the height of the crystals
+- identify $N_{ch}$: on the $\Delta\theta_x$ filtered histogram perform a gaussian fit on the channeling peak, only from the right side of the peak, then do the integral around the peak
+- compute $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$ amd its error - we choose a binomial distribution
 
