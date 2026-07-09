@@ -8,7 +8,7 @@ ROOT.ROOT.EnableImplicitMT()
 file = 8430
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
-ROOT.gStyle.SetOptStat(1111)
+ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
 # VARIABLES
