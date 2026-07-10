@@ -18,13 +18,13 @@ theta_L = 0 # Lindhard angle for TCCP and TCCPA in urad
 width = 0 # width of the crystal in mm (for spatial cut)
 height = 0 # height of the crystal in mm (for spatial cut)
 delta_x = 0 # shift in x (for spatial cut)
-theta_0 = 0 # centro della tua isola di channeling - looking at 2D "h_scan" find on which x (thetaIn) the channeling isle is centered
+theta_0 = 0 # centro della tua isola di channeling - looking at 2D "h scan" find on which x (thetaIn) the channeling isle is centered
 max_value = 0 # histograms range
 deflection_peak = 0 # urad
 
 if file in [8430, 8431, 8650]:
     theta_L = 12.9
-    deflection_peak = 6010.0
+    deflection_peak = 6015.0
     width = 8
     height = 2
     delta_x = 0.5*70*7*pow(10,-3) # 0.245 mm
@@ -93,7 +93,7 @@ h_d0_y_ch = df_cut.Histo1D(("h_d0_y_ch", "d0_y of channeled particles; d0_y [mm]
 h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 400, -2, 2), "Tracks.d0Out_x")
 h_d0_Out_y_ch = df_cut.Histo1D(("h_d0_Out_y_ch", "d0Out_y of channeled particles; d0Out_y [mm]; Counts", 200, -4, 6), "Tracks.d0Out_y")
 
-y_c3 = h_d0_y_ch.GetMean(); y_c2 = h_d0_Out_y_ch.GetMean(); y_c = (y_c3 + y_c2) / 2.0 # centro del cristallo in y (mm)
+y_c4 = h_d0_y_ch.GetMean(); y_c2 = h_d0_Out_y_ch.GetMean(); y_c = (y_c4 + y_c2) / 2.0 # centro del cristallo in y (mm)
 y_min, y_max = y_c - width / 2.0, y_c + width / 2.0
 
 # metodo sliding window che massimizza l'integrale per trovare margini esatti in x, piuttosto che la media essendo distribuzione asimmetrica
@@ -125,16 +125,19 @@ box3 = ROOT.TBox(x_min, y_min, x_max, y_max); box3.SetLineColor(ROOT.kRed); box3
 c0.cd(4); h_d0_Out_xy_ch.Draw("COLZ")
 box4 = ROOT.TBox(x_min+delta_x, y_min, x_max+delta_x, y_max); box4.SetLineColor(ROOT.kRed); box4.SetLineWidth(2); box4.SetFillStyle(0); box4.Draw("SAME")
 box5 = ROOT.TBox(x_min, y_min, x_max, y_max); box5.SetLineColor(ROOT.kRed); box5.SetLineWidth(1); box5.SetLineStyle(2); box5.SetFillStyle(0); box5.Draw("SAME")
+c0.Update()
+
+c0b = ROOT.TCanvas("c0b", "d0_x and d0_y of channeled particles", 1200, 900)
+h_d0_xy.Draw("COLZ"); h_d0_xy.SetTitle("Incoming beam of all particles; d0_x [mm]; d0_y [mm]")
+box_selected = ROOT.TBox(x_min, y_min, x_max, y_max); box_selected.SetLineColor(ROOT.kRed); box_selected.SetLineWidth(2); box_selected.SetFillStyle(0); box_selected.Draw("SAME")
+c0b.Update()
 
 c1 = ROOT.TCanvas("c1", "d0_x and d0_y of channeled particles", 1000, 900)
 pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 0.65)
-# pad_center.SetBottomMargin(0.01); pad_center.SetLeftMargin(0.01)
 pad_center.Draw()
 pad_top = ROOT.TPad("pad_top", "pad_top", 0.0, 0.60, 0.65, 1.0)
-# pad_top.SetTopMargin(0.01); pad_top.SetLeftMargin(0.01); pad_top.SetBottomMargin(0.3); 
 pad_top.Draw()
 pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 0.65)
-# pad_right.SetRightMargin(0.01); pad_right.SetTopMargin(0.01); pad_right.SetLeftMargin(0.3);
 pad_right.Draw()
 h_d0_Out_xy_ch.SetTitle(""); pad_center.cd(); h_d0_Out_xy_ch.Draw("COL"); box4.Draw("SAME")
 h_d0_Out_x_ch.SetTitle(""); h_d0_Out_x_ch.GetXaxis().SetTitle(""); pad_top.cd(); h_d0_Out_x_ch.SetFillColor(ROOT.kAzure-3); h_d0_Out_x_ch.Draw("BAR X+")
@@ -147,13 +150,10 @@ c1.Update()
 
 c2 = ROOT.TCanvas("c2", "d0_x and d0_y of channeled particles", 1000, 900)
 pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 0.65)
-# pad_center.SetBottomMargin(0.01); pad_center.SetLeftMargin(0.01); 
 pad_center.Draw()
 pad_top = ROOT.TPad("pad_top", "pad_top", 0.0, 0.60, 0.65, 1.0)
-# pad_top.SetTopMargin(0.01); pad_top.SetLeftMargin(0.01); pad_top.SetBottomMargin(0.3); 
 pad_top.Draw()
 pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 0.65)
-# pad_right.SetRightMargin(0.01); pad_right.SetTopMargin(0.01); pad_right.SetLeftMargin(0.3); 
 pad_right.Draw()
 h_d0_xy_ch.SetTitle(""); pad_center.cd(); h_d0_xy_ch.Draw("COL"); box3.Draw("SAME")
 h_d0_x_ch.SetTitle(""); h_d0_x_ch.GetXaxis().SetTitle(""); pad_top.cd(); h_d0_x_ch.SetFillColor(ROOT.kAzure-3); h_d0_x_ch.Draw("BAR X+"); 
@@ -170,12 +170,11 @@ print(f"Filter 3 (Spatial cut): {((P2 - P3)/P2*100):.2f}% events out of {P2} got
 
 # HISTOGRAMS PRE ANGLE CUT
 h_theta_before = df_phys.Histo1D(("h_theta_before", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
-h_defl_before = df_phys.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, max_value), "Deltatheta_x") 
+h_defl_before2 = df_phys.Histo1D(("h_defl_before2", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, max_value), "Deltatheta_x") 
 h_scan = df_phys.Histo2D(("h_scan", "Angular deflection of the particles as a function of the incident angle; Incident angle #theta_{In, x} [#murad]; Deflection #Delta#theta_{x} [#murad]", 500, -150, 150, 500, -2000, max_value), "thetaIn_x", "Deltatheta_x")
 
 # FILTER 4: Lindhard cut (only keeping events that have entered the crystal with an angle within +/- 1/2 theta_L)
 # FINDING THETA 0
-# df_cut2 = df_phys.Filter(f"Deltatheta_x > {preliminary_cut}")
 
 h_theta_all = df_phys.Histo1D(("h_theta_all", "", 1000, -100, 100), "thetaIn_x")
 h_theta_chan = df_phys.Filter(f"Deltatheta_x > {preliminary_cut}").Histo1D(("h_theta_chan", "", 1000, -100, 100), "thetaIn_x")
@@ -224,11 +223,11 @@ arr_theta = array('d', theta_vals)
 arr_eff = array('d', eff_vals)
 
 gr_eff = ROOT.TGraph(n_points, arr_theta, arr_eff)
-gr_eff.SetTitle("Angular Acceptance Curve;#theta_{in} Scan [#murad];Channeling Efficiency [%]")
-gr_eff.SetMarkerStyle(20); gr_eff.SetMarkerSize(0.6); gr_eff.SetMarkerColor(ROOT.kBlack)
+gr_eff.SetTitle("Angular Acceptance Curve;Incoming Angle #theta_{in,x} [#murad];Channeling Efficiency [%]")
+gr_eff.SetMarkerStyle(20); gr_eff.SetMarkerSize(0.6); gr_eff.SetMarkerColor(ROOT.kBlue+2)
 
-fit_min = best_theta_0_raw - 30.0
-fit_max = best_theta_0_raw + 30.0
+fit_min = best_theta_0_raw - 5.0
+fit_max = best_theta_0_raw + 20.0
 gaus_eff = ROOT.TF1("gaus_eff", "gaus", fit_min, fit_max)
 
 gaus_eff.SetParameters(max_eff_raw, best_theta_0_raw, 5.0)
@@ -240,21 +239,45 @@ best_theta_0 = gaus_eff.GetParameter(1)
 best_max_eff = gaus_eff.GetParameter(0)
 
 print(f"\tMiglior theta_0 trovato: {best_theta_0:.2f} urad")
-print(f"\tEfficienza Globale Massima: {(best_max_eff*100):.2f}%")
+print(f"\tEfficienza Globale Massima: {(best_max_eff):.2f}%")
+
+c3 = ROOT.TCanvas("c3", "Angular Acceptance Curve", 1000, 700)
+gr_eff.Draw("AP")
+gaus_eff.Draw("SAME")
+leg = ROOT.TPaveText(0.55, 0.75, 0.90, 0.90, "NDC")
+leg.SetBorderSize(1)
+leg.SetFillColor(ROOT.kWhite)
+leg.AddText(f"Max Efficiency #epsilon_{{ch}} = {best_max_eff:.1f} %"); leg.Draw("SAME")
+c3.Update()
 
 cut = f"abs(thetaIn_x - ({best_theta_0})) <= {theta_L / 2.0}"
 df_phys = df_phys.Filter(cut)
 P4 = df_phys.Count().GetValue()
 print(f"Filter 4 (Lindhard cut): {((P3 - P4)/P3*100):.2f}% events out of {P3} got discarded.")
-
-# N TOT
-N_tot = df_phys.Count().GetValue() # so actually is P4 
 print("="*50)
 
+
+
+# N TOT
+N_tot = df_phys.Count().GetValue()
 h_theta_cut = df_phys.Histo1D(("h_theta_cut", "#theta_{in,x} after filtering ; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
 # bin width circa 20 urad
 h_defl_cut = df_phys.Histo1D(("h_defl_cut", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, max_value), "Deltatheta_x")
 h_cut_value = h_defl_cut.GetValue()
+
+c4 = ROOT.TCanvas("c4", "Channeling Efficiency Analysis", 1400, 900)
+pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 1.0)
+pad_center.Draw()
+pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 1.0)
+pad_right.Draw()
+pad_center.cd(); h_scan.Draw("COL")
+line1 = ROOT.TLine(best_theta_0 - theta_L/2.0, -2000, best_theta_0 - theta_L/2.0, max_value)
+line2 = ROOT.TLine(best_theta_0 + theta_L/2.0, -2000, best_theta_0 + theta_L/2.0, max_value)
+line1.SetLineColor(ROOT.kOrange+10); line1.SetLineStyle(2); line1.SetLineWidth(2); line1.Draw("SAME")
+line2.SetLineColor(ROOT.kOrange+10); line2.SetLineStyle(2); line2.SetLineWidth(2); line2.Draw("SAME")
+pad_right.cd(); h_cut_value.SetFillColor(ROOT.kOrange+10); h_cut_value.GetXaxis().SetTitle(""); h_cut_value.Draw("HBAR Y+")
+c4.Update()
+
 
 # GAUSSIAN FIT
 eff_ch = 0.0
@@ -265,7 +288,7 @@ fit_sigma = 0.0
     
 if N_tot > 0:
     # fitting only right side of the peak (cleanest one)
-    fit_min = deflection_peak - 25
+    fit_min = deflection_peak - 15
     fit_max = deflection_peak + 500
     # fit_max = max_value
     gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
@@ -293,52 +316,27 @@ if N_tot > 0:
     eff_err = math.sqrt(eff_ch/100.0 * (1.0 - eff_ch/100.0) / N_tot) * 100.0
 
 
-# DRAWINGS
-c0.Update()
-c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
-c0.SaveAs(f"plots_{file}/spatial_cut_box.png")
+c5 = ROOT.TCanvas("c5", "Channeling Efficiency Fit", 1400, 900)
+h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
+h_cut_value.SetLineColor(ROOT.kOrange)
+h_cut_value.Draw("HIST")
+c5.SetLogy()
+c5.Update()
 
-c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.pdf")
-c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.png")
-
-c2.SaveAs(f"plots_{file}/d0_projxy_box.pdf")
-c2.SaveAs(f"plots_{file}/d0_projxy_box.png")
-
-c3 = ROOT.TCanvas("c3", "Channeling Efficiency Analysis", 1800, 700)
-c3.Divide(3, 1) 
-
-# Pad Angular deflection (Log scale)
-c3.cd(1)
-ROOT.gPad.SetLogy()
-# h_defl_before.SetLineWidth(2)
-h_defl_before.Draw("HIST")
-# h_defl_cut.SetLineWidth(2)
-# h_defl_cut.SetLineColor(ROOT.kRed)
-# h_defl_cut.Draw("HIST SAME")
-
-# Pad Scan Angolare 2D
-c3.cd(2)
-h_scan.Draw("COLZ TICKXY")
-    
-# Disegniamo due linee verticali per mostrare dove stiamo tagliando
-line1 = ROOT.TLine(best_theta_0 - theta_L/2.0, -2000, best_theta_0 - theta_L/2.0, max_value)
-line2 = ROOT.TLine(best_theta_0 + theta_L/2.0, -2000, best_theta_0 + theta_L/2.0, max_value)
-line1.SetLineColor(ROOT.kRed); line1.SetLineStyle(2); line1.SetLineWidth(2); line1.Draw()
-line2.SetLineColor(ROOT.kRed); line2.SetLineStyle(2); line2.SetLineWidth(2); line2.Draw()
-
-# Pad Gaussian Fit after cut
-c3.cd(3)
-h_cut_value.SetFillColorAlpha(ROOT.kGreen+1, 0.6)
-h_cut_value.SetLineColor(ROOT.kGreen+2)
+c6 = ROOT.TCanvas("c6", "Channeling Efficiency Fit", 1400, 900)
+h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
+h_cut_value.SetLineColor(ROOT.kOrange)
+h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
 h_cut_value.Draw("HIST")
 if N_tot > 0:
     gaus_fit.Draw("SAME")
-line3 = ROOT.TLine(fit_mean - 3*fit_sigma, 0, fit_mean - 3*fit_sigma, h_cut_value.GetMaximum())
-line3.SetLineColor(ROOT.kRed); line3.SetLineStyle(2); line3.SetLineWidth(2); line3.Draw()
-line4 = ROOT.TLine(fit_mean + 4*fit_sigma, 0, fit_mean + 4*fit_sigma, h_cut_value.GetMaximum())
-line4.SetLineColor(ROOT.kRed); line4.SetLineStyle(2); line4.SetLineWidth(2); line4.Draw()
 
-legend = ROOT.TPaveText(0.45, 0.75, 0.90, 0.90, "NDC")
+# line3 = ROOT.TLine(fit_mean - 3*fit_sigma, 0, fit_mean - 3*fit_sigma, h_cut_value.GetMaximum())
+# line3.SetLineColor(ROOT.kRed); line3.SetLineStyle(2); line3.SetLineWidth(2); line3.Draw()
+# line4 = ROOT.TLine(fit_mean + 4*fit_sigma, 0, fit_mean + 4*fit_sigma, h_cut_value.GetMaximum())
+# line4.SetLineColor(ROOT.kRed); line4.SetLineStyle(2); line4.SetLineWidth(2); line4.Draw()
+
+legend = ROOT.TPaveText(0.75, 0.75, 0.90, 0.90, "NDC")
 legend.SetBorderSize(1)
 legend.SetFillColor(ROOT.kWhite)
 legend.SetTextAlign(12)
@@ -346,7 +344,34 @@ legend.AddText(f"Cut at #pm #theta_{{L}}/2 (#theta_{{0}} = {best_theta_0:.2f} #m
 legend.AddText(f"#epsilon_{{ch}} = {eff_ch:.1f} #pm {eff_err:.1f} %")
 legend.AddText(f"Fit mean: {fit_mean:.1f} #murad")
 legend.Draw()
+c6.Update()
 
-# print(f"#sigma = {fit_sigma:.2f}, so bin width should be = {3.49*fit_sigma/math.pow(N_tot,1/3)}")
 
-c3.Update()
+
+c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
+c0.SaveAs(f"plots_{file}/spatial_cut_box.png")
+
+c0b.SaveAs(f"plots_{file}/spatial_cut2_box.pdf")
+c0b.SaveAs(f"plots_{file}/spatial_cut2_box.png")
+
+c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.pdf")
+c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.png")
+
+c2.SaveAs(f"plots_{file}/d0_projxy_box.pdf")
+c2.SaveAs(f"plots_{file}/d0_projxy_box.png")
+
+c3.SaveAs(f"plots_{file}/angular_acceptance_curve.pdf")
+c3.SaveAs(f"plots_{file}/angular_acceptance_curve.png")
+
+c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.pdf")
+c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.png")
+
+c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.pdf")
+c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.png")
+
+c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.pdf")
+c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.png")
+
+
+
+
