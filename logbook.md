@@ -4,6 +4,7 @@
 2. [week 2](#week-2)  
     - [measuring the channeling efficiency](#measure-the-channeling-efficiency)
 3. [week 3](#week-3)
+4. [week 4](#week-4)
 
 ## WEEK 1  
 
@@ -56,7 +57,7 @@ from [checkdata_1.py](./recoDataSimple/checkdata_1.py):
 what to do next:
 - ✅ check through [checkdata_0.py](./recoDataSimple/checkdata_0.py) that within the same run the position of the goniometer ($x,y,z$) does not change
 - ✅ check about `SingleTrack`, `MultiHit`: they are either 0 or 1 and they always match in every run
-- look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf)  
+- ✅ look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf)  
     | | | TCCP | TCCPA |
     |-|-|-----|-------|
     |length|[mm]|70|70.5|
@@ -70,11 +71,19 @@ $\theta_L = (1-\frac{\rho_c}{\rho})\sqrt{\frac{2U_0}{E}}$ where: $\rho_c=\frac{E
 ### Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
 
 - center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
-    - in [checkdata_2.py](./recoDataSimple/checkdata_2.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
-    - what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$ $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py)
+    - ✅ in [checkdata_2.py](./recoDataSimple/checkdata_2.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
+    - ❌ what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$
 - $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
     - to filter spatially those who entered the crystal (of dimension width $\times$ length), i look at `d0` variables $x$ and $y$ (`d0` and `d0Out`), total and from those events that will present some channeling (so $\Delta\theta_x>\sim 5850 \mu$ rad, number found as $\mu-4\sigma$ by preliminary fit) and from these last ones filtered `d0Out`, which form an almost perfect rectangular, i infere the position of the crystal with respect to the beam through a sliding window method (which maximize the integral).
     - to filter the particles that have entered with the right angle, we first need to find $\theta_0$ in order to apply the filter $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$:
 - identify $N_{ch}$: on the $\Delta\theta_x$ filtered histogram perform a gaussian fit on the channeling peak, only from the right side of the peak, then do the integral around the peak
 - compute $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$ amd its error - we choose a binomial distribution
+
+$\to$ [slides week 2](./slides/week2.pdf)
+
+## WEEK 3
+
+to do:
+- checkerboard grid search of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py)
+- analyse all the datasets
 
