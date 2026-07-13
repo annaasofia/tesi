@@ -1,7 +1,14 @@
+0. [bibliography](#bibliography)
 1. [book](#crystal-channeling-and-its-application-at-high-energy-accelerators)
 2. [article May 2025](#performance-of-short-and-long-bent-crystals-for-the-twocryst-experiment-at-the-large-hadron-collider)
 3. [article March 2026](#new-direction-for-bent-crystals)
 
+
+## BIBLIOGRAPHY
+- V.M. Biryukov, Y.A. Chesnokov, V.I. Kotov, *Crystal Channeling and its Application at High-Energy Accelerators. Accelerator Physics* (Springer, Berlin, 1997). [https://doi.org/10.1007/978-3-662-03407-1](https://doi.org/10.1007/978-3-662-03407-1)
+- Bandiera, L., et al. *Performance of short and long bent crystals for the TWOCRYST experiment at the Large Hadron Collider.* The European Physical Journal C 85.12 (2025): 1373. [http://doi.org/10.1140/epjc/s10052-025-15092-y](http://doi.org/10.1140/epjc/s10052-025-15092-y)
+- P. Hermes, I. Meinke, S. Redaelli, *New directions for bent crystals* Cern Courier (2026). [https://cerncourier.com/new-directions-for-bent-crystals/](https://cerncourier.com/new-directions-for-bent-crystals/)
+- M. Garattini, *Overview of crystal performance at SPS-H8* (2018). [https://indico.cern.ch/event/752062/contributions/3114845/](https://indico.cern.ch/event/752062/contributions/3114845/)
 
 ## CRYSTAL CHANNELING AND ITS APPLICATION AT HIGH ENERGY ACCELERATORS
 *by Biryukov, Chesnokov, Kotov*

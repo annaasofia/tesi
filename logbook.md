@@ -84,6 +84,18 @@ $\to$ [slides week 2](./slides/week2.pdf)
 ## WEEK 3
 
 to do:
-- checkerboard grid search of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py)
+- checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py):
+    - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$
+    - plotting $\theta_0$ vs $y$, we should see a linear correlation, and thus find $\tau_y$ [$\mu$ rad/mm]  
+    $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map, we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible  
+        $\to$ we expect $\tau_y(\text{TCCP})> 5\tau_y(\text{TCCPA})$
+- computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at thier impact position on the crystal surface  
+    $\to$ we obtain a global efficiency curve
+- improve $\Delta x$ spatial shift: if $\Delta z$ is the distance between the two detectors, the shift should be $\Delta x=\Delta z \cdot\tan(\theta_{defl})\sim\Delta z\cdot\theta_{defl}$
+- remove bkg?:
+    - removing instrumental noise, volume reflection, multiple scattering bkg from $N_{tot}$(?) by using the particles that didn't hit the crystal as gauge, plot their $\Delta\theta$ distribution, normalize it and subtract it (so that its height matches the zero-peak of my data) from my actual data
+    - removing dechanneling bkg (gradually decreasing) from $N_{ch}$: can be modelled by a crystal ball function (power law tail) and subtracted it from the $N_{ch}$ integral  
+    $\to$ the article says that since the two peaks are very well separated, the dechanneled background is negligible, because it is spread over a much broader angular range
+- found a systematical uncertainty in $\epsilon_{ch}$ and in $N_{ch}$
 - analyse all the datasets
 
