@@ -148,19 +148,19 @@ def compute_spatial_cut_bounds(df_phys, parameters):
 
     return x_min, x_max, y_min, y_max
 
-def torsion_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices, ny_slices):
+def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False):
     h_theta_before = df.Histo1D(("h_theta_before", "#theta_{in,x}; #theta_{x} [#murad]; Counts", 500, -150, 150), "thetaIn_x")
     h_defl_before2 = df.Histo1D(("h_defl_before2", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, parameters["max_value"]), "Deltatheta_x") 
     h_scan = df.Histo2D(("h_scan", "Angular deflection of the particles as a function of the incident angle; Incident angle #theta_{In, x} [#murad]; Deflection #Delta#theta_{x} [#murad]", 500, -150, 150, 500, -2000, parameters["max_value"]), "thetaIn_x", "Deltatheta_x")
 
-    # Create 3D histograms to avoid looping over RDataFrame
+    # Create 3D histograms (one for all and one for channeled only) to avoid looping over RDataFrame
     # X-axis: theta_in, Y-axis: d0_x, Z-axis: d0_y
-    df_cut, preliminary_cut = preliminary_cut_on_deltatheta(df, parameters["deflection_peak"])
+    _, preliminary_cut = preliminary_cut_on_deltatheta(df, parameters["deflection_peak"])
     h3_all = df.Histo3D(("h3_all", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
     h3_chan = df.Filter(f"Deltatheta_x > {preliminary_cut}").Histo3D(("h3_chan", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
 
     # 2D Histogram to store the final map
-    h2_torsion_map = ROOT.TH2D("h2_torsion_map", "2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_torsion_map = ROOT.TH2D("h2_torsion_map", "2D Torsion Map (bins 0.1 x 0.1 mm); x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     scan_min, scan_max, step = -80, 80, 1.0  # Scan range and step for theta_in
 
     # Extract local theta_0 for each (x, y) grid square
@@ -186,7 +186,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices, ny_slices
                 n_ch_test  = h1_chan.Integral(bin_min, bin_max)
                 
                 eff_test = 0.0
-                if n_tot_test > 15: # Minimum statistics safeguard for 2D
+                if n_tot_test > 100: # minimum statistics
                     eff_test = n_ch_test / n_tot_test * 100.0
                     if eff_test > max_eff_raw:
                         max_eff_raw = eff_test
@@ -212,7 +212,10 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices, ny_slices
 
     # Fit the Torsion Map with a 2D plane (Linear interpolator in x and y)
     # Formula: z = p0 + p1*x + p2*y
-    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", "[0] + [1]*x + [2]*y", x_min, x_max, y_min, y_max)
+    current_y_min = y_min_restricted if restricted else y_min
+    current_y_max = y_max_restricted if restricted else y_max
+    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", "[0] + [1]*x + [2]*y", x_min, x_max, current_y_min, current_y_max)
+
     h2_torsion_map.Fit(torsion_fit_2d, "RQ0")
 
     theta_0_baseline = torsion_fit_2d.GetParameter(0) # Intercept
@@ -224,12 +227,11 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices, ny_slices
     print(f"\tTorsion parameter Y (tau_y): {tau_y:.2f} urad/mm")
 
     # nel grafico: x_grafico = Y_fisico, y_grafico = X_fisico
-    torsion_plot_2d = ROOT.TF2("torsion_plot_2d", f"{theta_0_baseline} + {tau_x}*y + {tau_y}*x", y_min, y_max, x_min, x_max)
-    torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; y at crystal surface [mm]; x at crystal surface [mm]; angle shift #theta_{0} [#murad]")
+    torsion_plot_2d = ROOT.TF2("torsion_plot_2d", f"{theta_0_baseline} + {tau_x}*x + {tau_y}*y", x_min, x_max, y_min, y_max)
+    torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]")
 
     c_torsion_smooth = ROOT.TCanvas("c_torsion_smooth", "Continuous 2D Torsion Map", 900, 700)
     c_torsion_smooth.SetRightMargin(0.15)
-
     torsion_plot_2d.Draw("COLZ") 
     c_torsion_smooth.Update()
     # c_torsion_smooth.SaveAs(f"plots_{file}/torsion_map_2d_continuous.png")
@@ -238,10 +240,15 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices, ny_slices
     c_torsion_2d = ROOT.TCanvas("c_torsion_2d", "2D Torsion Map", 900, 700)
     c_torsion_2d.SetRightMargin(0.15) # Room for colorbar
     h2_torsion_map.SetStats(0)
-    h2_torsion_map.GetZaxis().SetRangeUser(-80, 80) # Adjust based on expected torsion range
+    h2_torsion_map.GetZaxis().SetRangeUser(-70, 0) # Adjust based on expected torsion range
     h2_torsion_map.Draw("COLZ")
     c_torsion_2d.Update()
     # c_torsion_2d.SaveAs(f"plots_{file}/torsion_map_2d.png")
+
+    ROOT.SetOwnership(h2_torsion_map, False)
+    ROOT.SetOwnership(torsion_plot_2d, False)
+    ROOT.SetOwnership(c_torsion_2d, False)
+    ROOT.SetOwnership(c_torsion_smooth, False)
 
     return theta_0_baseline, tau_x, tau_y
 
@@ -374,8 +381,8 @@ def main():
     count_2 = df_phys.Count()
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    theta_0_baseline, tau_x, tau_y = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=10)
-    df_phys = filter3_Lindhard_cut(df_phys, parameters, theta_0_baseline, tau_x, tau_y)
+    theta_0_baseline, tau_x, tau_y = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=-2, y_max_restricted=1, nx_slices=10, ny_slices=40, restricted=True)
+    df_phys = filter3_Lindhard_cut(df_phys, parameters, theta_0_baseline, tau_x=0, tau_y=tau_y) # we neglect tau_x
     count_3 = df_phys.Count()
 
     # CHANNELING EFFICINECY
@@ -386,7 +393,7 @@ def main():
     print(filter_message(2, count_1.GetValue(), count_2.GetValue()))
     print(filter_message(3, count_2.GetValue(), count_3.GetValue()))
     print("="*50)
-    print(f"Computed channeling efficiency = ({eff_ch} #pm {eff_err})%")
+    print(f"Computed channeling efficiency = ({eff_ch:.1f} ± {eff_err:.1f})%")
 
     # c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
     # c0.SaveAs(f"plots_{file}/spatial_cut_box.png")

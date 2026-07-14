@@ -85,10 +85,11 @@ $\to$ [slides week 2](./slides/week2.pdf)
 
 to do:
 - checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py):
+    - for every small square (the $xy$ beam distribution is divided into) we find at which $\theta$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
     - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$
-    - plotting $\theta_0$ vs $y$, we should see a linear correlation, and thus find $\tau_y$ [$\mu$ rad/mm]  
+    - plotting $\theta_0$ vs $y$, we should see a *linear correlation*, and thus find $\tau_y$ [$\mu$ rad/mm] **[A]**  
     $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map, we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible  
-        $\to$ we expect $\tau_y(\text{TCCP})> 5\tau_y(\text{TCCPA})$
+        <!-- $\to$ we expect $\tau_y(\text{TCCP})> 5\tau_y(\text{TCCPA})$ -->
 - computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at thier impact position on the crystal surface  
     $\to$ we obtain a global efficiency curve
 - improve $\Delta x$ spatial shift: if $\Delta z$ is the distance between the two detectors, the shift should be $\Delta x=\Delta z \cdot\tan(\theta_{defl})\sim\Delta z\cdot\theta_{defl}$
@@ -98,4 +99,8 @@ to do:
     $\to$ the article says that since the two peaks are very well separated, the dechanneled background is negligible, because it is spread over a much broader angular range
 - found a systematical uncertainty in $\epsilon_{ch}$ and in $N_{ch}$
 - analyse all the datasets
+
+**[A]:** i was expecting (left image) but i obtain (right image)  
+![this linear relation](image-1.png) 
+
 
