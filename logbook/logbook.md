@@ -88,7 +88,7 @@ to do:
     - for every small square (the $xy$ beam distribution is divided into) we find at which $\theta$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
     - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$
     - plotting $\theta_0$ vs $y$, we should see a *linear correlation*, and thus find $\tau_y$ [$\mu$ rad/mm] **[A]**  
-    $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map, we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible  
+    $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y$ where $p_0$ is $\theta_{0,bsln}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$), we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
         <!-- $\to$ we expect $\tau_y(\text{TCCP})> 5\tau_y(\text{TCCPA})$ -->
 - computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at thier impact position on the crystal surface  
     $\to$ we obtain a global efficiency curve
@@ -101,6 +101,5 @@ to do:
 - analyse all the datasets
 
 **[A]:** i was expecting (left image) but i obtain (right image)  
-![this linear relation](image-1.png) 
-
+![this linear relation](image-1.png) ![alt text](image-4.png)
 

@@ -250,7 +250,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     ROOT.SetOwnership(c_torsion_2d, False)
     ROOT.SetOwnership(c_torsion_smooth, False)
 
-    return theta_0_baseline, tau_x, tau_y
+    return theta_0_baseline, tau_x, tau_y, h2_torsion_map
 
 def channeling_efficiency(df, parameters, best_theta_0):
     N_tot = df.Count().GetValue()
@@ -336,6 +336,145 @@ def channeling_efficiency(df, parameters, best_theta_0):
 
     return eff_ch, eff_err
 
+def plot_mean_impact_angle(df, y_min, y_max):
+    # TProfile (mean impact angle theta in fuction of impact position y) -> should be linear?
+    h_prof = df.Profile1D(("h_prof", "Mean Impact Angle vs Y; Impact position d0_y [mm]; Mean Incident Angle #theta_{in, x} [#murad]", 50, y_min, y_max), "Tracks.d0_y", "thetaIn_x")
+    
+    c_prof = ROOT.TCanvas("c_prof", "Mean Impact Angle", 800, 600)
+    h_prof.SetLineColor(ROOT.kBlue)
+    h_prof.SetMarkerStyle(20)
+    h_prof.SetMarkerColor(ROOT.kBlue)
+    h_prof.Draw("PE")
+    
+    c_prof.Update()
+    
+    ROOT.SetOwnership(c_prof, False)
+    ROOT.SetOwnership(h_prof, False)
+
+
+def plot_global_efficiency_curve(df, parameters, theta_0_baseline, tau_x, tau_y):
+    
+    df_corr = df.Define("thetaIn_x_corr", f"thetaIn_x - ({tau_x} * Tracks.d0_x + {tau_y} * Tracks.d0_y)")
+    df_cut, _ = preliminary_cut_on_deltatheta(df_corr, parameters["deflection_peak"])
+
+    h_all = df_corr.Histo1D(("h_all_corr", "", 1000, -150, 150), "thetaIn_x_corr").GetValue()
+    h_chan = df_cut.Histo1D(("h_chan_corr", "", 1000, -150, 150), "thetaIn_x_corr").GetValue()
+
+    scan_min = theta_0_baseline - 60
+    scan_max = theta_0_baseline + 60
+    step = 1.0
+
+    theta_vals, eff_vals, err_vals = [], [], []
+
+    current_theta = scan_min
+    while current_theta <= scan_max:
+        bin_min = h_all.FindBin(current_theta - parameters["theta_L"] / 2.0)
+        bin_max = h_all.FindBin(current_theta + parameters["theta_L"] / 2.0)
+
+        n_tot = h_all.Integral(bin_min, bin_max)
+        n_ch  = h_chan.Integral(bin_min, bin_max)
+
+        if n_tot > 50: # Evitiamo rumore statistico sulle code del fascio
+            eff = n_ch / n_tot * 100.0
+            err = math.sqrt(eff/100.0 * (1.0 - eff/100.0) / n_tot) * 100.0
+            
+            theta_vals.append(current_theta)
+            eff_vals.append(eff)
+            err_vals.append(err)
+
+        current_theta += step
+
+    n_points = len(theta_vals)
+    gr_eff = ROOT.TGraphErrors(n_points, array('d', theta_vals), array('d', eff_vals), array('d', [0]*n_points), array('d', err_vals))
+    
+    gr_eff.SetTitle("Global Angular Acceptance (Torsion Corrected); Torsion-Corrected Incoming Angle [#murad]; Channeling Efficiency [%]")
+    gr_eff.SetMarkerStyle(20); gr_eff.SetMarkerColor(ROOT.kBlue+1); gr_eff.SetLineColor(ROOT.kBlue+1)
+
+    c_eff_curve = ROOT.TCanvas("c_eff_curve", "Global Efficiency Curve", 800, 600)
+    gr_eff.Draw("AP")
+
+    gaus_eff = ROOT.TF1("gaus_eff", "gaus", theta_0_baseline - 15, theta_0_baseline + 15)
+    gaus_eff.SetLineColor(ROOT.kRed)
+    gr_eff.Fit(gaus_eff, "RQ0")
+    gaus_eff.Draw("SAME")
+
+    max_eff = gaus_eff.GetParameter(0)
+    
+    leg = ROOT.TPaveText(0.15, 0.75, 0.50, 0.85, "NDC")
+    leg.SetFillColor(ROOT.kWhite); leg.SetBorderSize(1)
+    leg.AddText(f"Max Global Efficiency = {max_eff:.1f} %")
+    leg.Draw("SAME")
+
+    c_eff_curve.Update()
+
+    ROOT.SetOwnership(gr_eff, False)
+    ROOT.SetOwnership(c_eff_curve, False)
+    ROOT.SetOwnership(leg, False)
+
+
+def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map):
+    print("\n" + "="*50)
+    print("Running Sliding Window Scan for Tau_y and Efficiency...")
+    
+    window_width = 2  # Larghezza della finestra di taglio in mm
+    step = 0.25         # Di quanto spostiamo la finestra ad ogni ciclo
+    
+    y_centers = []
+    tau_ys = []
+    efficiencies = []
+    eff_errs = []
+    
+    current_y_min = y_min
+    
+    while current_y_min + window_width <= y_max:
+        current_y_max = current_y_min + window_width
+        y_center = (current_y_min + current_y_max) / 2.0
+        
+        fit_func = ROOT.TF2(f"fit_{y_center:.2f}", "[0] + [1]*x + [2]*y", x_min, x_max, current_y_min, current_y_max)
+        h2_torsion_map.Fit(fit_func, "RQ0")
+        local_theta_0 = fit_func.GetParameter(0)
+        local_tau_y = fit_func.GetParameter(2)
+        
+        # 2. Estraiamo l'efficienza LOCALE
+        df_window = filter2_spatial_cut(df_phys, x_min, x_max, current_y_min, current_y_max)
+        # Applichiamo il Lindhard cut dinamico usando i parametri appena trovati
+        df_chan = filter3_Lindhard_cut(df_window, parameters, local_theta_0, tau_x=0, tau_y=local_tau_y)
+        # Calcoliamo l'efficienza locale riutilizzando la funzione
+        eff, err = channeling_efficiency(df_chan, parameters, local_theta_0)
+        
+        if eff > 0:
+            y_centers.append(y_center)
+            tau_ys.append(local_tau_y)
+            efficiencies.append(eff)
+            eff_errs.append(err)
+            
+        current_y_min += step
+
+    n_pts = len(y_centers)
+    arr_y_centers = array('d', y_centers)
+    
+    # Grafico Tau_y vs Posizione
+    gr_tau = ROOT.TGraph(n_pts, arr_y_centers, array('d', tau_ys))
+    gr_tau.SetTitle("Local Torsion vs Y Cut Position; Center of Y-Cut [mm]; Local #tau_{y} [#murad/mm]")
+    gr_tau.SetMarkerStyle(20); gr_tau.SetMarkerColor(ROOT.kRed)
+    
+    c_scan_tau = ROOT.TCanvas("c_scan_tau", "Torsion Scan", 800, 600)
+    gr_tau.Draw("APL") # A=Axis, P=Points, L=Line
+    c_scan_tau.Update()
+    
+    # Grafico Efficienza vs Posizione
+    gr_eff = ROOT.TGraphErrors(n_pts, arr_y_centers, array('d', efficiencies), array('d', [0]*n_pts), array('d', eff_errs))
+    gr_eff.SetTitle("Local Efficiency vs Y Cut Position; Center of Y-Cut [mm]; Local Channeling Efficiency [%]")
+    gr_eff.SetMarkerStyle(20); gr_eff.SetMarkerColor(ROOT.kBlue+1)
+    
+    c_scan_eff = ROOT.TCanvas("c_scan_eff", "Efficiency Scan", 800, 600)
+    gr_eff.Draw("APL")
+    c_scan_eff.Update()
+
+    ROOT.SetOwnership(c_scan_tau, False); ROOT.SetOwnership(gr_tau, False)
+    ROOT.SetOwnership(c_scan_eff, False); ROOT.SetOwnership(gr_eff, False)
+
+
 def filter1_initial(df):
     df_filtered = df.Filter("SingleTrack == 1")
     return df_filtered
@@ -380,13 +519,22 @@ def main():
     df_phys = filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max)
     count_2 = df_phys.Count()
 
+    plot_mean_impact_angle(df_phys, y_min, y_max)
+
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    theta_0_baseline, tau_x, tau_y = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=-2, y_max_restricted=1, nx_slices=10, ny_slices=40, restricted=True)
+    theta_0_baseline, tau_x, tau_y, h2_torsion_map = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, nx_slices=10, ny_slices=40, restricted=True)
+
+    scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map)
+
+    plot_global_efficiency_curve(df_phys, parameters, theta_0_baseline, tau_x=0, tau_y=tau_y)
+
     df_phys = filter3_Lindhard_cut(df_phys, parameters, theta_0_baseline, tau_x=0, tau_y=tau_y) # we neglect tau_x
     count_3 = df_phys.Count()
-
     # CHANNELING EFFICINECY
     eff_ch, eff_err = channeling_efficiency(df_phys, parameters, best_theta_0=theta_0_baseline)
+
+    # study how the torsion changes when we change the y margins
+
 
     print("="*50)
     print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
