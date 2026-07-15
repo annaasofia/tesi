@@ -86,7 +86,7 @@ $\to$ [slides week 2](./slides/week2.pdf)
 to do:
 - checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](./recoDataSimple/checkdata_3.py):
     - for every small square (the $xy$ beam distribution is divided into) we find at which $\theta$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
-    - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$
+    - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)
     - plotting $\theta_0$ vs $y$, we should see a *linear correlation*, and thus find $\tau_y$ [$\mu$ rad/mm] **[A]**  
     $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y$ where $p_0$ is $\theta_{0,bsln}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$), we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
         <!-- $\to$ we expect $\tau_y(\text{TCCP})> 5\tau_y(\text{TCCPA})$ -->
