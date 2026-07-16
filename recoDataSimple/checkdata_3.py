@@ -152,7 +152,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     h3_all = df.Histo3D(("h3_all", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
     h3_chan = df.Filter(f"Deltatheta_x > {preliminary_cut}").Histo3D(("h3_chan", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
 
-    # 2D Histogram to store the final map
+    # To store the final map
     h2_torsion_map = ROOT.TH2D("h2_torsion_map", "2D Torsion Map (bins 0.1 x 0.1 mm); x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     scan_min, scan_max, step = -80, 80, 1.0  # Scan range and step for theta_in
 
@@ -210,8 +210,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     h2_torsion_map.Draw("COLZ")
     c_torsion_2d.Update()
     
-    # Fit the Torsion Map with a 3D dome
-    # Formula: z = p0 + p1*x + p2*y + p3*x**2 + p4*y**2 + p5*x*y
+    # Fit the Torsion Map with a xy function
     current_y_min = y_min_restricted if restricted else y_min
     current_y_max = y_max_restricted if restricted else y_max
 
@@ -231,7 +230,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             tau_y = torsion_fit_2d.GetParameter(2)
             
             fit_params = (theta_0_baseline, tau_x, tau_y)
-            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
+            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
 
         case "parabolic_y":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -240,7 +239,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_yy = torsion_fit_2d.GetParameter(3)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_yy)
-            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "pure_parabolic_y":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -248,7 +247,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_yy = torsion_fit_2d.GetParameter(2)
             
             fit_params = (theta_0_baseline, tau_y, c_yy)
-            rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+            # rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "full_quadratic":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -259,10 +258,12 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_xy = torsion_fit_2d.GetParameter(5)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
-            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
+            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
             
         case _:
             raise ValueError(f"Failed: model '{chosen_model}' not supported.")
+
+    rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y)"
 
     print(f"\tBaseline Theta_0: {theta_0_baseline:.2f} urad")
     # print(f"\tLinear tau_x: {tau_x:.2f} urad/mm")
@@ -339,10 +340,6 @@ def channeling_efficiency(df, parameters, best_theta_0):
     # h_cut_value.Draw("HIST")
     # if N_tot > 0:
     #     gaus_fit.Draw("SAME")
-    # line3 = ROOT.TLine(fit_mean - 3*fit_sigma, 0, fit_mean - 3*fit_sigma, h_cut_value.GetMaximum())
-    # line3.SetLineColor(ROOT.kRed); line3.SetLineStyle(2); line3.SetLineWidth(2); line3.Draw()
-    # line4 = ROOT.TLine(fit_mean + 4*fit_sigma, 0, fit_mean + 4*fit_sigma, h_cut_value.GetMaximum())
-    # line4.SetLineColor(ROOT.kRed); line4.SetLineStyle(2); line4.SetLineWidth(2); line4.Draw()
     # legend = ROOT.TPaveText(0.75, 0.75, 0.90, 0.90, "NDC")
     # legend.SetBorderSize(1)
     # legend.SetFillColor(ROOT.kWhite)
