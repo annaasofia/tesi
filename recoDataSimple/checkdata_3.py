@@ -40,14 +40,13 @@ def filter_message(number, count_before, count_after):
 
 def preliminary_cut_on_deltatheta(df, deflection_peak):
     # Applies a preliminary cut on Deltatheta_x to select channeled particles.
-    h_defl_before = df.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, deflection_peak + 500), "Deltatheta_x") 
+    h_defl_before = df.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, deflection_peak + 1000), "Deltatheta_x") 
     h_defl_val = h_defl_before.GetValue()
 
     pre_fit = ROOT.TF1("pre_fit", "gaus", deflection_peak - 500, deflection_peak + 500)
     h_defl_val.Fit(pre_fit, "RQ0") # R=Range, Q=Quiet, 0=NoDraw
     pre_mean = pre_fit.GetParameter(1); pre_sigma = pre_fit.GetParameter(2)
     preliminary_cut = pre_mean - 3.0 * pre_sigma
-    # print(f"\tPreliminary cut on Deltatheta_x to select channeled particles: {preliminary_cut:.2f} urad (mean = {pre_mean:.2f}, sigma = {pre_sigma:.2f})")
     df_cut = df.Filter(f"Deltatheta_x > {preliminary_cut}", "Preliminary cut on Deltatheta_x to select channeled particles")
     return df_cut, preliminary_cut
 
@@ -146,7 +145,7 @@ def compute_spatial_cut_bounds(df_phys, parameters):
 
     return x_min, x_max, y_min, y_max
 
-def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False):
+def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False, chosen_model="full_quadratic"):
 
     # Create 3D histograms (one for all and one for channeled only) to avoid looping over RDataFrame
     _, preliminary_cut = preliminary_cut_on_deltatheta(df, parameters["deflection_peak"])
@@ -205,67 +204,91 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
                 h2_torsion_map.SetBinContent(ix, iy, local_theta_0)
 
     c_torsion_2d = ROOT.TCanvas("c_torsion_2d", "2D Torsion Map", 900, 700)
-    c_torsion_2d.SetRightMargin(0.15) # Room for colorbar
+    c_torsion_2d.SetRightMargin(0.15) # room for colorbar
     h2_torsion_map.SetStats(0)
-    h2_torsion_map.GetZaxis().SetRangeUser(-55, -10) # Adjust based on expected torsion range
-    h2_torsion_map.Draw("SURF2")
+    h2_torsion_map.GetZaxis().SetRangeUser(-55, -25) # Adjust based on expected torsion range
+    h2_torsion_map.Draw("COLZ")
     c_torsion_2d.Update()
-    # c_torsion_2d.SaveAs(f"plots_{file}/torsion_map_2d.png")
     
     # Fit the Torsion Map with a 3D dome
     # Formula: z = p0 + p1*x + p2*y + p3*x**2 + p4*y**2 + p5*x*y
     current_y_min = y_min_restricted if restricted else y_min
     current_y_max = y_max_restricted if restricted else y_max
-    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", "[0] + [1]*x + [2]*y + [3]*x*x + [4]*y*y + [5]*x*y", x_min, x_max, current_y_min, current_y_max)
+
+    fit_models = {
+        "linear": "[0] + [1]*x + [2]*y",
+        "pure_parabolic_y": "[0] + [1]*y + [2]*y*y",
+        "parabolic_y": "[0] + [1]*x + [2]*y + [3]*y*y",
+        "full_quadratic": "[0] + [1]*x + [2]*y + [3]*x*x + [4]*y*y + [5]*x*y"
+    }
+    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", fit_models[chosen_model], x_min, x_max, current_y_min, current_y_max)
     h2_torsion_map.Fit(torsion_fit_2d, "RQ0")
 
-    theta_0_baseline = torsion_fit_2d.GetParameter(0) # Intercept
-    tau_x = torsion_fit_2d.GetParameter(1)  # Pendenza media X
-    tau_y = torsion_fit_2d.GetParameter(2)  # Pendenza media Y
-    c_xx = torsion_fit_2d.GetParameter(3)   # Curvatura X
-    c_yy = torsion_fit_2d.GetParameter(4)   # Curvatura Y
-    c_xy = torsion_fit_2d.GetParameter(5)   # Termine misto
+    match chosen_model:
+        case "linear":
+            theta_0_baseline = torsion_fit_2d.GetParameter(0)
+            tau_x = torsion_fit_2d.GetParameter(1)
+            tau_y = torsion_fit_2d.GetParameter(2)
+            
+            fit_params = (theta_0_baseline, tau_x, tau_y)
+            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
+
+        case "parabolic_y":
+            theta_0_baseline = torsion_fit_2d.GetParameter(0)
+            tau_x = torsion_fit_2d.GetParameter(1)
+            tau_y = torsion_fit_2d.GetParameter(2)
+            c_yy = torsion_fit_2d.GetParameter(3)
+            
+            fit_params = (theta_0_baseline, tau_x, tau_y, c_yy)
+            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+
+        case "pure_parabolic_y":
+            theta_0_baseline = torsion_fit_2d.GetParameter(0)
+            tau_y = torsion_fit_2d.GetParameter(1)
+            c_yy = torsion_fit_2d.GetParameter(2)
+            
+            fit_params = (theta_0_baseline, tau_y, c_yy)
+            rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+
+        case "full_quadratic":
+            theta_0_baseline = torsion_fit_2d.GetParameter(0)
+            tau_x = torsion_fit_2d.GetParameter(1)
+            tau_y = torsion_fit_2d.GetParameter(2)
+            c_xx = torsion_fit_2d.GetParameter(3)
+            c_yy = torsion_fit_2d.GetParameter(4)
+            c_xy = torsion_fit_2d.GetParameter(5)
+            
+            fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
+            rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
+            
+        case _:
+            raise ValueError(f"Failed: model '{chosen_model}' not supported.")
 
     print(f"\tBaseline Theta_0: {theta_0_baseline:.2f} urad")
-    print(f"\tLinear tau_x: {tau_x:.2f} urad/mm")
+    # print(f"\tLinear tau_x: {tau_x:.2f} urad/mm")
     print(f"\tLinear tau_y: {tau_y:.2f} urad/mm")
-    print(f"\tCurvature c_xx: {c_xx:.2f}, c_yy: {c_yy:.2f}, c_xy: {c_xy:.2f}")
 
-    torsion_plot_2d = ROOT.TF2("torsion_plot_2d", f"{theta_0_baseline} + {tau_x}*x + {tau_y}*y + {c_xx}*x*x + {c_yy}*y*y + {c_xy}*x*y", x_min, x_max, y_min, y_max)
+    # torsion_plot_2d = ROOT.TF2("torsion_plot_2d", plot_formula, x_min, x_max, y_min, y_max)
+    torsion_plot_2d = torsion_fit_2d.Clone("torsion_plot_2d")
+    torsion_plot_2d.SetRange(x_min, y_min, x_max, y_max)
     torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]")
     c_torsion_smooth = ROOT.TCanvas("c_torsion_smooth", "Continuous 2D Torsion Map", 900, 700)
     c_torsion_smooth.SetRightMargin(0.15)
-    torsion_plot_2d.Draw("SURF2") 
+    torsion_plot_2d.Draw("surf2") 
     c_torsion_smooth.Update()
-    # c_torsion_smooth.SaveAs(f"plots_{file}/torsion_map_2d_continuous.png")
 
     ROOT.SetOwnership(h2_torsion_map, False)
     ROOT.SetOwnership(torsion_plot_2d, False)
     ROOT.SetOwnership(c_torsion_2d, False)
     ROOT.SetOwnership(c_torsion_smooth, False)
 
-    fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
-    return fit_params, h2_torsion_map
+    return fit_params, h2_torsion_map, rdf_surface_expr
 
 def channeling_efficiency(df, parameters, best_theta_0):
     N_tot = df.Count().GetValue()
 
     h_defl_cut = df.Histo1D(("h_defl_cut", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
     h_cut_value = h_defl_cut.GetValue()
-
-    # h_scan = df.Histo2D(("h_scan", "Angular deflection of the particles as a function of the incident angle; Incident angle #theta_{In, x} [#murad]; Deflection #Delta#theta_{x} [#murad]", 500, -150, 150, 500, -2000, parameters["max_value"]), "thetaIn_x", "Deltatheta_x")
-    # c4 = ROOT.TCanvas("c4", "Channeling Efficiency Analysis", 1400, 900)
-    # pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 1.0)
-    # pad_center.Draw()
-    # pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 1.0)
-    # pad_right.Draw()
-    # pad_center.cd(); h_scan.Draw("COL")
-    # line1 = ROOT.TLine(best_theta_0 - parameters["theta_L"]/2.0, -2000, best_theta_0 - parameters["theta_L"]/2.0, parameters["max_value"])
-    # line2 = ROOT.TLine(best_theta_0 + parameters["theta_L"]/2.0, -2000, best_theta_0 + parameters["theta_L"]/2.0, parameters["max_value"])
-    # line1.SetLineColor(ROOT.kOrange+10); line1.SetLineStyle(2); line1.SetLineWidth(2); line1.Draw("SAME")
-    # line2.SetLineColor(ROOT.kOrange+10); line2.SetLineStyle(2); line2.SetLineWidth(2); line2.Draw("SAME")
-    # pad_right.cd(); h_cut_value.SetFillColor(ROOT.kOrange+10); h_cut_value.GetXaxis().SetTitle(""); h_cut_value.Draw("HBAR Y+")
-    # c4.Update()
 
     # GAUSSIAN FIT
     eff_ch = 0.0
@@ -332,8 +355,25 @@ def channeling_efficiency(df, parameters, best_theta_0):
 
     return eff_ch, eff_err
 
+def plot_deltatheta_theta(df, parameters, best_theta_0):
+    h_deltatheta = df.Histo1D(("h_deltatheta", "Angular Deflection; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
+    h_thetax = df.Histo1D(("h_deltatheta", "Incident Angle; Incident angle #theta_{In, x} [#murad]; No. particles", 500, -150, 150), "thetaIn_x")
+    h_deflection = df.Histo2D(("h_deflection", "Angular deflection of the particles as a function of the incident angle; Incident angle #theta_{In, x} [#murad]; Deflection #Delta#theta_{x} [#murad]", 500, -150, 150, 500, -2000, parameters["max_value"]), "thetaIn_x", "Deltatheta_x")
+    c_deflection = ROOT.TCanvas("c_deflection","Angular Deflection vs Incident Angle", 800, 600)
+
+    # line1 = ROOT.TLine(best_theta_0 - parameters["theta_L"]/2.0, -2000, best_theta_0 - parameters["theta_L"]/2.0, parameters["max_value"])
+    # line2 = ROOT.TLine(best_theta_0 + parameters["theta_L"]/2.0, -2000, best_theta_0 + parameters["theta_L"]/2.0, parameters["max_value"])
+    # line1.SetLineColor(ROOT.kRed); line1.SetLineStyle(2); line1.SetLineWidth(2); line1.Draw("SAME")
+    # line2.SetLineColor(ROOT.kRed); line2.SetLineStyle(2); line2.SetLineWidth(2); line2.Draw("SAME")
+
+    h_deflection.Draw("COLZ")
+    c_deflection.Update()
+
+    ROOT.SetOwnership(c_deflection, False)
+    ROOT.SetOwnership(h_deflection, False)
+
 def plot_mean_impact_angle(df, y_min, y_max):
-    # TProfile (mean impact angle theta in fuction of impact position y) -> should be linear?
+    # TProfile (mean impact angle theta in fuction of impact position y) -> should be linear
     h_prof = df.Profile1D(("h_prof", "Mean Impact Angle vs Y; Impact position d0_y [mm]; Mean Incident Angle #theta_{in, x} [#murad]", 50, y_min, y_max), "Tracks.d0_y", "thetaIn_x")
     
     c_prof = ROOT.TCanvas("c_prof", "Mean Impact Angle", 800, 600)
@@ -348,11 +388,9 @@ def plot_mean_impact_angle(df, y_min, y_max):
     ROOT.SetOwnership(h_prof, False)
 
 
-def plot_global_efficiency_curve(df, parameters, fit_params):
+def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr):
 
-    theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy = fit_params
-
-    corr_expr = f"thetaIn_x - ({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x + {c_yy}*Tracks.d0_y*Tracks.d0_y + {c_xy}*Tracks.d0_x*Tracks.d0_y)"
+    corr_expr = f"thetaIn_x - ({rdf_surface_expr})"
     
     df_corr = df.Define("thetaIn_x_corr", corr_expr)
     df_cut, _ = preliminary_cut_on_deltatheta(df_corr, parameters["deflection_peak"])
@@ -391,16 +429,17 @@ def plot_global_efficiency_curve(df, parameters, fit_params):
     gr_eff.SetMarkerStyle(20); gr_eff.SetMarkerColor(ROOT.kBlue+1); gr_eff.SetLineColor(ROOT.kBlue+1)
 
     c_eff_curve = ROOT.TCanvas("c_eff_curve", "Global Efficiency Curve", 800, 600)
+    gr_eff.GetXaxis().SetRangeUser(-80,80)
     gr_eff.Draw("AP")
 
-    gaus_eff = ROOT.TF1("gaus_eff", "gaus", -40, +40)
+    gaus_eff = ROOT.TF1("gaus_eff", "gaus", -20, +20)
     gaus_eff.SetLineColor(ROOT.kRed)
     gr_eff.Fit(gaus_eff, "RQ0")
     gaus_eff.Draw("SAME")
 
     max_eff = gaus_eff.GetParameter(0)
     
-    leg = ROOT.TPaveText(0.15, 0.75, 0.50, 0.85, "NDC")
+    leg = ROOT.TPaveText(0.53, 0.78, 0.88, 0.88, "NDC")
     leg.SetFillColor(ROOT.kWhite); leg.SetBorderSize(1)
     leg.AddText(f"Max Global Efficiency = {max_eff:.1f} %")
     leg.Draw("SAME")
@@ -477,7 +516,6 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
     ROOT.SetOwnership(c_scan_tau, False); ROOT.SetOwnership(gr_tau, False)
     ROOT.SetOwnership(c_scan_eff, False); ROOT.SetOwnership(gr_eff, False)
 
-
 def filter1_initial(df):
     df_filtered = df.Filter("SingleTrack == 1")
     return df_filtered
@@ -487,17 +525,12 @@ def filter2_spatial_cut(df, x_min, x_max, y_min, y_max):
     df_filtered = df.Filter(spatial_cut, "Spatial Cut (Crystal Area)")
     return df_filtered
 
-def filter3_Lindhard_cut(df, parameters, fit_params):
-    theta_0, tau_x, tau_y, c_xx, c_yy, c_xy = fit_params 
-    surface_expr = f"({theta_0} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x + {c_yy}*Tracks.d0_y*Tracks.d0_y + {c_xy}*Tracks.d0_x*Tracks.d0_y)"
-    Lindhard_cut = f"abs(thetaIn_x - {surface_expr}) <= {parameters['theta_L'] / 2.0}"
-    df_filtered = df.Filter(Lindhard_cut, "2D Torsion-corrected Lindhard cut (Cupola)")
+def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
+    Lindhard_cut = f"abs(thetaIn_x - {rdf_surface_expr}) <= {parameters['theta_L'] / 2.0}"
+    df_filtered = df.Filter(Lindhard_cut, f"Torsion-corrected Lindhard cut")
     return df_filtered
 
-
-
-
-
+# ==========================================================================================
 
 def main():
 
@@ -527,46 +560,25 @@ def main():
     # plot_mean_impact_angle(df_phys, y_min, y_max)
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    fit_params, h2_torsion_map = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, nx_slices=10, ny_slices=40, restricted=False)
+    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, 
+                                             nx_slices=10, ny_slices=40, restricted=False, chosen_model="pure_parabolic_y")
+    
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map)
-    plot_global_efficiency_curve(df_phys, parameters, fit_params)
+    plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
 
-    df_phys = filter3_Lindhard_cut(df_phys, parameters, fit_params)
+    df_phys = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()
 
     # CHANNELING EFFICIENCY
     eff_ch, eff_err = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
 
-    print("="*50)
-    print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
-    print(filter_message(2, count_1.GetValue(), count_2.GetValue()))
-    print(filter_message(3, count_2.GetValue(), count_3.GetValue()))
-    print("="*50)
+    # print("="*50)
+    # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
+    # print(filter_message(2, count_1.GetValue(), count_2.GetValue()))
+    # print(filter_message(3, count_2.GetValue(), count_3.GetValue()))
+    # print("="*50)
+    print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
     print(f"Computed channeling efficiency = ({eff_ch:.1f} ± {eff_err:.1f})%")
-
-    # c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
-    # c0.SaveAs(f"plots_{file}/spatial_cut_box.png")
-
-    # c0b.SaveAs(f"plots_{file}/spatial_cut2_box.pdf")
-    # c0b.SaveAs(f"plots_{file}/spatial_cut2_box.png")
-
-    # c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.pdf")
-    # c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.png")
-
-    # c2.SaveAs(f"plots_{file}/d0_projxy_box.pdf")
-    # c2.SaveAs(f"plots_{file}/d0_projxy_box.png")
-
-    # c3.SaveAs(f"plots_{file}/angular_acceptance_curve.pdf")
-    # c3.SaveAs(f"plots_{file}/angular_acceptance_curve.png")
-
-    # c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.pdf")
-    # c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.png")
-
-    # c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.pdf")
-    # c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.png")
-
-    # c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.pdf")
-    # c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.png")
 
 
 if __name__ == "__main__":
