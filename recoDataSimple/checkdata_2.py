@@ -7,7 +7,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 
 # file = input("File number: ")
-file = 8430
+file = 8650
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
 ROOT.gStyle.SetOptStat(0)
@@ -348,29 +348,29 @@ c6.Update()
 
 
 
-c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
-c0.SaveAs(f"plots_{file}/spatial_cut_box.png")
+# c0.SaveAs(f"plots_{file}/spatial_cut_box.pdf")
+# c0.SaveAs(f"plots_{file}/spatial_cut_box.png")
 
-c0b.SaveAs(f"plots_{file}/spatial_cut2_box.pdf")
-c0b.SaveAs(f"plots_{file}/spatial_cut2_box.png")
+# c0b.SaveAs(f"plots_{file}/spatial_cut2_box.pdf")
+# c0b.SaveAs(f"plots_{file}/spatial_cut2_box.png")
 
-c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.pdf")
-c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.png")
+# c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.pdf")
+# c1.SaveAs(f"plots_{file}/d0_Out_projxy_box.png")
 
-c2.SaveAs(f"plots_{file}/d0_projxy_box.pdf")
-c2.SaveAs(f"plots_{file}/d0_projxy_box.png")
+# c2.SaveAs(f"plots_{file}/d0_projxy_box.pdf")
+# c2.SaveAs(f"plots_{file}/d0_projxy_box.png")
 
-c3.SaveAs(f"plots_{file}/angular_acceptance_curve.pdf")
-c3.SaveAs(f"plots_{file}/angular_acceptance_curve.png")
+# c3.SaveAs(f"plots_{file}/angular_acceptance_curve.pdf")
+# c3.SaveAs(f"plots_{file}/angular_acceptance_curve.png")
 
-c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.pdf")
-c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.png")
+# c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.pdf")
+# c4.SaveAs(f"plots_{file}/channeling_efficiency_scan.png")
 
-c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.pdf")
-c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.png")
+# c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.pdf")
+# c5.SaveAs(f"plots_{file}/channeling_efficiency_fit.png")
 
-c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.pdf")
-c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.png")
+# c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.pdf")
+# c6.SaveAs(f"plots_{file}/channeling_efficiency_fit_zoom.png")
 
 
 

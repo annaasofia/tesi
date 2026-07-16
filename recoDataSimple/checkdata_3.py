@@ -206,8 +206,8 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     c_torsion_2d = ROOT.TCanvas("c_torsion_2d", "2D Torsion Map", 900, 700)
     c_torsion_2d.SetRightMargin(0.15) # room for colorbar
     h2_torsion_map.SetStats(0)
-    h2_torsion_map.GetZaxis().SetRangeUser(-55, -25) # Adjust based on expected torsion range
-    h2_torsion_map.Draw("COLZ")
+    h2_torsion_map.GetZaxis().SetRangeUser(-50, 20) # Adjust based on expected torsion range
+    h2_torsion_map.Draw("surf2")
     c_torsion_2d.Update()
     
     # Fit the Torsion Map with a xy function
@@ -265,7 +265,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_xy = torsion_fit_2d.GetParameter(5)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
-            surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
+            surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x + {c_yy}*Tracks.d0_y*Tracks.d0_y + {c_xy}*Tracks.d0_x*Tracks.d0_y)"
             
         case _:
             raise ValueError(f"Failed: model '{chosen_model}' not supported.")
@@ -455,7 +455,7 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr):
     ROOT.SetOwnership(leg, False)
 
 
-def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map):
+def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr):
     print("\n" + "="*50)
     print("Running Sliding Window Scan for Tau_y and Efficiency...")
     
@@ -484,7 +484,7 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
         # 2. Estraiamo l'efficienza LOCALE
         df_window = filter2_spatial_cut(df_phys, x_min, x_max, current_y_min, current_y_max)
         # Applichiamo il Lindhard cut dinamico usando i parametri appena trovati
-        df_chan = filter3_Lindhard_cut(df_window, parameters, local_fit_params)
+        df_chan = filter3_Lindhard_cut(df_window, parameters, local_fit_params, rdf_surface_expr)
         # Calcoliamo l'efficienza locale riutilizzando la funzione
         eff, err = channeling_efficiency(df_chan, parameters, local_theta_0)
         
@@ -539,7 +539,7 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8430 
+    file = 8650
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
@@ -565,9 +565,9 @@ def main():
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
     fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, 
-                                             nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="pure_parabolic_y")
+                                             nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="full_quadratic")
     
-    # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map)
+    # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
     plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
 
     df_phys = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)

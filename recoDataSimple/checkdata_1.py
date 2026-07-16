@@ -2,7 +2,8 @@ import ROOT
 
 ROOT.ROOT.EnableImplicitMT() 
 
-filename = "recoDataSimple_8430_xtalMerging.root"
+file = 8650
+filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 df = ROOT.RDataFrame("simpleEvent", filename)
 
 ROOT.gStyle.SetOptStat(111111)
