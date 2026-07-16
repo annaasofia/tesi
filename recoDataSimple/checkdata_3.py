@@ -145,7 +145,7 @@ def compute_spatial_cut_bounds(df_phys, parameters):
 
     return x_min, x_max, y_min, y_max
 
-def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False, chosen_model="full_quadratic"):
+def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False, linear=False, chosen_model="full_quadratic"):
 
     # Create 3D histograms (one for all and one for channeled only) to avoid looping over RDataFrame
     _, preliminary_cut = preliminary_cut_on_deltatheta(df, parameters["deflection_peak"])
@@ -221,7 +221,14 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
         "full_quadratic": "[0] + [1]*x + [2]*y + [3]*x*x + [4]*y*y + [5]*x*y"
     }
     torsion_fit_2d = ROOT.TF2("torsion_fit_2d", fit_models[chosen_model], x_min, x_max, current_y_min, current_y_max)
-    h2_torsion_map.Fit(torsion_fit_2d, "RQ0")
+    fit_result = h2_torsion_map.Fit(torsion_fit_2d, "RQ0S")
+
+    chi2 = fit_result.Chi2()
+    ndf = fit_result.Ndf()        # Number of Degrees of Freedom
+    p_value = fit_result.Prob()   # Fit probability
+    
+    print(f"Chi2 / NDF: {chi2 / ndf:.2f}")
+    print(f"p-value: {p_value:.4f}")
 
     match chosen_model:
         case "linear":
@@ -230,7 +237,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             tau_y = torsion_fit_2d.GetParameter(2)
             
             fit_params = (theta_0_baseline, tau_x, tau_y)
-            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
+            surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
 
         case "parabolic_y":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -239,7 +246,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_yy = torsion_fit_2d.GetParameter(3)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_yy)
-            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+            surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "pure_parabolic_y":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -247,7 +254,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_yy = torsion_fit_2d.GetParameter(2)
             
             fit_params = (theta_0_baseline, tau_y, c_yy)
-            # rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
+            surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "full_quadratic":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
@@ -258,12 +265,12 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
             c_xy = torsion_fit_2d.GetParameter(5)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
-            # rdf_surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
+            surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x) + {c_yy}*Tracks.d0_y*Tracks.d0_y) + {c_xy}*Tracks.d0_x*Tracks.d0_y) "
             
         case _:
             raise ValueError(f"Failed: model '{chosen_model}' not supported.")
 
-    rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y)"
+    rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y)" if linear else surface_expr
 
     print(f"\tBaseline Theta_0: {theta_0_baseline:.2f} urad")
     # print(f"\tLinear tau_x: {tau_x:.2f} urad/mm")
@@ -558,7 +565,7 @@ def main():
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
     fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, 
-                                             nx_slices=10, ny_slices=40, restricted=False, chosen_model="pure_parabolic_y")
+                                             nx_slices=10, ny_slices=40, restricted=False, linear=True, chosen_model="pure_parabolic_y")
     
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map)
     plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
