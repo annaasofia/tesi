@@ -565,7 +565,7 @@ def main():
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
     fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, 
-                                             nx_slices=10, ny_slices=40, restricted=False, linear=True, chosen_model="pure_parabolic_y")
+                                             nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="pure_parabolic_y")
     
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map)
     plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
