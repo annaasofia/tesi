@@ -98,8 +98,8 @@ def compute_spatial_cut_bounds(df_phys, parameters):
     best_x_max = best_x_min + parameters["height"]
     print(f"\tCut in x found: [{best_x_min:.2f} mm, {best_x_max:.2f} mm]")
 
-    x_min, x_max = best_x_min - parameters["delta_x"], best_x_max - parameters["delta_x"]
-    print(f"\tFinal cut in x (after shift of {parameters["delta_x"]:.3f} mm): [{x_min:.2f} mm, {x_max:.2f} mm]")
+    x_min, x_max = best_x_min - parameters["delta_x"], best_x_max - parameters['delta_x']
+    print(f"\tFinal cut in x (after shift of {parameters['delta_x']:.3f} mm): [{x_min:.2f} mm, {x_max:.2f} mm]")
 
     # c0.cd(3); h_d0_xy_ch.Draw("COLZ")
     # box3 = ROOT.TBox(x_min, y_min, x_max, y_max); box3.SetLineColor(ROOT.kRed); box3.SetLineWidth(2); box3.SetFillStyle(0); box3.Draw("SAME")
@@ -539,7 +539,7 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8656
+    file = 8430
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
