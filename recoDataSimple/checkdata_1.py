@@ -2,7 +2,7 @@ import ROOT
 
 ROOT.ROOT.EnableImplicitMT() 
 
-file = 8650
+file = 8656
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 df = ROOT.RDataFrame("simpleEvent", filename)
 
@@ -20,7 +20,7 @@ h_beam_angle = df_clean.Histo2D(("h_beam_angle", "Beam Divergence Profile; #thet
 # Calcoliamo delta_theta usando i rami Tracks
 df_physics = df_clean.Define("delta_theta_x", "Tracks.thetaOut_x - Tracks.thetaIn_x").Define("delta_theta_y", "Tracks.thetaOut_y - Tracks.thetaIn_y")
     
-h_deflection_x = df_physics.Histo1D(("h_deflection_x", "Deflection Angle #Delta#theta_{x} = #theta_{out} - #theta_{in}; #Delta#theta_{x}; Events", 1000, -0.01, 0.01), "delta_theta_x")
+h_deflection_x = df_physics.Histo1D(("h_deflection_x", "Deflection Angle #Delta#theta_{x} = #theta_{out} - #theta_{in}; #Delta#theta_{x}; Events", 1000, -0.01, 0.015), "delta_theta_x")
 h_deflection_y = df_physics.Histo1D(("h_deflection_y", "Deflection Angle #Delta#theta_{y} = #theta_{out} - #theta_{in}; #Delta#theta_{y}; Events", 1000, -0.01, 0.01), "delta_theta_y")
 h_deflection_xy = df_physics.Histo2D(("h_deflection_xy", "Deflections x and y; #Delta#theta_{x}; #Delta#theta_{y}", 500, -0.0005, 0.0005, 500, -0.0005, 0.0005), "delta_theta_x", "delta_theta_y")
     

@@ -9,7 +9,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 
 # file = input("File number: ")
-file = 8650
+file = 8656
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
@@ -25,14 +25,14 @@ theta_0 = 0 # centro della tua isola di channeling - looking at 2D "h scan" find
 max_value = 0 # histograms range
 deflection_peak = 0 # urad
 
-if file in [8430, 8431, 8650]:
+if file in [8430, 8431, 8650, 8655, 8656]:
     theta_L = 12.9
     deflection_peak = 6015.0
     width = 8
     height = 2
     delta_x = 0.5*70*7*pow(10,-3) # 0.245 mm
     max_value = 8000
-elif file in [8655, 8656]: 
+elif file in [0]: 
     theta_L = 12.5
     deflection_peak = 13000
     width = 22.5
@@ -89,12 +89,12 @@ print(f"\tPreliminary cut on Deltatheta_x to select channeled particles: {prelim
 df_cut = df_phys.Filter(f"Deltatheta_x > {preliminary_cut}", "Preliminary cut on Deltatheta_x to select channeled particles")
 
 # i look at the beam profile of d0 of those who channeled, and find the region (width x length)
-h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; d0_x [mm]; d0_y [mm]", 400, -2, 2, 200, -4, 6), "Tracks.d0_x", "Tracks.d0_y")
-h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; d0Out_x [mm]; d0Out_y [mm]", 400, -2, 2, 200, -4, 6), "Tracks.d0Out_x", "Tracks.d0Out_y")
+h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; d0_x [mm]; d0_y [mm]", 500, -2, 3, 200, -4, 6), "Tracks.d0_x", "Tracks.d0_y")
+h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; d0Out_x [mm]; d0Out_y [mm]", 500, -2, 3, 200, -4, 6), "Tracks.d0Out_x", "Tracks.d0Out_y")
 
-h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "d0_x of channeled particles; d0_x [mm]; Counts", 400, -2, 2), "Tracks.d0_x")
+h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "d0_x of channeled particles; d0_x [mm]; Counts", 500, -2, 3), "Tracks.d0_x")
 h_d0_y_ch = df_cut.Histo1D(("h_d0_y_ch", "d0_y of channeled particles; d0_y [mm]; Counts", 200, -4, 6), "Tracks.d0_y")
-h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 400, -2, 2), "Tracks.d0Out_x")
+h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 500, -2, 3), "Tracks.d0Out_x")
 h_d0_Out_y_ch = df_cut.Histo1D(("h_d0_Out_y_ch", "d0Out_y of channeled particles; d0Out_y [mm]; Counts", 200, -4, 6), "Tracks.d0Out_y")
 
 y_c4 = h_d0_y_ch.GetMean(); y_c2 = h_d0_Out_y_ch.GetMean(); y_c = (y_c4 + y_c2) / 2.0 # centro del cristallo in y (mm)

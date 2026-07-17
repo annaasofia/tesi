@@ -9,7 +9,7 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
 def get_run_parameters(file_id):
-    if file_id in [8430, 8431, 8650]:
+    if file_id in [8430, 8431, 8650, 8655, 8656]:
         parameters = {
             "theta_L": 12.9,
             "deflection_peak": 6000.0,
@@ -18,7 +18,7 @@ def get_run_parameters(file_id):
             "delta_x": 0.5 * 70 * 7 * pow(10, -3),  # 0.245 mm
             "max_value": 8000
         }
-    elif file_id in [8655, 8656]:
+    elif file_id in [0]:
         parameters = {
             "theta_L": 12.5,
             "deflection_peak": 13000,
@@ -67,12 +67,12 @@ def compute_spatial_cut_bounds(df_phys, parameters):
     df_cut, _ = preliminary_cut_on_deltatheta(df_phys, parameters["deflection_peak"])
 
     # i look at the beam profile of d0 of those who channeled, and find the region (width x length)
-    h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; d0_x [mm]; d0_y [mm]", 400, -2, 2, 200, -4, 6), "Tracks.d0_x", "Tracks.d0_y")
-    h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; d0Out_x [mm]; d0Out_y [mm]", 400, -2, 2, 200, -4, 6), "Tracks.d0Out_x", "Tracks.d0Out_y")
+    h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; d0_x [mm]; d0_y [mm]", 500, -2, 3, 200, -4, 6), "Tracks.d0_x", "Tracks.d0_y")
+    h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; d0Out_x [mm]; d0Out_y [mm]", 500, -2, 3, 200, -4, 6), "Tracks.d0Out_x", "Tracks.d0Out_y")
 
-    h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "d0_x of channeled particles; d0_x [mm]; Counts", 400, -2, 2), "Tracks.d0_x")
+    h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "d0_x of channeled particles; d0_x [mm]; Counts", 500, -2, 3), "Tracks.d0_x")
     h_d0_y_ch = df_cut.Histo1D(("h_d0_y_ch", "d0_y of channeled particles; d0_y [mm]; Counts", 200, -4, 6), "Tracks.d0_y")
-    h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 400, -2, 2), "Tracks.d0Out_x")
+    h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 500, -2, 3), "Tracks.d0Out_x")
     h_d0_Out_y_ch = df_cut.Histo1D(("h_d0_Out_y_ch", "d0Out_y of channeled particles; d0Out_y [mm]; Counts", 200, -4, 6), "Tracks.d0Out_y")
 
     y_c_in = h_d0_y_ch.GetMean(); y_c_out = h_d0_Out_y_ch.GetMean(); y_c = (y_c_in + y_c_out) / 2.0 # crystal centre (mm)
@@ -539,7 +539,7 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8650
+    file = 8656
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
