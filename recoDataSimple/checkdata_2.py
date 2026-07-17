@@ -4,11 +4,14 @@ import sys
 import numpy as np
 from array import array
 
+
+
 ROOT.ROOT.EnableImplicitMT() 
 
 # file = input("File number: ")
 file = 8650
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
+files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
@@ -42,6 +45,7 @@ else:
 
 # ROOT DATA FRAME
 df = ROOT.RDataFrame("simpleEvent", filename)
+# df = ROOT.RDataFrame("simpleEvent", files)
 print("="*50)
 print(f"Analyzing {filename} ...")
 
