@@ -30,7 +30,7 @@ if file in [8430, 8431, 8650, 8655, 8656]:
     deflection_peak = 6015.0
     width = 8
     height = 2
-    delta_x = 0.5*70*7*pow(10,-3) # 0.245 mm
+    delta_x = 0.5*70*6*pow(10,-3) # 0.210 mm
     max_value = 8000
 elif file in [0]: 
     theta_L = 12.5
@@ -122,7 +122,7 @@ best_x_max = best_x_min + height
 print(f"\tTaglio ottimale in x trovato: [{best_x_min:.2f} mm, {best_x_max:.2f} mm]")
 
 x_min, x_max = best_x_min - delta_x, best_x_max - delta_x
-print(f"\tTaglio finale in x (dopo shift di {delta_x:.3f} mm): [{x_min:.2f} mm, {x_max:.2f} mm]")
+print(f"\tTaglio finale in x (dopo shift di {delta_x:.3f} mm): x = [{x_min:.4f} mm, {x_max:.4f} mm], y = [{y_min:.4f} mm, {y_max:.4f} mm]")
 
 c0.cd(3); h_d0_xy_ch.Draw("COLZ")
 box3 = ROOT.TBox(x_min, y_min, x_max, y_max); box3.SetLineColor(ROOT.kRed); box3.SetLineWidth(2); box3.SetFillStyle(0); box3.Draw("SAME")

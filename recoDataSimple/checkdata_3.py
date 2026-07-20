@@ -12,21 +12,21 @@ def get_run_parameters(file_id):
     if file_id in [8430, 8431, 8650, 8655, 8656]:
         parameters = {
             "theta_L": 12.9,
-            "deflection_peak": 6000.0,
+            "deflection_peak": 6010.0,
             "width": 8,
             "height": 2,
-            "delta_x": 0.5 * 70 * 7 * pow(10, -3),  # 0.245 mm
+            "delta_x": 0.5 * 70 * 6 * pow(10, -3),  # 0.245 mm
             "max_value": 8000
         }
-    elif file_id in [0]:
-        parameters = {
-            "theta_L": 12.5,
-            "deflection_peak": 13000,
-            "width": 22.5,
-            "height": 2,
-            "delta_x": 0.5 * 70.5 * 13.3 * pow(10, -3),  # 0.468 mm
-            "max_value": 14000
-        }
+    # elif file_id in [0]:
+    #     parameters = {
+    #         "theta_L": 12.5,
+    #         "deflection_peak": 13000,
+    #         "width": 22.5,
+    #         "height": 2,
+    #         "delta_x": 0.5 * 70.5 * 13.3 * pow(10, -3),  # 0.468 mm
+    #         "max_value": 14000
+    #     }
     else:
         print(f"Run {file_id} not found...")
         sys.exit(1)
