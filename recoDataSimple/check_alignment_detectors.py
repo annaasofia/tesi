@@ -150,8 +150,8 @@ c2.Update()
 
 # c1.SaveAs(f"./plots_{file_num}/alignment_check.png")
 # c1.SaveAs(f"./plots_{file_num}/alignment_check.pdf")
-c2.SaveAs(f"./plots_{file_num}/linear_check.png")
-c2.SaveAs(f"./plots_{file_num}/linear_check.pdf")
+# c2.SaveAs(f"./plots_{file_num}/linear_check.png")
+# c2.SaveAs(f"./plots_{file_num}/linear_check.pdf")
  
 # # 2D scatter of the air-only sample, to visually confirm these
 # # tracks really are outside the crystal footprint

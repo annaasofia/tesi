@@ -94,35 +94,35 @@ $\to$ [slides week 2](./slides/week2.pdf)
 - ❌ improve $\Delta x$ spatial shift: if $\Delta z$ is the distance between the two detectors, the shift should be $\Delta x=\Delta z \cdot\tan(\theta_{defl})\sim\Delta z\cdot\theta_{defl}$
 - ❌ remove bkg?:
     - removing instrumental noise, volume reflection, multiple scattering bkg from $N_{tot}$(?) by using the particles that didn't hit the crystal as gauge, plot their $\Delta\theta$ distribution, normalize it and subtract it (so that its height matches the zero-peak of my data) from my actual data
-    - removing dechanneling bkg (gradually decreasing) from $N_{ch}$: can be modelled by a crystal ball function (power law tail) and subtracted it from the $N_{ch}$ integral  
+    - removing dechanneling bkg (gradually decreasing) from $N_{ch}$: can be modelled by a Crystal Ball function (power law tail) and subtracted it from the $N_{ch}$ integral  
     $\to$ the article says that since the two peaks are very well separated, the dechanneled background is negligible, because it is spread over a much broader angular range
 - ❌ find a systematical uncertainty in $\epsilon_{ch}$ and in $N_{ch}$
 - ✅ analyse all the datasets
 
 ### Measure the torsion correction✅
 Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](../recoDataSimple/checkdata_3.py):  
-- for every small square (the $xy$ beam distribution is divided into) we find at which $\theta$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
-- cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)
-- plotting $\theta_0$ vs $y$, we should see a *linear correlation*, and thus find $\tau_y$ [$\mu$ rad/mm] **[A]**  
-    $\to$ do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a linear interpolator along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y$ where $p_0$ is $\theta_{0,bsln}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$), we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
+- for every small square (the $xy$ beam distribution is divided into) we find at which $\theta_{x,in}$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
+- do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a function along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y + p_3 y^2$ where $p_0$ is $\theta_{baseline}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$). we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
+- cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)  
 - computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at their impact position on the crystal surface  
     $\to$ we obtain a global efficiency curve
 
 
-**[A]:** i was expecting (left image) but i obtain (right image)  
+- plotting $\theta_0$ vs $y$, we should see a *linear correlation*, and thus find $\tau_y$ [$\mu$ rad/mm]:   
+(i was expecting (left image) but i obtain (right image))  
 ![this linear relation](image-1.png) ![alt text](image-4.png)
 
 
 ## WEEK 4
 
 ### Crystal edges found for each run  
-| run | $x_{min}$ |$x_{max}$|$y_{min}$ |$y_{max}$ |
+| **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
 |-|-|-|-|-|
-|8430|[-1.1000 mm | 0.9000 mm]|[-2.8288 mm | 5.1712 mm]|
-|8431|[-1.1000 mm | 0.9000 mm]|[-2.8090 mm | 5.1910 mm]|
-|8650|[-0.2700 mm | 1.7300 mm]|[-3.2639 mm | 4.7361 mm]|
-|8655|[0.5700 mm | 2.5700 mm]|[-3.4964 mm | 4.5036 mm]|
-|8656|[0.5700 mm | 2.5700 mm]|[-3.5103 mm | 4.4897 mm]|
+|**8430**|[-1.1000 mm | 0.9000 mm]|[-2.8288 mm | 5.1712 mm]|
+|**8431**|[-1.1000 mm | 0.9000 mm]|[-2.8090 mm | 5.1910 mm]|
+|**8650**|[-0.2700 mm | 1.7300 mm]|[-3.2639 mm | 4.7361 mm]|
+|**8655**|[0.5700 mm | 2.5700 mm]|[-3.4964 mm | 4.5036 mm]|
+|**8656**|[0.5700 mm | 2.5700 mm]|[-3.5103 mm | 4.4897 mm]|
 
 ### Calibrate the detectors and alignment check
 Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/check_alignment_detectors.py):  
@@ -141,5 +141,7 @@ Results:
 | **8656** | 0.0079 +/- 0.0001 mm | 0.0989 mm | 1.356 | -0.0130 | 0.9966 | 0.0080 mm | 0.0108 +/- 0.0001 mm | 0.0997 mm | 1.401 | -0.0286 | 0.9988 | 0.0107 mm |
 
 ### Mapping the torsion
-I choose a fit parabolic function ($$)
+I choose a fit parabolic function (i want to use the simplest model that can accurately describe the data, but not so simple that it hides the actual physics):  
+$\theta(x,y) = \theta_{baseline} + \tau_x \cdot x + \tau_y \cdot y + p_3\cdot y^2$  
+- the `full_quadratic` function with 6 parameters can overfit the data and its noise, while a `pure_parabolic_y` is automatically imposing $\tau_x=0$ and it is too risky
 - how uniform is $\tau_y$
