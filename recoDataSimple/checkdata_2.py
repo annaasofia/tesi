@@ -9,7 +9,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 
 # file = input("File number: ")
-file = 8656
+file = 8430
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
@@ -44,8 +44,8 @@ else:
     sys.exit(1)
 
 # ROOT DATA FRAME
-df = ROOT.RDataFrame("simpleEvent", filename)
-# df = ROOT.RDataFrame("simpleEvent", files)
+# df = ROOT.RDataFrame("simpleEvent", filename)
+df = ROOT.RDataFrame("simpleEvent", files)
 print("="*50)
 print(f"Analyzing {filename} ...")
 

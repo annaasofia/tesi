@@ -8,8 +8,9 @@
 3. [WEEK 3 (JUL 13)](#week-3)
     - [Measuring the torsion correction](#measure-the-torsion-correction)
 4. [WEEK 4 (JUL 20)](#week-4)
-    - [Crystal edges found](#crystal-edges-found-for-each-run)
+    - [Crystal edges](#crystal-edges-found-for-each-run)
     - [Calibrate the detectors and alignment check](#calibrate-the-detectors-and-alignment-check)
+    - [Mapping the torsion](#mapping-the-torsion)
 5. [WEEK 5 (JUL 27)](#week-5)
 
 ## WEEK 1  
@@ -143,5 +144,8 @@ Results:
 ### Mapping the torsion
 I choose a fit parabolic function (i want to use the simplest model that can accurately describe the data, but not so simple that it hides the actual physics):  
 $\theta(x,y) = \theta_{baseline} + \tau_x \cdot x + \tau_y \cdot y + p_3\cdot y^2$  
-- the `full_quadratic` function with 6 parameters can overfit the data and its noise, while a `pure_parabolic_y` is automatically imposing $\tau_x=0$ and it is too risky
-- how uniform is $\tau_y$
+- the `full_quadratic` function with 6 parameters can overfit the data and its noise, while a `pure_parabolic_y` is automatically imposing $\tau_x=0$ and it is too risky  
+$\to$ first, i verify with the `full_quadratic` function that the curvature along $x$ is negligible, and then for the final fit i use the `parabolic_y` function to have a more robust fit  
+- plot of how uniform is $\tau_y$ across $(x,y)$  
+- plot of how uniform is $\epsilon_{ch}$ across $(x,y)$  
+- understand the meaning of the global efficiency curve plot 
