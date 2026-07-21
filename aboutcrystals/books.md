@@ -9,7 +9,6 @@
 - Bandiera, L., et al. *Performance of short and long bent crystals for the TWOCRYST experiment at the Large Hadron Collider.* The European Physical Journal C 85.12 (2025): 1373. [http://doi.org/10.1140/epjc/s10052-025-15092-y](http://doi.org/10.1140/epjc/s10052-025-15092-y)
 - P. Hermes, I. Meinke, S. Redaelli, *New directions for bent crystals* Cern Courier (2026). [https://cerncourier.com/new-directions-for-bent-crystals/](https://cerncourier.com/new-directions-for-bent-crystals/)
 - M. Garattini, *Overview of crystal performance at SPS-H8* (2018). [https://indico.cern.ch/event/752062/contributions/3114845/](https://indico.cern.ch/event/752062/contributions/3114845/)
-- 
 
 ## CRYSTAL CHANNELING AND ITS APPLICATION AT HIGH ENERGY ACCELERATORS
 *by Biryukov, Chesnokov, Kotov*
