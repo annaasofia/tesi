@@ -314,42 +314,35 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     ROOT.SetOwnership(c_torsion_2d, False)
     ROOT.SetOwnership(c_torsion_smooth, False)
 
-    return fit_params, h2_torsion_map, rdf_surface_expr
+    h2_residuals = ROOT.TH2D("h2_residuals", f"Torsion Residuals (Data - {chosen_model}); x [mm]; y [mm]; #Delta#theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    for ix in range(1, nx_slices + 1):
+        for iy in range(1, ny_slices + 1):
+            data_val = h2_torsion_map.GetBinContent(ix, iy)
+            if data_val != 0: # Evita di sottrarre in bin vuoti
+                x_center = h2_torsion_map.GetXaxis().GetBinCenter(ix)
+                y_center = h2_torsion_map.GetYaxis().GetBinCenter(iy)
+                fit_val = torsion_fit_2d.Eval(x_center, y_center)
+                h2_residuals.SetBinContent(ix, iy, data_val - fit_val)
 
-# # Plot dei nuovi grafici
-#     c_eff_map = ROOT.TCanvas("c_eff_map", "2D Efficiency Map", 900, 700)
-#     c_eff_map.SetRightMargin(0.15)
-#     h2_eff_map.SetStats(0)
-#     h2_eff_map.Draw("COLZ")
-#     c_eff_map.Update()
+    c_eff_map = ROOT.TCanvas("c_eff_map", "2D Efficiency Map", 900, 700)
+    c_eff_map.SetRightMargin(0.15)
+    h2_eff_map.SetStats(0)
+    h2_eff_map.Draw("COLZ")
+    c_eff_map.Update()
 
-#     c_residuals = ROOT.TCanvas("c_residuals", "2D Residuals Map", 900, 700)
-#     c_residuals.SetRightMargin(0.15)
-#     h2_residuals.SetStats(0)
-#     h2_residuals.Draw("COLZ")
-#     c_residuals.Update()
-
-#     # Plot Continuous Map
-#     torsion_plot_2d = torsion_fit_2d.Clone("torsion_plot_2d")
-#     torsion_plot_2d.SetRange(x_min, y_min, x_max, y_max)
-#     torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]")
-#     c_torsion_smooth = ROOT.TCanvas("c_torsion_smooth", "Continuous 2D Torsion Map", 900, 700)
-#     c_torsion_smooth.SetRightMargin(0.15)
-#     torsion_plot_2d.Draw("surf2") 
-#     c_torsion_smooth.Update()
-
-#     ROOT.SetOwnership(h2_torsion_map, False)
-#     ROOT.SetOwnership(torsion_plot_2d, False)
-#     ROOT.SetOwnership(c_torsion_2d, False)
-#     ROOT.SetOwnership(c_torsion_smooth, False)
+    c_residuals = ROOT.TCanvas("c_residuals", "2D Residuals Map", 900, 700)
+    c_residuals.SetRightMargin(0.15)
+    h2_residuals.SetStats(0)
+    h2_residuals.Draw("COLZ")
+    c_residuals.Update()
     
-#     # Ownership dei nuovi grafici
-#     ROOT.SetOwnership(h2_eff_map, False)
-#     ROOT.SetOwnership(c_eff_map, False)
-#     ROOT.SetOwnership(h2_residuals, False)
-#     ROOT.SetOwnership(c_residuals, False)
+    # Ownership dei nuovi grafici
+    ROOT.SetOwnership(h2_eff_map, False)
+    ROOT.SetOwnership(c_eff_map, False)
+    ROOT.SetOwnership(h2_residuals, False)
+    ROOT.SetOwnership(c_residuals, False)
 
-#     return fit_params, h2_torsion_map, rdf_surface_expr
+    return fit_params, h2_torsion_map, rdf_surface_expr
 
 def channeling_efficiency(df, parameters, best_theta_0):
     N_tot = df.Count().GetValue()
