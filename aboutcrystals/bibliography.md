@@ -24,7 +24,7 @@ $\to$ citation [28] from European Physical Journal article
 [https://inspirehep.net/files/af953e84c7e2432f50be2678a4cc8a03](https://inspirehep.net/files/af953e84c7e2432f50be2678a4cc8a03)
 - Hermes, Pascal, et al. "*Update on TWOCRYST: the feasibility of double-crystal fixed-target experiments at the LHC.*" POS PROCEEDINGS OF SCIENCE 476 (2025).  
 [https://inspirehep.net/files/f42c420496f900bf7935d132c0c4bbf5](https://inspirehep.net/files/f42c420496f900bf7935d132c0c4bbf5)
-- Maccani, Chiara. "*JACOW: Simulated beam performance of the TWOCRYST proof of principle experiment at the LHC.*" JACoW IPAC 2025 (2025): MOPS019.
+- Maccani, Chiara. "*JACOW: Simulated beam performance of the TWOCRYST proof of principle experiment at the LHC.*" JACoW IPAC 2025 (2025): MOPS019.  
 [https://inspirehep.net/files/3e82eb348328f4b86283cacaa0bfac68](https://inspirehep.net/files/3e82eb348328f4b86283cacaa0bfac68)
 - Hall, G., T. James, and M. Pesaresi. "Optimisation of a silicon microstrip telescope for UA9 crystal channeling studies." Journal of Instrumentation 15.05 (2020): C05014-C05014.  
 [http://dx.doi.org/10.1088/1748-0221/15/05/C05014](http://dx.doi.org/10.1088/1748-0221/15/05/C05014)
