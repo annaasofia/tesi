@@ -9,13 +9,31 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
 def get_run_parameters(file_id):
-    if file_id in [8430, 8431, 8650, 8655, 8656]:
+    if file_id in [8430, 8431]:
         parameters = {
             "theta_L": 12.9,
             "deflection_peak": 6010.0,
             "width": 8,
             "height": 2,
-            "delta_x": 0.5 * 70 * 6 * pow(10, -3),  # 0.21 mm
+            "delta_x": 0.5 * 74 * 6.01 * pow(10, -3),  # 0.222 mm
+            "max_value": 8000
+        }
+    elif file_id in [8650]:
+        parameters = {
+            "theta_L": 12.9,
+            "deflection_peak": 6080.0,
+            "width": 8,
+            "height": 2,
+            "delta_x": 0.5 * 74 * 6.08 * pow(10, -3),  # 0.222 mm
+            "max_value": 8000
+        }
+    elif file_id in [8655, 8656]:
+        parameters = {
+            "theta_L": 12.9,
+            "deflection_peak": 6130.0,
+            "width": 8,
+            "height": 2,
+            "delta_x": 0.5 * 74 * 6.13 * pow(10, -3),  # 0.222 mm
             "max_value": 8000
         }
     # elif file_id in [0]:
@@ -349,7 +367,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     if N_tot > 0:
         # fitting only right side of the peak (cleanest one)
         fit_min = parameters["deflection_peak"] - 15
-        fit_max = parameters["deflection_peak"] + 500
+        fit_max = parameters["deflection_peak"] + 100
         # fit_max = parameters["max_value"]
         gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
         gaus_fit.SetLineColor(ROOT.kRed)
@@ -357,7 +375,11 @@ def channeling_efficiency(df, parameters, best_theta_0):
         h_cut_value.Fit(gaus_fit, "RQ0")
 
         fit_mean = gaus_fit.GetParameter(1)
+        fit_mean_error = gaus_fit.GetParError(1)
         fit_sigma = gaus_fit.GetParameter(2)
+        fit_sigma_error = gaus_fit.GetParError(2)
+
+        fit_parameters = [fit_mean, fit_mean_error, fit_sigma, fit_sigma_error]
         
         # COMPUTE N CH FROM GAUSSIAN INTEGRAL
         bin_width = h_cut_value.GetBinWidth(1)
@@ -381,6 +403,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     c5.SetLogy()
     c5.Update()
 
+
     ROOT.SetOwnership(c5, False)
     ROOT.SetOwnership(h_cut_value, False)
 
@@ -388,14 +411,14 @@ def channeling_efficiency(df, parameters, best_theta_0):
     h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
     h_cut_value.SetLineColor(ROOT.kOrange)
     h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
+    # h_cut_value.GetXaxis().SetRangeUser(6000, 6200)
     h_cut_value.Draw("HIST")
     if N_tot > 0:
         gaus_fit.Draw("SAME")
-    legend = ROOT.TPaveText(0.75, 0.75, 0.90, 0.90, "NDC")
+    legend = ROOT.TPaveText(0.70, 0.75, 0.85, 0.85, "NDC")
     legend.SetBorderSize(1)
     legend.SetFillColor(ROOT.kWhite)
     legend.SetTextAlign(12)
-    legend.AddText(f"Cut at #pm #theta_{{L}}/2 (#theta_{{0}} = {best_theta_0:.2f} #murad)")
     legend.AddText(f"#epsilon_{{ch}} = {eff_ch:.1f} #pm {eff_err:.1f} %")
     legend.AddText(f"Fit mean: {fit_mean:.1f} #murad")
     legend.Draw()
@@ -406,7 +429,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     ROOT.SetOwnership(gaus_fit, False)
     ROOT.SetOwnership(legend, False)
 
-    return eff_ch, eff_err
+    return eff_ch, eff_err, fit_parameters
 
 def plot_deltatheta_theta(df, parameters, best_theta_0):
     h_deltatheta = df.Histo1D(("h_deltatheta", "Angular Deflection; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
@@ -589,6 +612,7 @@ def main():
 
     # file = input("File number: ")
     file = 8430
+    # files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
@@ -623,7 +647,7 @@ def main():
     count_3 = df_phys.Count()
 
     # CHANNELING EFFICIENCY
-    eff_ch, eff_err = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
+    eff_ch, eff_err, fit_efficiency = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
 
     # print("="*50)
     # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
@@ -632,6 +656,7 @@ def main():
     # print("="*50)
     print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
     print(f"Computed channeling efficiency = ({eff_ch:.1f} ± {eff_err:.1f})%")
+    print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , 𝛔 = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
 
 
 if __name__ == "__main__":

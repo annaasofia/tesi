@@ -119,11 +119,11 @@ Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2
 ### Crystal edges found for each run  
 | **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
 |-|-|-|-|-|
-|**8430**|[-1.1000 mm | 0.9000 mm]|[-2.8288 mm | 5.1712 mm]|
-|**8431**|[-1.1000 mm | 0.9000 mm]|[-2.8090 mm | 5.1910 mm]|
-|**8650**|[-0.2700 mm | 1.7300 mm]|[-3.2639 mm | 4.7361 mm]|
-|**8655**|[0.5700 mm | 2.5700 mm]|[-3.4964 mm | 4.5036 mm]|
-|**8656**|[0.5700 mm | 2.5700 mm]|[-3.5103 mm | 4.4897 mm]|
+|**8430**|[-1.1124 mm | 0.8876 mm]|[-2.8289 mm | 5.1711 mm]|
+|**8431**|[-1.1124 mm | 0.8876 mm]|[-2.8090 mm | 5.1910 mm]|
+|**8650**|[-0.28496 mm | 1.71504 mm]|[-3.2639 mm | 4.7361 mm]|
+|**8655**|[0.55319 mm | 2.55319 mm]|[-3.4964 mm | 4.5036 mm]|
+|**8656**|[0.55319 mm | 2.55319 mm]|[-3.5103 mm | 4.4897 mm]|
 
 ### Calibrate the detectors and alignment check
 Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/check_alignment_detectors.py):  
@@ -146,6 +146,17 @@ I choose a fit parabolic function (i want to use the simplest model that can acc
 $\theta(x,y) = \theta_{baseline} + \tau_x \cdot x + \tau_y \cdot y + p_3\cdot y^2$  
 - the `full_quadratic` function with 6 parameters can overfit the data and its noise, while a `pure_parabolic_y` is automatically imposing $\tau_x=0$ and it is too risky  
 $\to$ first, i verify with the `full_quadratic` function that the curvature along $x$ is negligible, and then for the final fit i use the `parabolic_y` function to have a more robust fit  
-- plot of how uniform is $\tau_y$ across $(x,y)$  
+- ?plot of how uniform is $\tau_y$ across $(x,y)$  
 - plot of how uniform is $\epsilon_{ch}$ across $(x,y)$  
 - understand the meaning of the global efficiency curve plot 
+
+Final results:  
+|_parabolic model_|     | $\tau_y$     | $\tau_x$     | $\epsilon_{ch}$ | angle                 | sigma               | events discarded |
+|---|-------------------|--------------|--------------|-----------------|-----------------------|---------------------|------------------|
+| 1 | 8430              | 3.86 urad/mm | 1.41 urad/mm | (19.0 ± 0.1)%   | (6010.4 +/- 0.2) urad | (21.6 +/- 0.2) urad | 98%              |
+| 1 | 8431              | 3.32 urad/mm | 2.10 urad/mm | (18.4 ± 0.1)%   | (6010.9 +/- 0.2) urad | (21.1 +/- 0.2) urad | 98%              |
+| 1 | 8430 & 8431       | 5.28 urad/mm | 0.73 urad/mm | (19.4 ± 0.0)%   | (6008.4 +/- 0.2) urad | (22.7 +/- 0.2) urad | 98%              |
+| 1 | 8650              | 3.74 urad/mm | 1.06 urad/mm | (17.2 ± 0.1)%   | (6076.0 +/- 0.3) urad | (28.7 +/- 0.2) urad | 96%              |
+| 2 | 8655              | 2.87 urad/mm | 1.41 urad/mm | (17.8 ± 0.1)%   | (6129.4 +/- 0.2) urad | (28.6 +/- 0.2) urad | 97%              |
+| 2 | 8656              | 2.91 urad/mm | 1.05 urad/mm | (18.0 ± 0.1)%   | (6126.7 +/- 0.2) urad | (30.2 +/- 0.2) urad | 97%              |
+
