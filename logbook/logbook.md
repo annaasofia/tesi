@@ -8,9 +8,10 @@
 3. [WEEK 3 (JUL 13)](#week-3)
     - [Measuring the torsion correction](#measure-the-torsion-correction)
 4. [WEEK 4 (JUL 20)](#week-4)
-    - [Crystal edges](#crystal-edges-found-for-each-run)
     - [Calibrate the detectors and alignment check](#calibrate-the-detectors-and-alignment-check)
+    - [Crystal edges](#crystal-edges-found-for-each-run)
     - [Mapping the torsion](#mapping-the-torsion)
+    - [Studying the experimental setup](#studying-the-experimental-setup)
 5. [WEEK 5 (JUL 27)](#week-5)
 
 ## WEEK 1  
@@ -116,15 +117,6 @@ Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2
 
 ## WEEK 4
 
-### Crystal edges found for each run  
-| **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
-|-|-|-|-|-|
-|**8430**|[-1.1124 mm | 0.8876 mm]|[-2.8289 mm | 5.1711 mm]|
-|**8431**|[-1.1124 mm | 0.8876 mm]|[-2.8090 mm | 5.1910 mm]|
-|**8650**|[-0.28496 mm | 1.71504 mm]|[-3.2639 mm | 4.7361 mm]|
-|**8655**|[0.55319 mm | 2.55319 mm]|[-3.4964 mm | 4.5036 mm]|
-|**8656**|[0.55319 mm | 2.55319 mm]|[-3.5103 mm | 4.4897 mm]|
-
 ### Calibrate the detectors and alignment check
 Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/check_alignment_detectors.py):  
     1) compute histograms in $x$ and $y$ showing $d0_{out} - d0_{in}$: if the offset is smaller than $\sim 1–2\,\sigma$ of its own fit error, treat it as statistically consistent with zero;  
@@ -141,14 +133,44 @@ Results:
 | **8655** | 0.0108 +/- 0.0001 mm | 0.0987 mm | 1.351 | -0.0206 | 0.9965 | 0.0108 mm | 0.0147 +/- 0.0001 mm | 0.0994 mm | 1.445 | -0.0396 | 0.9988 | 0.0147 mm |
 | **8656** | 0.0079 +/- 0.0001 mm | 0.0989 mm | 1.356 | -0.0130 | 0.9966 | 0.0080 mm | 0.0108 +/- 0.0001 mm | 0.0997 mm | 1.401 | -0.0286 | 0.9988 | 0.0107 mm |
 
+### Crystal edges found for each run  
+
+Knowing that the detectors are aligned, the shift we see has only physics reasons.  
+We can compute precisely the $x$ shift for channeled particles:  
+- curvature radius $R=\frac{L}{\theta}\sim 12$ m  
+- the lateral displacement at the end of an arc is $\Delta x = R (1 - \cos\theta)$
+- considering $\cos\theta=1-\theta^2/2$ (small angles)
+- we obtain $\Delta x = \frac{L\cdot\theta}{2}$
+
+| **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
+|-|-|-|-|-|
+|**8430**|[-1.1124 mm | 0.8876 mm]|[-2.8289 mm | 5.1711 mm]|
+|**8431**|[-1.1124 mm | 0.8876 mm]|[-2.8090 mm | 5.1910 mm]|
+|**8650**|[-0.28496 mm | 1.71504 mm]|[-3.2639 mm | 4.7361 mm]|
+|**8655**|[0.55319 mm | 2.55319 mm]|[-3.4964 mm | 4.5036 mm]|
+|**8656**|[0.55319 mm | 2.55319 mm]|[-3.5103 mm | 4.4897 mm]|
+
+So also we can correct the Lindhard angle estimation:
+$$\theta_L=\bigg(1-\frac{\rho_c}{\rho}\bigg)\sqrt{\frac{2U_0}{E}}$$
+where:
+- $\rho_c=\frac{E}{U'(x_c)}$ is the critical radius
+- $E = p\beta c = 180\, \text{GeV}$
+- $U'(x_c)=5.7\text{ GeV/cm}$ for the (110) plane in silicon
+- $U_0=16\text{ eV}$ for silicon
+- $\rho=\frac{L}{\theta_b}$
+
+so for the $L=74\text{ mm}$ long crystals, with a $\theta_b=6\text{ mrad}$:  
+$\big(1-\frac{180\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{180\cdot 10^9}}=12.992$
+
+
 ### Mapping the torsion
 I choose a fit parabolic function (i want to use the simplest model that can accurately describe the data, but not so simple that it hides the actual physics):  
 $\theta(x,y) = \theta_{baseline} + \tau_x \cdot x + \tau_y \cdot y + p_3\cdot y^2$  
 - the `full_quadratic` function with 6 parameters can overfit the data and its noise, while a `pure_parabolic_y` is automatically imposing $\tau_x=0$ and it is too risky  
 $\to$ first, i verify with the `full_quadratic` function that the curvature along $x$ is negligible, and then for the final fit i use the `parabolic_y` function to have a more robust fit  
-- ?plot of how uniform is $\tau_y$ across $(x,y)$  
+- plot of how uniform is $\tau_y$ across $(x,y)$: plot the residuals from the fit  
 - plot of how uniform is $\epsilon_{ch}$ across $(x,y)$  
-- understand the meaning of the global efficiency curve plot 
+- understand the meaning of the global efficiency curve plot: how aligned is the crystal after the torsion correction, the efficiency peak should be centered at zero. The curve is obtained from all the data, through a scan along $\theta_{in}$.
 
 Final results:  
 |_parabolic model_|     | $\tau_y$     | $\tau_x$     | $\epsilon_{ch}$ | angle                 | sigma               | events discarded |
@@ -159,4 +181,15 @@ Final results:
 | 1 | 8650              | 3.74 urad/mm | 1.06 urad/mm | (17.2 ± 0.1)%   | (6076.0 +/- 0.3) urad | (28.7 +/- 0.2) urad | 96%              |
 | 2 | 8655              | 2.87 urad/mm | 1.41 urad/mm | (17.8 ± 0.1)%   | (6129.4 +/- 0.2) urad | (28.6 +/- 0.2) urad | 97%              |
 | 2 | 8656              | 2.91 urad/mm | 1.05 urad/mm | (18.0 ± 0.1)%   | (6126.7 +/- 0.2) urad | (30.2 +/- 0.2) urad | 97%              |
+
+### Studying the experimental setup
+
+From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMDQ5LWFjYmQtNGI2OS04MzQzLWQ2OWEzNTMyNGM4ZQAQAKQ6%2BkI76qtAjeLpXOun5po%3D)  
+- the distances of the planes relative to the crystal are: [-12434.0, -10356.0, 487.0, 4714.0, ~~11004.0~~, ~~19533.0~~];
+- for the long crystals only the first four planes were used: two for the incoming track and two for the outgoing tracks;
+- the crystals are 74 mm long.  
+
+
+
+
 

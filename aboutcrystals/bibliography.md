@@ -40,3 +40,17 @@ $\to$ citation [28] from European Physical Journal article
 - [H8_zone_PPE168 Model](https://edms.cern.ch/ui/#!master/navigator/document?D:1049780410:1049780410:subDocs)
 - [TCCP and TCCS prototypes photos](https://cds.cern.ch/record/2921818)
 
+## SIMULATION
+- G. Iadarola, R. De Maria, et al. *Xsuite: an integrated beam physics simulation framework (2023)*. arXiv:2310.00317  
+[https://doi.org/10.48550/arXiv.2310.00317](https://doi.org/10.48550/arXiv.2310.00317)  
+$\to$ citation [54] from European Physical Journal article
+- M. D’Andrea, A. Mereghetti, D. Mirarchi, V. Olsen, S. Redaelli, 2648–2651 (2021).   
+[https://doi.org/10.18429/JACoW-IPAC2021-WEPAB024](https://doi.org/10.18429/JACoW-IPAC2021-WEPAB024)  
+[https://cds.cern.ch/record/2783804](https://cds.cern.ch/record/2783804)  
+$\to$ citation [53] from European Physical Journal article
+- K. Dewhurst, F. Van der Veken, P. Hermes, D. Mirarchi, S. Redaelli, 1148–1151 (2024).  
+[https://doi.org/10.18429/JACOW-IPAC2024-TUPC65](https://doi.org/10.18429/JACOW-IPAC2024-TUPC65)  
+[https://jacow.org/ipac2024/doi/jacow-ipac2024-tupc65](https://jacow.org/ipac2024/doi/jacow-ipac2024-tupc65)  
+$\to$ citation [57] from European Physical Journal article
+- 
+

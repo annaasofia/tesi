@@ -11,7 +11,7 @@ ROOT.gStyle.SetPalette(ROOT.kBird)
 def get_run_parameters(file_id):
     if file_id in [8430, 8431]:
         parameters = {
-            "theta_L": 12.9,
+            "theta_L": 12.992,
             "deflection_peak": 6010.0,
             "width": 8,
             "height": 2,
@@ -20,7 +20,7 @@ def get_run_parameters(file_id):
         }
     elif file_id in [8650]:
         parameters = {
-            "theta_L": 12.9,
+            "theta_L": 12.992,
             "deflection_peak": 6080.0,
             "width": 8,
             "height": 2,
@@ -29,22 +29,13 @@ def get_run_parameters(file_id):
         }
     elif file_id in [8655, 8656]:
         parameters = {
-            "theta_L": 12.9,
+            "theta_L": 12.992,
             "deflection_peak": 6130.0,
             "width": 8,
             "height": 2,
             "delta_x": 0.5 * 74 * 6.13 * pow(10, -3),  # 0.222 mm
             "max_value": 8000
         }
-    # elif file_id in [0]:
-    #     parameters = {
-    #         "theta_L": 12.5,
-    #         "deflection_peak": 13000,
-    #         "width": 22.5,
-    #         "height": 2,
-    #         "delta_x": 0.5 * 70.5 * 13.3 * pow(10, -3),  # 0.468 mm
-    #         "max_value": 14000
-    #     }
     else:
         print(f"Run {file_id} not found...")
         sys.exit(1)
