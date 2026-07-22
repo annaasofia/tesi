@@ -16,7 +16,8 @@ $\to$ citation [20] from European Physical Journal article
 - M. Garattini, *Overview of crystal performance at SPS-H8* (2018).  
 [https://indico.cern.ch/event/752062/contributions/3114845/](https://indico.cern.ch/event/752062/contributions/3114845/)  
 $\to$ citation [27] from European Physical Journal article
-- R. Rossi, L.S. Esposito, M. Garattini, T.O. James, M. Pesaresi, G.Hall, W. Scandale, J. Inst. 16(05), P05017 (2021). [https://doi.org/10.1088/1748-0221/16/05/P05017](https://doi.org/10.1088/1748-0221/16/05/P05017)  
+- R. Rossi, L.S. Esposito, M. Garattini, T.O. James, M. Pesaresi, G.Hall, W. Scandale, J. Inst. 16(05), P05017 (2021).   
+[https://doi.org/10.1088/1748-0221/16/05/P05017](https://doi.org/10.1088/1748-0221/16/05/P05017)  
 $\to$ citation [28] from European Physical Journal article
 - Maccani, Chiara, et al. "*JACOW: The TWOCRYST fibre tracker: A detector to characterize precession crystals at the LHC.*" JACoW IPAC 2025 (2025): MOPS020.  
 [https://inspirehep.net/files/3073dd5cbc22b6a6421d73172f97cba8](https://inspirehep.net/files/3073dd5cbc22b6a6421d73172f97cba8)
