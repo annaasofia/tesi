@@ -350,7 +350,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     
     if N_tot > 0:
         # fitting only right side of the peak (cleanest one)
-        fit_min = parameters["deflection_peak"] - 15
+        fit_min = parameters["deflection_peak"] - 25
         fit_max = parameters["deflection_peak"] + 100
         # fit_max = parameters["max_value"]
         gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
@@ -394,8 +394,8 @@ def channeling_efficiency(df, parameters, best_theta_0):
     c6 = ROOT.TCanvas("c6", "Channeling Efficiency Fit", 1400, 900)
     h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
     h_cut_value.SetLineColor(ROOT.kOrange)
-    h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
-    # h_cut_value.GetXaxis().SetRangeUser(6000, 6200)
+    # h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
+    h_cut_value.GetXaxis().SetRangeUser(6000, 6200)
     h_cut_value.Draw("HIST")
     if N_tot > 0:
         gaus_fit.Draw("SAME")
@@ -595,13 +595,14 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8430
-    # files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
+    file = 8656
+    files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
     # ROOT DATA FRAME
     df = ROOT.RDataFrame("simpleEvent", filename)
+    # df = ROOT.RDataFrame("simpleEvent", files)
     print(f"Analyzing {filename} ...")
     print("="*50)
 
@@ -621,7 +622,7 @@ def main():
     # plot_mean_impact_angle(df_phys, y_min, y_max)
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=0, y_max_restricted=2, 
+    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=-1.0, y_max_restricted=4.8, 
                                              nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="parabolic_y")
     
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
