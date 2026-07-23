@@ -190,6 +190,22 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - the crystals are 74 mm long.  
 
 
+## WEEK 5
+
+### to do:
+- in the results report everything interesting someone would want to know: maximum efficiency, ...
+- torsion error (by the fit)
+- ✅ do not consider the edges
+- efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%)
+- explore 8650, plot the histograms on top of each others
+- confidence level and similar stuffs
+- consider also angle errors (which i have)
+- look into the spikes: select bins with spikes vs the ones that have not: check their angle distribution
+- ask luigi for a systematic error
+- look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
+- look into MCS multiple coulomb scattering, select one outcoming angle and and check the arrival one(? check into pdg about mcs)
+
+
 
 
 

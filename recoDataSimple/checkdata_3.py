@@ -154,7 +154,7 @@ def compute_spatial_cut_bounds(df_phys, parameters):
 
     return x_min, x_max, y_min, y_max
 
-def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_max_restricted, nx_slices, ny_slices, restricted=False, linear=False, chosen_model="full_quadratic"):
+def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_margin, nx_slices, ny_slices, restricted=False, linear=False, chosen_model="full_quadratic"):
 
     # Create 3D histograms (one for all and one for channeled only) to avoid looping over RDataFrame
     _, preliminary_cut = preliminary_cut_on_deltatheta(df, parameters["deflection_peak"])
@@ -223,8 +223,10 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
     c_torsion_2d.Update()
     
     # Fit the Torsion Map with a xy function
-    current_y_min = y_min_restricted if restricted else y_min
-    current_y_max = y_max_restricted if restricted else y_max
+    current_x_min = (x_min + x_cut_margin) if restricted else x_min
+    current_x_max = (x_max - x_cut_margin) if restricted else x_max
+    current_y_min = (y_min + y_cut_margin) if restricted else y_min
+    current_y_max = (y_max - y_cut_margin) if restricted else y_max
 
     fit_models = {
         "linear": "[0] + [1]*x + [2]*y",
@@ -232,7 +234,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, y_min_restricted, y_
         "parabolic_y": "[0] + [1]*x + [2]*y + [3]*y*y",
         "full_quadratic": "[0] + [1]*x + [2]*y + [3]*x*x + [4]*y*y + [5]*x*y"
     }
-    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", fit_models[chosen_model], x_min, x_max, current_y_min, current_y_max)
+    torsion_fit_2d = ROOT.TF2("torsion_fit_2d", fit_models[chosen_model], current_x_min, current_x_max, current_y_min, current_y_max)
     fit_result = h2_torsion_map.Fit(torsion_fit_2d, "RQ0S")
 
     chi2 = fit_result.Chi2()
@@ -622,7 +624,7 @@ def main():
     # plot_mean_impact_angle(df_phys, y_min, y_max)
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, y_min_restricted=-1.0, y_max_restricted=4.8, 
+    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, x_cut_margin=1.0, y_cut_margin=1.0, 
                                              nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="parabolic_y")
     
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
