@@ -41,16 +41,20 @@ $\to$ citation [28] from European Physical Journal article
 
 
 ## SIMULATION
-- G. Iadarola, R. De Maria, et al. *Xsuite: an integrated beam physics simulation framework (2023)*. arXiv:2310.00317  
+- G. Iadarola, R. De Maria, et al. **Xsuite**: *an integrated beam physics simulation framework (2023)*. arXiv:2310.00317  
 [https://doi.org/10.48550/arXiv.2310.00317](https://doi.org/10.48550/arXiv.2310.00317)  
 $\to$ citation [54] from European Physical Journal article
-- M. D’Andrea, A. Mereghetti, D. Mirarchi, V. Olsen, S. Redaelli, "*Release of Crystal Routine for Multi-Turn Proton Simulations within SixTrack v5*" 2648–2651 (2021).   
+- M. D’Andrea, A. Mereghetti, D. Mirarchi, V. Olsen, S. Redaelli, "*Release of Crystal Routine for Multi-Turn Proton Simulations within **SixTrack** v5*" 2648–2651 (2021).   
 [https://doi.org/10.18429/JACoW-IPAC2021-WEPAB024](https://doi.org/10.18429/JACoW-IPAC2021-WEPAB024)  
 [https://cds.cern.ch/record/2783804](https://cds.cern.ch/record/2783804)  
 $\to$ citation [53] from European Physical Journal article
-- K. Dewhurst, F. Van der Veken, P. Hermes, D. Mirarchi, S. Redaelli, "*CALCULATING THE CHANNELLING EFFICIENCY OF BENT SILICON CRYSTALS USING TWO PARTICLE SIMULATION PROGRAMS: SIXTRACK AND XSUITE*" 1148–1151 (2024).  
+- K. Dewhurst, F. Van der Veken, P. Hermes, D. Mirarchi, S. Redaelli, "*CALCULATING THE CHANNELLING EFFICIENCY OF BENT SILICON CRYSTALS USING TWO PARTICLE SIMULATION PROGRAMS: **SIXTRACK** AND* **XSUITE**" 1148–1151 (2024).  
 [https://doi.org/10.18429/JACOW-IPAC2024-TUPC65](https://doi.org/10.18429/JACOW-IPAC2024-TUPC65)  
 [https://jacow.org/ipac2024/doi/jacow-ipac2024-tupc65](https://jacow.org/ipac2024/doi/jacow-ipac2024-tupc65)  
 $\to$ citation [57] from European Physical Journal article
-- 
-
+- Negrello, R., et al. "*A novel tool for advanced analysis of **Geant4** simulations of charged particles interactions in oriented crystals.*" Nuclear Instruments and Methods in Physics Research Section A: Accelerators, Spectrometers, Detectors and Associated Equipment 1074 (2025): 170277.  
+[https://doi.org/10.48550/arXiv.2503.16060](https://doi.org/10.48550/arXiv.2503.16060)
+- Mazzolari, A., et al. "*Bent crystals for efficient beam steering of multi TeV-particle beams.* **Geant4**" The European Physical Journal C 78.9 (2018): 720.  
+[https://link.springer.com/article/10.1140/epjc/s10052-018-6196-z](https://link.springer.com/article/10.1140/epjc/s10052-018-6196-z)
+- Bagli, Enrico, et al. "*Allowing for crystalline structure effects in* **Geant4**." Nuclear Instruments and Methods in Physics Research Section B: Beam Interactions with Materials and Atoms 402 (2017): 304-307.  
+[https://doi.org/10.1016/j.nimb.2017.03.092](https://doi.org/10.1016/j.nimb.2017.03.092)

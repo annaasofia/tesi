@@ -164,6 +164,10 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     # To store the final map
     h2_torsion_map = ROOT.TH2D("h2_torsion_map", "2D Torsion Map (bins 0.1 x 0.1 mm); x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     h2_eff_map = ROOT.TH2D("h2_eff_map", "2D Efficiency Map; x [mm]; y [mm]; Local Efficiency [%]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+
+    h2_torsion_map.Sumw2()
+    h2_eff_map.Sumw2()
+
     scan_min, scan_max, step = -80, 80, 1.0  # Scan range and step for theta_in
 
     # Extract local theta_0 for each (x, y) grid square
@@ -209,11 +213,15 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
                 gr_eff_slice.Fit(gaus_eff_slice, "RQ0")
                 
                 local_theta_0 = gaus_eff_slice.GetParameter(1)
+                local_theta_0_err = gaus_eff_slice.GetParError(1)
                 local_max_eff = gaus_eff_slice.GetParameter(0)
+                local_max_eff_err = gaus_eff_slice.GetParError(0)
                 
                 # Fill the 2D map
                 h2_torsion_map.SetBinContent(ix, iy, local_theta_0)
+                h2_torsion_map.SetBinError(ix, iy, local_theta_0_err)
                 h2_eff_map.SetBinContent(ix, iy, local_max_eff)
+                h2_eff_map.SetBinError(ix, iy, local_max_eff_err)
 
     c_torsion_2d = ROOT.TCanvas("c_torsion_2d", "2D Torsion Map", 900, 700)
     c_torsion_2d.SetRightMargin(0.15) # room for colorbar
@@ -237,10 +245,9 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     torsion_fit_2d = ROOT.TF2("torsion_fit_2d", fit_models[chosen_model], current_x_min, current_x_max, current_y_min, current_y_max)
     fit_result = h2_torsion_map.Fit(torsion_fit_2d, "RQ0S")
 
-    chi2 = fit_result.Chi2()
-    ndf = fit_result.Ndf()        # Number of Degrees of Freedom
-    p_value = fit_result.Prob()   # Fit probability
-    
+    # chi2 = fit_result.Chi2()
+    # ndf = fit_result.Ndf()        # Number of Degrees of Freedom
+    # p_value = fit_result.Prob()   # Fit probability
     # print(f"Chi2 / NDF: {chi2 / ndf:.2f}")
     # print(f"p-value: {p_value:.4f}")
 
@@ -249,8 +256,13 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
             tau_x = torsion_fit_2d.GetParameter(1)
             tau_y = torsion_fit_2d.GetParameter(2)
+            theta_0_baseline_err = torsion_fit_2d.GetParError(0)
+            tau_x_err = torsion_fit_2d.GetParError(1)
+            tau_y_err = torsion_fit_2d.GetParError(2)
+
             
             fit_params = (theta_0_baseline, tau_x, tau_y)
+            fit_errors = (theta_0_baseline_err, tau_x_err, tau_y_err)
             surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y)"
 
         case "parabolic_y":
@@ -258,16 +270,25 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             tau_x = torsion_fit_2d.GetParameter(1)
             tau_y = torsion_fit_2d.GetParameter(2)
             c_yy = torsion_fit_2d.GetParameter(3)
+            theta_0_baseline_err = torsion_fit_2d.GetParError(0)
+            tau_x_err = torsion_fit_2d.GetParError(1)
+            tau_y_err = torsion_fit_2d.GetParError(2)
+            c_yy_err = torsion_fit_2d.GetParError(3)
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_yy)
+            fit_errors = (theta_0_baseline_err, tau_x_err, tau_y_err, c_yy_err)
             surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "pure_parabolic_y":
             theta_0_baseline = torsion_fit_2d.GetParameter(0)
             tau_y = torsion_fit_2d.GetParameter(1)
             c_yy = torsion_fit_2d.GetParameter(2)
+            theta_0_baseline_err = torsion_fit_2d.GetParError(0)
+            tau_y_err = torsion_fit_2d.GetParError(1)
+            c_yy_err = torsion_fit_2d.GetParError(2)
             
             fit_params = (theta_0_baseline, tau_y, c_yy)
+            fit_errors = (theta_0_baseline_err, tau_y_err, c_yy_err)
             surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y + {c_yy}*Tracks.d0_y*Tracks.d0_y)"
 
         case "full_quadratic":
@@ -277,8 +298,16 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             c_xx = torsion_fit_2d.GetParameter(3)
             c_yy = torsion_fit_2d.GetParameter(4)
             c_xy = torsion_fit_2d.GetParameter(5)
+            theta_0_baseline_err = torsion_fit_2d.GetParError(0)
+            tau_x_err = torsion_fit_2d.GetParError(1)
+            tau_y_err = torsion_fit_2d.GetParError(2)
+            c_xx_err = torsion_fit_2d.GetParError(3) 
+            c_yy_err = torsion_fit_2d.GetParError(4)
+            c_xy_err = torsion_fit_2d.GetParError(5)
+
             
             fit_params = (theta_0_baseline, tau_x, tau_y, c_xx, c_yy, c_xy)
+            fit_errors = (theta_0_baseline_err, tau_x_err, tau_y_err, c_xx_err, c_yy_err, c_xy_err)
             surface_expr = f"({theta_0_baseline} + {tau_x}*Tracks.d0_x + {tau_y}*Tracks.d0_y + {c_xx}*Tracks.d0_x*Tracks.d0_x + {c_yy}*Tracks.d0_y*Tracks.d0_y + {c_xy}*Tracks.d0_x*Tracks.d0_y)"
             
         case _:
@@ -295,7 +324,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
 
     # torsion_plot_2d = ROOT.TF2("torsion_plot_2d", plot_formula, x_min, x_max, y_min, y_max)
     torsion_plot_2d = torsion_fit_2d.Clone("torsion_plot_2d")
-    torsion_plot_2d.SetRange(x_min, y_min, x_max, y_max)
+    torsion_plot_2d.SetRange(current_x_min, current_y_min, current_x_max, current_y_max)
     torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]")
     c_torsion_smooth = ROOT.TCanvas("c_torsion_smooth", "Continuous 2D Torsion Map", 900, 700)
     c_torsion_smooth.SetRightMargin(0.15)
@@ -308,6 +337,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     ROOT.SetOwnership(c_torsion_smooth, False)
 
     h2_residuals = ROOT.TH2D("h2_residuals", f"Torsion Residuals (Data - {chosen_model}); x [mm]; y [mm]; #Delta#theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_pulls = ROOT.TH2D("h2_pulls", f"Torsion Pulls (Data - {chosen_model})/#sigma; x [mm]; y [mm]; Pull", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     for ix in range(1, nx_slices + 1):
         for iy in range(1, ny_slices + 1):
             data_val = h2_torsion_map.GetBinContent(ix, iy)
@@ -315,7 +345,12 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
                 x_center = h2_torsion_map.GetXaxis().GetBinCenter(ix)
                 y_center = h2_torsion_map.GetYaxis().GetBinCenter(iy)
                 fit_val = torsion_fit_2d.Eval(x_center, y_center)
-                h2_residuals.SetBinContent(ix, iy, data_val - fit_val)
+                residual = data_val - fit_val
+                h2_residuals.SetBinContent(ix, iy, residual)
+                data_err = h2_torsion_map.GetBinError(ix, iy)
+                if data_err > 0:
+                    h2_pulls.SetBinContent(ix, iy, residual / data_err)
+
 
     c_eff_map = ROOT.TCanvas("c_eff_map", "2D Efficiency Map", 900, 700)
     c_eff_map.SetRightMargin(0.15)
@@ -328,14 +363,22 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     h2_residuals.SetStats(0)
     h2_residuals.Draw("COLZ")
     c_residuals.Update()
+
+    c_pulls = ROOT.TCanvas("c_pulls", "2D Pulls Map", 900, 700)
+    c_pulls.SetRightMargin(0.15)
+    h2_pulls.SetStats(0)
+    h2_pulls.Draw("COLZ")
+    c_pulls.Update()
     
     # Ownership dei nuovi grafici
     ROOT.SetOwnership(h2_eff_map, False)
     ROOT.SetOwnership(c_eff_map, False)
     ROOT.SetOwnership(h2_residuals, False)
     ROOT.SetOwnership(c_residuals, False)
+    ROOT.SetOwnership(h2_pulls, False)
+    ROOT.SetOwnership(c_pulls, False)
 
-    return fit_params, h2_torsion_map, rdf_surface_expr
+    return fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr
 
 def channeling_efficiency(df, parameters, best_theta_0):
     N_tot = df.Count().GetValue()
@@ -352,7 +395,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     
     if N_tot > 0:
         # fitting only right side of the peak (cleanest one)
-        fit_min = parameters["deflection_peak"] - 25
+        fit_min = parameters["deflection_peak"] - 15
         fit_max = parameters["deflection_peak"] + 100
         # fit_max = parameters["max_value"]
         gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
@@ -396,8 +439,8 @@ def channeling_efficiency(df, parameters, best_theta_0):
     c6 = ROOT.TCanvas("c6", "Channeling Efficiency Fit", 1400, 900)
     h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
     h_cut_value.SetLineColor(ROOT.kOrange)
-    # h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
-    h_cut_value.GetXaxis().SetRangeUser(6000, 6200)
+    h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
+    # h_cut_value.GetXaxis().SetRangeUser(6000, 6200)
     h_cut_value.Draw("HIST")
     if N_tot > 0:
         gaus_fit.Draw("SAME")
@@ -500,6 +543,7 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr):
     gaus_eff.Draw("SAME")
 
     max_eff = gaus_eff.GetParameter(0)
+    max_eff_err = gaus_eff.GetParError(0)
     
     leg = ROOT.TPaveText(0.53, 0.78, 0.88, 0.88, "NDC")
     leg.SetFillColor(ROOT.kWhite); leg.SetBorderSize(1)
@@ -512,6 +556,8 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr):
     ROOT.SetOwnership(c_eff_curve, False)
     ROOT.SetOwnership(leg, False)
 
+    return max_eff, max_eff_err
+
 
 def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr):
     print("\n" + "="*50)
@@ -522,6 +568,7 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
     
     y_centers = []
     tau_ys = []
+    tau_y_errs = []
     efficiencies = []
     eff_errs = []
     
@@ -536,6 +583,7 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
         local_theta_0 = fit_func.GetParameter(0)
         local_tau_x = fit_func.GetParameter(1)
         local_tau_y = fit_func.GetParameter(2)
+        local_tau_y_err = fit_func.GetParError(2)
 
         local_fit_params = (local_theta_0, local_tau_x, local_tau_y, 0.0, 0.0, 0.0)
         
@@ -544,11 +592,12 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
         # Applichiamo il Lindhard cut dinamico usando i parametri appena trovati
         df_chan = filter3_Lindhard_cut(df_window, parameters, local_fit_params, rdf_surface_expr)
         # Calcoliamo l'efficienza locale riutilizzando la funzione
-        eff, err = channeling_efficiency(df_chan, parameters, local_theta_0)
+        eff, err, _ = channeling_efficiency(df_chan, parameters, local_theta_0)
         
         if eff > 0:
             y_centers.append(y_center)
             tau_ys.append(local_tau_y)
+            tau_y_errs.append(local_tau_y_err)
             efficiencies.append(eff)
             eff_errs.append(err)
             
@@ -558,7 +607,7 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
     arr_y_centers = array('d', y_centers)
     
     # Grafico Tau_y vs Posizione
-    gr_tau = ROOT.TGraph(n_pts, arr_y_centers, array('d', tau_ys))
+    gr_tau = ROOT.TGraphErrors(n_pts, arr_y_centers, array('d', tau_ys), array('d', [0]*n_pts), array('d', tau_y_errs))
     gr_tau.SetTitle("Local Torsion vs Y Cut Position; Center of Y-Cut [mm]; Local #tau_{y} [#murad/mm]")
     gr_tau.SetMarkerStyle(20); gr_tau.SetMarkerColor(ROOT.kRed)
     
@@ -582,8 +631,12 @@ def filter1_initial(df):
     df_filtered = df.Filter("SingleTrack == 1")
     return df_filtered
 
-def filter2_spatial_cut(df, x_min, x_max, y_min, y_max):
-    spatial_cut = f"Tracks.d0_x > {x_min} && Tracks.d0_x < {x_max} && Tracks.d0_y > {y_min} && Tracks.d0_y < {y_max}"
+def filter2_spatial_cut(df, x_min, x_max, y_min, y_max, x_cut_margin=0, y_cut_margin=0, restricted=True):
+    x_min_new = x_min + x_cut_margin if restricted else x_min
+    x_max_new = x_max - x_cut_margin if restricted else x_max
+    y_min_new = y_min + y_cut_margin if restricted else y_min
+    y_max_new = y_max - y_cut_margin if restricted else y_max
+    spatial_cut = f"Tracks.d0_x > {x_min_new} && Tracks.d0_x < {x_max_new} && Tracks.d0_y > {y_min_new} && Tracks.d0_y < {y_max_new}"
     df_filtered = df.Filter(spatial_cut, "Spatial Cut (Crystal Area)")
     return df_filtered
 
@@ -597,12 +650,11 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8656
+    file = 8430
     files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
-    # ROOT DATA FRAME
     df = ROOT.RDataFrame("simpleEvent", filename)
     # df = ROOT.RDataFrame("simpleEvent", files)
     print(f"Analyzing {filename} ...")
@@ -617,33 +669,57 @@ def main():
     count_1 = df_phys.Count()
 
     # FILTER 2: spatial cut (d0_x and d0_y within the crystal area)
+    x_cut_margin = 0.2
+    y_cut_margin = 0.8
     x_min, x_max, y_min, y_max = compute_spatial_cut_bounds(df_phys, parameters)
-    df_phys = filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max)
+    df_phys = filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_margin, restricted=False)
     count_2 = df_phys.Count()
 
     # plot_mean_impact_angle(df_phys, y_min, y_max)
 
     # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
-    fit_params, h2_torsion_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, x_cut_margin=1.0, y_cut_margin=1.0, 
-                                             nx_slices=10, ny_slices=40, restricted=False, linear=False, chosen_model="parabolic_y")
-    
+    fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min, y_max, 
+                                                                                       x_cut_margin, y_cut_margin, nx_slices=10, ny_slices=40, 
+                                                                                       restricted=True, linear=False, chosen_model="parabolic_y")
+
+    theta_0_baseline, tau_x, tau_y, c_yy = fit_params
+    theta_0_baseline_err, tau_x_err, tau_y_err, _ = fit_errors 
+
+
+    # not needed anymore because the torsion fit is not linear but parabolic
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
-    plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
+
+    max_eff_global, max_eff_global_err = plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
 
     df_phys = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()
 
     # CHANNELING EFFICIENCY
-    eff_ch, eff_err, fit_efficiency = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
+    eff_ch, eff_err_stat, fit_efficiency = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
+
+    surface_expr_up = rdf_surface_expr.replace(f"({theta_0_baseline}", f"({theta_0_baseline + theta_0_baseline_err}", 1)
+    surface_expr_down = rdf_surface_expr.replace(f"({theta_0_baseline}", f"({theta_0_baseline - theta_0_baseline_err}", 1)
+
+    df_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_up)
+    df_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_down)
+    eff_up, _, _ = channeling_efficiency(df_up, parameters, best_theta_0=theta_0_baseline + theta_0_baseline_err)
+    eff_down, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=theta_0_baseline - theta_0_baseline_err)
+ 
+    eff_err_syst = abs(eff_up - eff_down) / 2.0
+    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
 
     # print("="*50)
     # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
     # print(filter_message(2, count_1.GetValue(), count_2.GetValue()))
     # print(filter_message(3, count_2.GetValue(), count_3.GetValue()))
     # print("="*50)
+
     print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
-    print(f"Computed channeling efficiency = ({eff_ch:.1f} ± {eff_err:.1f})%")
-    print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , 𝛔 = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
+    print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.1f} [syst, torsion map]) %")
+    print(f"Total error = +/- {eff_err_total:.1f} %")
+    print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
+    print(f"Torsion tau_x = {tau_x:.2f} +/- {tau_x_err:.2f} urad/mm")
+    print(f"Torsion tau_y = {tau_y:.2f} +/- {tau_y_err:.2f} urad/mm")
 
 
 if __name__ == "__main__":

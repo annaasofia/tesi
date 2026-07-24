@@ -13,6 +13,8 @@
     - [Mapping the torsion](#mapping-the-torsion)
     - [Studying the experimental setup](#studying-the-experimental-setup)
 5. [WEEK 5 (JUL 27)](#week-5)
+    - [To do](#to-do)
+    - [Multiple Coulomb Scattering](#msc)
 
 ## WEEK 1  
 
@@ -193,9 +195,19 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 ## WEEK 5
 
 ### to do:
+
 - in the results report everything interesting someone would want to know: maximum efficiency, ...
-- torsion error (by the fit)
-- ✅ do not consider the edges
+    - maximum efficiency of ... with a drop at ... at the edges
+
+- ✅ do not consider the edges:
+    - need a different consideration for edges for `filter2_spatial_cut` and for the fit: narrower window for the fit?
+    - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
+
+- torsion error (by the fit):
+    - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
+    - now `h2_torsion_map` carries real per-bin errors (from the local Gaussian fit above) instead of ROOT's default sqrt(content) fallback. This makes the fit below a proper inverse-variance-weighted chi2 fit: bins near the edges of the acceptance get a large local_theta_0_err and are automatically down-weighted, instead of contributing to the surface fit with the same weight as clean core bins.
+    - `eff_err_stat` is the binomial (statistical) error on eff_ch, as before. We add a systematic term from the torsion-map baseline uncertainty theta_0_baseline_err: re-run the Lindhard cut + efficiency with theta_0 shifted by +/-1 sigma and take half the resulting spread in eff_ch. This is deliberately a re-evaluation rather than an analytic slope propagation, because the sensitivity of the acceptance is NOT uniform: it is large where the local efficiency amplitude is still near its ~25% core value, and vanishes towards the edges where the local efficiency amplitude drops to ~0%. Re-running the actual cut captures that shape automatically instead of assuming one fixed slope.
+
 - efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%)
 - explore 8650, plot the histograms on top of each others
 - confidence level and similar stuffs
@@ -203,7 +215,53 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - look into the spikes: select bins with spikes vs the ones that have not: check their angle distribution
 - ask luigi for a systematic error
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
-- look into MCS multiple coulomb scattering, select one outcoming angle and and check the arrival one(? check into pdg about mcs)
+- look into MCS (multiple coulomb scattering), select one outcoming angle and and check the arrival one([check into pdg about mcs](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3))
+
+### Multiple Coulomb Scattering
+![alt text](image-3.png)  
+
+The question we need to ask ourselves is: on average, how much will this particle be deflected at the end of its path? Most of the particles will be deviated of an angle near zero (center of the gaussian distribution).  
+The width of this curve is the key value: it tells us how much, on average, the particle is deflected. This value is called the root-mean-square (RMS) angle (angolo quadratico medio) and is denoted by $\theta_0$, and can be computed through the Highland formula, which is derived by Rutherford scattering cross section formula.  
+In the formula we have: $\theta_0\propto 1/p$, $\propto 1/\beta c$ (the higher the velocity and more massive the particle is, the less deviated it gets), and $\propto z$. Then we also have the material's characteristics: the width $x$ and the radiation length $X_0$ (depends on the 'density').  
+
+
+
+$\to$ from [PDG: Passage of Particles Through Matter](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3)
+
+A charged particle traversing a medium is deflected by many small-angle scatters. Most of this deflection is due to Coulomb scattering from nuclei as described by the Rutherford cross section. (However, for hadronic projectiles, the strong interactions also contribute to multiple scattering.)  
+For many small-angle scatters the net scattering and displacement distributions are Gaussian via the central limit theorem. Less frequent “hard” scatters produce non-Gaussian tails *(= particelle che prendono grandi spallate perche colpiscono nucleo in pieno)*. These Coulomb scattering distributions are well-represented by the theory of Molière (relativistic pions, kaons, and protons). If we define  
+
+$\theta_0=\theta_{plane}^{rms}=\frac{1}{\sqrt{2}}\theta_{space}^{rms}$  
+
+then it is sufficient for many applications to use a Gaussian approximation for the central 98% of the projected angular distribution, with an rms width given by Lynch & Dahl:  
+
+$\theta_0=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.088\log_{10}\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
+$=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.038\ln\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
+
+Here $p$, $βc$, and $z$ are the momentum, speed, and charge number of the incident particle, and $x/X_0$ is the thickness of the scattering medium in radiation lengths. This takes into account the $p$ and $z$ dependence quite well at small $Z$, but for large $Z$ and small $x$ the $β$-dependence is not well represented. This equation describes scattering from a single material, while the usual problem involves the multiple scattering of a particle traversing many different layers and mixtures. Since it is from a fit to a Molière distribution, it is incorrect to add the individual $θ_0$ contributions in quadrature *(= non si puo' sommare e basta i contributi aria + silicio + rame ecc, ci sarebbe grave sottostima deviazione)*; the result is systematically too small. It is much more accurate to apply this equation once, after finding $x$ and $X_0$ for the combined scatterer.  
+
+The nonprojected (space) and projected (plane) angular distributions are given approximately by  
+
+$\frac{1}{2\pi\theta_0^2}\exp\big(-\frac{\theta^2_{space}}{2\theta_0^2}\big)d\Omega$  
+$\frac{1}{\sqrt{2\pi}\theta_0}\exp\big(-\frac{\theta^2_{plane}}{2\theta_0^2}\big)d\theta_{plane}$  
+
+where $θ$ is the deflection angle. In this approximation, $\theta^2_{space} ≈ (θ_{plane,x}^2 + θ_{plane,y}^2)$, where the $x$ and $y$ axes are orthogonal to the direction of motion, and $dΩ ≈ dθ_{plane,x} dθ_{plane,y}$. Deflections into $θ_{plane,x}$ and $θ_{plane,y}$ are independent and identically distributed. Fig. 34.10 shows these and other quantities sometimes used to describe multiple Coulomb scattering. They are  
+
+$\psi^{rms}_{plane}=\frac{1}{\sqrt{3}}\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}\theta_0$    
+$y^{rms}_{plane}=\frac{1}{\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}x\theta_0$  
+$s^{rms}_{plane}=\frac{1}{4\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{4\sqrt{3}}x\theta_0$  
+
+All the quantitative estimates in this section apply only in the limit of small $θ^{rms}_{plane}$ and in the absence of large-angle scatters. The random variables $s$, $ψ$, $y$, and $θ$ in a given plane are correlated. Obviously, $y ≈ xψ$. In addition, $y$ and $θ$ have the correlation coefficient $ρ_{yθ} = \sqrt{3}/2 ≈ 0.87$ *(1 would be perfect correlation)*.  
+
+For Monte Carlo generation of a joint ($y_{plane}$, $θ_{plane}$) distribution, or for other calculations, it may be most convenient to work with independent Gaussian random variables ($z_1$, $z_2$) with mean zero and variance one, and then set  
+
+$y_{plane}=z_1\, x\, \theta_0(1-\rho^2_{y\theta})^{1/2}/\sqrt{3}+z_2\,\rho_{y\theta}\, x\, \theta_0/\sqrt{3}=z_1\, x\, \theta_0/\sqrt{12}+z_2\, x\, \theta_0/2$  
+$\theta_{plane}=z_2\,\theta_0$  
+
+In this way the computer instantaneously gets an exit angle and a final position, which are correlated (no need of simulating all the small scatterings happening inside).  
+Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represents the displacement that would have occurred had the deflection $θ_{plane}$ all occurred at the single point $x/2$.  
+
+$\to$ **mcs theta/gaus width for the 74 mm long crystals:** $\theta_0=66.54 \,\mu\text{rad}$
 
 
 
