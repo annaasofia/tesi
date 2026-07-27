@@ -130,11 +130,11 @@ Results:
 |  | **x** |  |  |  |  |  | **y** |  |  |  |  |  |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 |  | **offset** | **sigma** | **X2/ndf** | **skewness** | **slope** | **intercept** | **offset** | **sigma** | **X2/ndf** | **skewness** | **slope** | **intercept** |
-| **8430** | 0.0029 +/- 0.0001 mm | 0.0909 mm | 1.587 | -0.0069 | 0.9954 | 0.0065 mm | 0.0045 +/- 0.0001 mm | 0.0916 mm | 1.580 | -0.0085 | 0.9990 | 0.0052 mm |
-| **8431** | 0.0022 +/- 0.0001 mm | 0.0910 mm | 1.613 | -0.0008 | 0.9956 | 0.0051 mm | -0.0049 +/- 0.0001 mm | 0.0919 mm | 1.643 | 0.0157 | 0.9990 | -0.0049 mm |
-| **8650** | 0.0092 +/- 0.0001 mm | 0.0989 mm | 1.191 | -0.0152 | 0.9967 | 0.0107 mm | 0.0039 +/- 0.0001 mm | 0.0997 mm | 1.185 | -0.0093 | 0.9990 | 0.0042 mm |
-| **8655** | 0.0108 +/- 0.0001 mm | 0.0987 mm | 1.351 | -0.0206 | 0.9965 | 0.0108 mm | 0.0147 +/- 0.0001 mm | 0.0994 mm | 1.445 | -0.0396 | 0.9988 | 0.0147 mm |
-| **8656** | 0.0079 +/- 0.0001 mm | 0.0989 mm | 1.356 | -0.0130 | 0.9966 | 0.0080 mm | 0.0108 +/- 0.0001 mm | 0.0997 mm | 1.401 | -0.0286 | 0.9988 | 0.0107 mm |
+| **8430** | 0.0028 +/- 0.0001 mm | 0.0911 mm | 1.521 | -0.0074 | 0.9954 | 0.0065 mm | 0.0046 +/- 0.0001 mm | 0.0915 mm | 1.527 | -0.0058 | 0.9987 | 0.0056 mm |
+| **8431** | 0.0021 +/- 0.0001 mm | 0.0912 mm | 1.548 | -0.0014 | 0.9957 | 0.0051 mm | -0.0049 +/- 0.0001 mm | 0.0918 mm | 1.574 | 0.0160 | 0.9988 | -0.0043 mm |
+| **8650** | 0.0092 +/- 0.0001 mm | 0.0989 mm | 1.145 | -0.0173 | 0.9966 | 0.0102 mm | 0.0040 +/- 0.0001 mm | 0.0997 mm | 1.172 | -0.0110 | 0.9989 | 0.0044 mm |
+| **8655** | 0.0109 +/- 0.0001 mm | 0.0987 mm | 1.335 | -0.0202 | 0.9965 | 0.0111 mm | 0.0148 +/- 0.0001 mm | 0.0993 mm | 1.422 | -0.0403 | 0.9985 | 0.0151 mm |
+| **8656** | 0.0080 +/- 0.0001 mm | 0.0988 mm | 1.348 | -0.0132 | 0.9965 | 0.0078 mm | 0.0109 +/- 0.0001 mm | 0.0996 mm | 1.368 | -0.0296 | 0.9987 | 0.0110 mm |
 
 ### Crystal edges found for each run  
 
@@ -205,7 +205,7 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
     - ✅ correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
     - ✅ redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
     - redo plots about spatial cut
-    - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
+    - ✅ redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
     - correct margins in `compute_channeling2.py`
 
 - do not consider the edges:

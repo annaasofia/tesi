@@ -4,7 +4,7 @@ import sys
 ROOT.ROOT.EnableImplicitMT()
 ROOT.gStyle.SetOptStat(0)
 
-file_num = 8430
+file_num = 8656
 filename = f"recoDataSimple_{file_num}_xtalMerging.root"
 
 print(f"Analyzing {filename} for alignment offset...")
