@@ -13,15 +13,18 @@
     - [Mapping the torsion](#mapping-the-torsion)
     - [Studying the experimental setup](#studying-the-experimental-setup)
 5. [WEEK 5 (JUL 27)](#week-5)
+    - [To do](#to-do)
+    - [Multiple Coulomb Scattering](#msc)
 
 ## WEEK 1  
 
 ### Some bibliography
+(more in [bibliography.md](../aboutcrystals/bibliography.md))
 - [_Crystal channeling and its application at high-energy accelerators_](./aboutcrystals/crystal%20channelling.pdf)  by Biryukov, Chesnokov, Kotov
 - [_Performance of short and long bent crystals for the TWOCRYST experiment at the Large Hadron Collider_](./aboutcrystals/s10052-025-15092-y.pdf) in The European Physics Journal (May 2025)
 - [_New direction for bent crystals_](./aboutcrystals/New%20directions%20for%20bent%20crystals%20–%20CERN%20Courier.pdf) in Cern Courier by P. Hermes, S. Redaelli (March 2026)  
 
-$\to$ summary in [books.md](./aboutcrystals/books.md)
+$\to$ summary of these in [books.md](../aboutcrystals/books.md)
 
 ### Looking at data structure
 data to look at:  
@@ -46,7 +49,7 @@ $\to$ code to open them [open.py](../recoDataSimple/open.py) or [open_as_df.py](
 
 ## WEEK 2
 
-data from the article about TCCP and TCCPA:
+informations extracted from the runs:
 | long crystal 1 | data   | time   | long crystal 2 | data   | time   |
 |----------------|--------|--------|----------------|--------|--------|
 | 8430           | 151024 | 184745 | 8655           | 281024 | 012716 |
@@ -60,27 +63,27 @@ what type of data analysis can i do?
 - $\Delta\theta_x=\theta_{out}-\theta_{in}$ of `singleTrackEvent` (where are the peaks? i expect 0 and some $\mu$ rad)
 - crystal acceptance $\Delta\theta_x$ vs $\theta_{in,x}$  
 
-from [checkdata_1.py](../recoDataSimple/checkdata_1.py):
+from [checkdata2.py](../recoDataSimple/checkdata2.py):
 ![alt text](image.png)
 
 what to do next:
-- ✅ check through [checkdata_0.py](../recoDataSimple/checkdata_0.py) that within the same run the position of the goniometer ($x,y,z$) does not change
+- ✅ check through [checkdata1.py](../recoDataSimple/checkdata1.py) that within the same run the position of the goniometer ($x,y,z$) does not change
 - ✅ check about `SingleTrack`, `MultiHit`: they are either 0 or 1 and they always match in every run
-- ✅ look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf)  
-    | | | TCCP | TCCPA |
-    |-|-|-----|-------|
-    |length|[mm]|70|70.5|
-    |width|[mm]|8|22.5|
-    |height|[mm]|2|2|
-    |bend radius $\rho$ | [m]|10|5.3|
-    |bend angle $\theta_b$ | [mrad]|7.0|13.3|
-    |$\theta_L$ @ 180 GeV/c | [$\mu$ rad]|12.9|12.5|  
+- ✅ look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf) vs mine  
+    | | | TCCP | TCCPA | new long crystals |
+    |-|-|-----|-------|-------|
+    |length|[mm]|70|70.5|74|
+    |width|[mm]|8|22.5|12.8|
+    |height|[mm]|2|2|2|
+    |bend radius $\rho$ | [m]|10|5.3|12|
+    |bend angle $\theta_b$ | [mrad]|7.0|13.3|6.0|
+    |$\theta_L$ @ 180 GeV/c | [$\mu$ rad]|12.9|12.5|12.99|  
 $\theta_L = (1-\frac{\rho_c}{\rho})\sqrt{\frac{2U_0}{E}}$ where: $\rho_c=\frac{E}{U'(x_c)}$, $U'(x_c)=5.7$ GeV/cm, $U_0=16$ eV for Silicon (110) 
 
 ### Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
 
 - center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
-    - ✅ in [checkdata_2.py](../recoDataSimple/checkdata_2.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
+    - ✅ in [compute_channeling1.py](../recoDataSimple/compute_channeling1.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
     - ❌ what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$
 - $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
     - to filter spatially those who entered the crystal (of dimension width $\times$ length), i look at `d0` variables $x$ and $y$ (`d0` and `d0Out`), total and from those events that will present some channeling (so $\Delta\theta_x>\sim 5850 \mu$ rad, number found as $\mu-4\sigma$ by preliminary fit) and from these last ones filtered `d0Out`, which form an almost perfect rectangular, i infere the position of the crystal with respect to the beam through a sliding window method (which maximize the integral).
@@ -102,7 +105,7 @@ $\to$ [slides week 2](./slides/week2.pdf)
 - ✅ analyse all the datasets
 
 ### Measure the torsion correction✅
-Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [checkdata_3.py](../recoDataSimple/checkdata_3.py):  
+Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [compute_channeling2.py](../recoDataSimple/compute_channeling2.py):  
 - for every small square (the $xy$ beam distribution is divided into) we find at which $\theta_{x,in}$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
 - do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a function along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y + p_3 y^2$ where $p_0$ is $\theta_{baseline}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$). we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
 - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)  
@@ -144,23 +147,24 @@ We can compute precisely the $x$ shift for channeled particles:
 
 | **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
 |-|-|-|-|-|
-|**8430**|[-1.1124 mm | 0.8876 mm]|[-2.8289 mm | 5.1711 mm]|
-|**8431**|[-1.1124 mm | 0.8876 mm]|[-2.8091 mm | 5.1909 mm]|
-|**8650**|[-0.2850 mm | 1.7150 mm]|[-3.2638 mm | 4.7362 mm]|
-|**8655**|[0.5532 mm | 2.5532 mm]|[-3.4963 mm | 4.5037 mm]|
-|**8656**|[0.5532 mm | 2.5532 mm]|[-3.5102 mm | 4.4898 mm]|
+|**8430**|[-1.1044 mm | 0.8965 mm]|[-5.0250 mm | 7.7750 mm]|
+|**8431**|[-1.1044 mm | 0.8956 mm]|[-5.1000 mm | 7.7000 mm]|
+|**8650**|[-0.2744 mm | 1.7256 mm]|[-5.7450 mm | 7.0550 mm]|
+|**8655**|[0.5536 mm | 2.5536 mm]|[-6.9150 mm | 5.8850 mm]|
+|**8656**|[0.5546 mm | 2.5546 mm]|[-6.8750 mm | 5.9250 mm]|
 
 So also we can correct the Lindhard angle estimation:
 $$\theta_L=\bigg(1-\frac{\rho_c}{\rho}\bigg)\sqrt{\frac{2U_0}{E}}$$
 where:
 - $\rho_c=\frac{E}{U'(x_c)}$ is the critical radius
-- $E = p\beta c = 180\, \text{GeV}$
+- $E = p\beta c = 180\, \text{GeV}$ or $150\, \text{GeV}$
 - $U'(x_c)=5.7\text{ GeV/cm}$ for the (110) plane in silicon
 - $U_0=16\text{ eV}$ for silicon
 - $\rho=\frac{L}{\theta_b}$
 
 so for the $L=74\text{ mm}$ long crystals, with a $\theta_b=6\text{ mrad}$:  
-$\big(1-\frac{180\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{180\cdot 10^9}}=12.992$
+$\big(1-\frac{180\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{180\cdot 10^9}}=12.992\,\mu\text{rad}$ or  
+$\big(1-\frac{150\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{150\cdot 10^9}}=14.294\,\mu\text{rad}$
 
 
 ### Mapping the torsion
@@ -193,17 +197,86 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 ## WEEK 5
 
 ### to do:
+
 - in the results report everything interesting someone would want to know: maximum efficiency, ...
-- torsion error (by the fit)
-- ✅ do not consider the edges
-- efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%)
-- explore 8650, plot the histograms on top of each others
+    - maximum efficiency of ... with a drop to ... at the edges
+
+- correct edges since $\text{width}=12.8\text{ mm}$:
+    - ✅ correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
+    - ✅ redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
+    - redo plots about spatial cut
+    - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
+    - correct margins in `compute_channeling2.py`
+
+- do not consider the edges:
+    - need a different consideration for edges for `filter2_spatial_cut` and for the fit: narrower window for the fit?
+    - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
+
+- torsion error (by the fit):
+    - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
+    - now `h2_torsion_map` carries real per-bin errors (from the local Gaussian fit above) instead of ROOT's default sqrt(content) fallback. This makes the fit below a proper inverse-variance-weighted chi2 fit: bins near the edges of the acceptance get a large local_theta_0_err and are automatically down-weighted, instead of contributing to the surface fit with the same weight as clean core bins.
+    - `eff_err_stat` is the binomial (statistical) error on eff_ch, as before. We add a systematic term from the torsion-map baseline uncertainty theta_0_baseline_err: re-run the Lindhard cut + efficiency with theta_0 shifted by +/-1 sigma and take half the resulting spread in eff_ch. This is deliberately a re-evaluation rather than an analytic slope propagation, because the sensitivity of the acceptance is NOT uniform: it is large where the local efficiency amplitude is still near its ~25% core value, and vanishes towards the edges where the local efficiency amplitude drops to ~0%. Re-running the actual cut captures that shape automatically instead of assuming one fixed slope.
+
+- efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%):  
+this would be wrong, because it would be before torsion correction and lindhard critical angle cut, and also the bins have different statistics, it is correct instead to recompute the efficiency over the full dataset  
+    - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
+    - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
+- explore 8650:
+    - ✅ correct its critical angle since we discovered is at 150 GeV
+    - plot the histograms on top of each others
 - confidence level and similar stuffs
 - consider also angle errors (which i have)
 - look into the spikes: select bins with spikes vs the ones that have not: check their angle distribution
 - ask luigi for a systematic error
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
-- look into MCS multiple coulomb scattering, select one outcoming angle and and check the arrival one(? check into pdg about mcs)
+- ✅ understand MCS multiple coulomb scattering
+- look into MCS: select one outcoming angle and and check the arrival one([check into pdg about mcs](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3))
+
+### Multiple Coulomb Scattering
+![alt text](image-3.png)  
+
+The question we need to ask ourselves is: on average, how much will this particle be deflected at the end of its path? Most of the particles will be deviated of an angle near zero (center of the gaussian distribution).  
+The width of this curve is the key value: it tells us how much, on average, the particle is deflected. This value is called the root-mean-square (RMS) angle (angolo quadratico medio) and is denoted by $\theta_0$, and can be computed through the Highland formula, which is derived by Rutherford scattering cross section formula.  
+In the formula we have: $\theta_0\propto 1/p$, $\propto 1/\beta c$ (the higher the velocity and more massive the particle is, the less deviated it gets), and $\propto z$. Then we also have the material's characteristics: the width $x$ and the radiation length $X_0$ (depends on the 'density').  
+
+
+
+$\to$ from [PDG: Passage of Particles Through Matter](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3)
+
+A charged particle traversing a medium is deflected by many small-angle scatters. Most of this deflection is due to Coulomb scattering from nuclei as described by the Rutherford cross section. (However, for hadronic projectiles, the strong interactions also contribute to multiple scattering.)  
+For many small-angle scatters the net scattering and displacement distributions are Gaussian via the central limit theorem. Less frequent “hard” scatters produce non-Gaussian tails *(= particelle che prendono grandi spallate perche colpiscono nucleo in pieno)*. These Coulomb scattering distributions are well-represented by the theory of Molière (relativistic pions, kaons, and protons). If we define  
+
+$\theta_0=\theta_{plane}^{rms}=\frac{1}{\sqrt{2}}\theta_{space}^{rms}$  
+
+then it is sufficient for many applications to use a Gaussian approximation for the central 98% of the projected angular distribution, with an rms width given by Lynch & Dahl:  
+
+$\theta_0=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.088\log_{10}\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
+$=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.038\ln\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
+
+Here $p$, $βc$, and $z$ are the momentum, speed, and charge number of the incident particle, and $x/X_0$ is the thickness of the scattering medium in radiation lengths. This takes into account the $p$ and $z$ dependence quite well at small $Z$, but for large $Z$ and small $x$ the $β$-dependence is not well represented. This equation describes scattering from a single material, while the usual problem involves the multiple scattering of a particle traversing many different layers and mixtures. Since it is from a fit to a Molière distribution, it is incorrect to add the individual $θ_0$ contributions in quadrature *(= non si puo' sommare e basta i contributi aria + silicio + rame ecc, ci sarebbe grave sottostima deviazione)*; the result is systematically too small. It is much more accurate to apply this equation once, after finding $x$ and $X_0$ for the combined scatterer.  
+
+The nonprojected (space) and projected (plane) angular distributions are given approximately by  
+
+$\frac{1}{2\pi\theta_0^2}\exp\big(-\frac{\theta^2_{space}}{2\theta_0^2}\big)d\Omega$  
+$\frac{1}{\sqrt{2\pi}\theta_0}\exp\big(-\frac{\theta^2_{plane}}{2\theta_0^2}\big)d\theta_{plane}$  
+
+where $θ$ is the deflection angle. In this approximation, $\theta^2_{space} ≈ (θ_{plane,x}^2 + θ_{plane,y}^2)$, where the $x$ and $y$ axes are orthogonal to the direction of motion, and $dΩ ≈ dθ_{plane,x} dθ_{plane,y}$. Deflections into $θ_{plane,x}$ and $θ_{plane,y}$ are independent and identically distributed. Fig. 34.10 shows these and other quantities sometimes used to describe multiple Coulomb scattering. They are  
+
+$\psi^{rms}_{plane}=\frac{1}{\sqrt{3}}\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}\theta_0$    
+$y^{rms}_{plane}=\frac{1}{\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}x\theta_0$  
+$s^{rms}_{plane}=\frac{1}{4\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{4\sqrt{3}}x\theta_0$  
+
+All the quantitative estimates in this section apply only in the limit of small $θ^{rms}_{plane}$ and in the absence of large-angle scatters. The random variables $s$, $ψ$, $y$, and $θ$ in a given plane are correlated. Obviously, $y ≈ xψ$. In addition, $y$ and $θ$ have the correlation coefficient $ρ_{yθ} = \sqrt{3}/2 ≈ 0.87$ *(1 would be perfect correlation)*.  
+
+For Monte Carlo generation of a joint ($y_{plane}$, $θ_{plane}$) distribution, or for other calculations, it may be most convenient to work with independent Gaussian random variables ($z_1$, $z_2$) with mean zero and variance one, and then set  
+
+$y_{plane}=z_1\, x\, \theta_0(1-\rho^2_{y\theta})^{1/2}/\sqrt{3}+z_2\,\rho_{y\theta}\, x\, \theta_0/\sqrt{3}=z_1\, x\, \theta_0/\sqrt{12}+z_2\, x\, \theta_0/2$  
+$\theta_{plane}=z_2\,\theta_0$  
+
+In this way the computer instantaneously gets an exit angle and a final position, which are correlated (no need of simulating all the small scatterings happening inside).  
+Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represents the displacement that would have occurred had the deflection $θ_{plane}$ all occurred at the single point $x/2$.  
+
+$\to$ **mcs theta/gaus width for the 74 mm long crystals:** $\theta_0=66.54 \,\mu\text{rad}$
 
 
 
