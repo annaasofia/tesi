@@ -179,14 +179,14 @@ $\to$ first, i verify with the `full_quadratic` function that the curvature alon
 - understand the meaning of the global efficiency curve plot: how aligned is the crystal after the torsion correction, the efficiency peak should be centered at zero. The curve is obtained from all the data, through a scan along $\theta_{in}$.
 
 Final results:  
-|_parabolic model_|     | $\tau_y$     | $\tau_x$     | $\epsilon_{ch}$ | angle                 | sigma               | events discarded |
-|---|-------------------|--------------|--------------|-----------------|-----------------------|---------------------|------------------|
-| 1 | 8430              | 3.45 urad/mm | 1.39 urad/mm | (18.7 ± 0.1)%   | (6011.3 +/- 0.2) urad | (21.2 +/- 0.2) urad | 98%              |
-| 1 | 8431              | 3.33 urad/mm | 2.34 urad/mm | (18.3 ± 0.1)%   | (6010.9 +/- 0.2) urad | (21.2 +/- 0.2) urad | 98%              |
-| 1 | 8430 & 8431       | 5.24 urad/mm | 0.72 urad/mm | (19.3 ± 0.0)%   | (6008.5 +/- 0.2) urad | (22.6 +/- 0.2) urad | 98%              |
-| 1 | 8650              | 3.72 urad/mm | 0.57 urad/mm | (17.1 ± 0.1)%   | (6076.5 +/- 0.3) urad | (28.5 +/- 0.2) urad | 96%              |
-| 2 | 8655              | 2.97 urad/mm | 1.26 urad/mm | (17.9 ± 0.1)%   | (6124.2 +/- 0.3) urad | (31.9 +/- 0.2) urad | 97%              |
-| 2 | 8656              | 2.83 urad/mm | 2.40 urad/mm | (17.8 ± 0.1)%   | (6122.8 +/- 0.2) urad | (32.7 +/- 0.2) urad | 97%              |
+|_parabolic model_|     | $\tau_y$        | $\tau_x$         | $\epsilon_{ch}$                     | angle               | sigma             | events discarded |
+|---|-------------------|-----------------|------------------|-------------------------------------|---------------------|-------------------|------------------|
+| 1 | 8430              | 6.25(4) urad/mm | -0.28(4) urad/mm | (19.6 ± 0.1 [stat] ± 0.0 [syst])%   | (6008.4 ± 0.2) urad | (21.0 ± 0.2) urad | 98%              |
+| 1 | 8431              | 5.71(4) urad/mm |  0.28(4) urad/mm | (19.1 ± 0.1 [stat] ± 0.0 [syst])%   | (6008.4 ± 0.2) urad | (20.4 ± 0.2) urad | 98%              |
+| 1 | 8430 & 8431       | 7.35(3) urad/mm | -0.70(4) urad/mm | (19.6 ± 0.0 [stat] ± 0.0 [syst])%   | (6008.2 ± 0.1) urad | (21.0 ± 0.1) urad | 98%              |
+| 1 | 8650              | 3.89(1) urad/mm | -0.19(4) urad/mm | (17.1 ± 0.1 [stat] ± 0.0 [syst])%   | (6081.7 ± 0.1) urad | (26.0 ± 0.2) urad | 96%              |
+| 2 | 8655              | 3.67(2) urad/mm |  0.83(5) urad/mm | (18.0 ± 0.1 [stat] ± 0.0 [syst])%   | (6122.6 ± 0.3) urad | (32.2 ± 0.2) urad | 97%              |
+| 2 | 8656              | 3.80(1) urad/mm |  0.87(4) urad/mm | (18.0 ± 0.1 [stat] ± 0.0 [syst])%   | (6122.0 ± 0.3) urad | (32.4 ± 0.2) urad | 97%              |
 
 ### Studying the experimental setup
 

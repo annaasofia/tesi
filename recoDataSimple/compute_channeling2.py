@@ -467,7 +467,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     
     if N_tot > 0:
         # fitting only right side of the peak (cleanest one)
-        fit_min = parameters["deflection_peak"] - 20
+        fit_min = parameters["deflection_peak"] - 30
         fit_max = parameters["deflection_peak"] + 100
         # fit_max = parameters["max_value"]
         gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
@@ -624,7 +624,7 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr):
     leg = ROOT.TPaveText(0.53, 0.78, 0.88, 0.88, "NDC")
     leg.SetFillColor(ROOT.kWhite); leg.SetBorderSize(1)
     leg.AddText(f"Max Global Efficiency = ({max_eff:.1f} +/- {max_eff_err:.1f}) %")
-    # leg.AddText(f"Mean = {mean:.3f} +/- {mean_err:.3f} (comp = {compatibility:.2f})")
+    leg.AddText(f"Mean = {mean:.3f} +/- {mean_err:.3f} (comp = {compatibility:.2f})")
     leg.Draw("SAME")
 
     c_eff_curve.Update()
@@ -758,7 +758,7 @@ def main():
     y_min_grid, y_max_grid = compute_torsion_grid_bounds(df_phys, parameters, sigma_mult=2.0)
     fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid, 
                                                                                        x_cut_margin, y_cut_margin, nx_slices=10, ny_slices=65, 
-                                                                                       restricted=True, linear=False, chosen_model="full_quadratic")
+                                                                                       restricted=True, linear=False, chosen_model="parabolic_y")
 
     # not needed anymore because the torsion fit is not linear but parabolic
     # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
