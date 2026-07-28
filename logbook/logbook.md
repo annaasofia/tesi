@@ -15,6 +15,8 @@
 5. [WEEK 5 (JUL 27)](#week-5)
     - [To do](#to-do)
     - [Multiple Coulomb Scattering](#msc)
+6. [WEEK 6 (JUL 10)](#week-6)
+7. [WEEK 7 (JUL 17)](#week-7)
 
 ## WEEK 1  
 
@@ -201,15 +203,16 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - in the results report everything interesting someone would want to know: maximum efficiency, ...
     - maximum efficiency of ... with a drop to ... at the edges
 
-- correct edges since $\text{width}=12.8\text{ mm}$:
-    - ✅ correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
-    - ✅ redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
-    - ✅ redo plots about spatial cut
-    - ✅ redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
+- ✅ correct edges since $\text{width}=12.8\text{ mm}$:
+    - correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
+    - redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
+    - redo plots about spatial cut
+    - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
     - correct margins in `compute_channeling2.py`
 
-- do not consider the edges:
-    - need a different consideration for edges for `filter2_spatial_cut` and for the fit: narrower window for the fit?
+- ✅ do not consider the edges (cannot measure a local torsion angle where there's no beam so only considering the beam-illuminated window):
+    - need a different consideration for edges for `filter2_spatial_cut` and for the fit: crop to where the data lives
+    - torsion-map grid range: i can consider along y the area $\mu\pm 3 \sigma$ from the beam or the quantiles (does not assume gaussian tails), should be a separate, narrower range that tracks where the beam actually has statistics
     - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
 
 - torsion error (by the fit):
@@ -277,6 +280,22 @@ In this way the computer instantaneously gets an exit angle and a final position
 Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represents the displacement that would have occurred had the deflection $θ_{plane}$ all occurred at the single point $x/2$.  
 
 $\to$ **mcs theta/gaus width for the 74 mm long crystals:** $\theta_0=66.54 \,\mu\text{rad}$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## WEEK 6
+## WEEK 7
 
 
 
