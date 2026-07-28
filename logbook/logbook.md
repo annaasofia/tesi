@@ -204,7 +204,7 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - correct edges since $\text{width}=12.8\text{ mm}$:
     - ✅ correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
     - ✅ redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
-    - redo plots about spatial cut
+    - ✅ redo plots about spatial cut
     - ✅ redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
     - correct margins in `compute_channeling2.py`
 
