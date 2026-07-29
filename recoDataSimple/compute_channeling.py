@@ -531,7 +531,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     ROOT.SetOwnership(gaus_fit, False)
     ROOT.SetOwnership(legend, False)
 
-    return eff_ch, eff_err, fit_parameters
+    return eff_ch, eff_err, fit_parameters, h_cut_value
 
 def plot_deltatheta_theta(df, parameters, best_theta_0):
     h_deltatheta = df.Histo1D(("h_deltatheta", "Angular Deflection; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
@@ -670,7 +670,7 @@ def scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_m
         # Applichiamo il Lindhard cut dinamico usando i parametri appena trovati
         df_chan = filter3_Lindhard_cut(df_window, parameters, local_fit_params, rdf_surface_expr)
         # Calcoliamo l'efficienza locale riutilizzando la funzione
-        eff, err, _ = channeling_efficiency(df_chan, parameters, local_theta_0)
+        eff, err, _, _ = channeling_efficiency(df_chan, parameters, local_theta_0)
         
         if eff > 0:
             y_centers.append(y_center)
@@ -728,7 +728,7 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8430
+    file = 8650
     files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -770,15 +770,20 @@ def main():
     count_3 = df_phys.Count()
 
     # CHANNELING EFFICIENCY
-    eff_ch, eff_err_stat, fit_efficiency = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
+    eff_ch, eff_err_stat, fit_efficiency, histo_final = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
+    out_filename = f"final_histo_run_{file}.root"
+    out_file = ROOT.TFile(out_filename, "RECREATE")
+    histo_final.Write(f"h_defl_run_{file}")
+    # h2_torsion_map.Write(f"h2_torsion_map_{file}")
+    out_file.Close()
 
     surface_expr_up = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] + fit_errors[0]}", 1)
     surface_expr_down = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] - fit_errors[0]}", 1)
 
     df_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_up)
     df_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_down)
-    eff_up, _, _ = channeling_efficiency(df_up, parameters, best_theta_0=fit_params[0] + fit_errors[0])
-    eff_down, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=fit_params[0] - fit_errors[0])
+    eff_up, _, _, _ = channeling_efficiency(df_up, parameters, best_theta_0=fit_params[0] + fit_errors[0])
+    eff_down, _, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=fit_params[0] - fit_errors[0])
  
     eff_err_syst = abs(eff_up - eff_down) / 2.0
     eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)

@@ -85,7 +85,7 @@ $\theta_L = (1-\frac{\rho_c}{\rho})\sqrt{\frac{2U_0}{E}}$ where: $\rho_c=\frac{E
 ### Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
 
 - center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
-    - ✅ in [compute_channeling1.py](../recoDataSimple/compute_channeling1.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
+    - ✅ in [compute_edges1.py](../recoDataSimple/compute_edges1.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
     - ❌ what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$
 - $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
     - to filter spatially those who entered the crystal (of dimension width $\times$ length), i look at `d0` variables $x$ and $y$ (`d0` and `d0Out`), total and from those events that will present some channeling (so $\Delta\theta_x>\sim 5850 \mu$ rad, number found as $\mu-4\sigma$ by preliminary fit) and from these last ones filtered `d0Out`, which form an almost perfect rectangular, i infere the position of the crystal with respect to the beam through a sliding window method (which maximize the integral).
@@ -107,7 +107,7 @@ $\to$ [slides week 2](./slides/week2.pdf)
 - ✅ analyse all the datasets
 
 ### Measure the torsion correction✅
-Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [compute_channeling2.py](../recoDataSimple/compute_channeling2.py):  
+Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [compute_channeling.py](../recoDataSimple/compute_channeling.py):  
 - for every small square (the $xy$ beam distribution is divided into) we find at which $\theta_{x,in}$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
 - do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a function along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y + p_3 y^2$ where $p_0$ is $\theta_{baseline}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$). we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
 - cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)  
@@ -200,20 +200,36 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 
 ### to do:
 
-- in the results report everything interesting someone would want to know: maximum efficiency, ...
-    - maximum efficiency of ... with a drop to ... at the edges
-
 - ✅ correct edges since $\text{width}=12.8\text{ mm}$:
     - correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
-    - redo `compute_channeling1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
+    - redo `compute_edges1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
     - redo plots about spatial cut
     - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
-    - correct margins in `compute_channeling2.py`
+    - correct margins in `compute_channeling.py`
 
 - ✅ do not consider the edges (cannot measure a local torsion angle where there's no beam so only considering the beam-illuminated window):
     - need a different consideration for edges for `filter2_spatial_cut` and for the fit: crop to where the data lives
     - torsion-map grid range: i can consider along y the area $\mu\pm 3 \sigma$ from the beam or the quantiles (does not assume gaussian tails), should be a separate, narrower range that tracks where the beam actually has statistics
     - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
+
+- ✅ explore 8650:  
+    $\to$ compared in [compare_histo.py](../recoDataSimple/compare_histo.py)
+    - Luigi and Melanie said there were some problems during the data taking and with one magnet: at energy 150GeV/c and by beamline hardware constraint also the current was lowered (otherwise particles would not follow the intended trajectory)
+    - wider critical angle
+    - channeling peak sigma is wider, as lower momentum particles get kicked around more (more multiple coulomb scattering, as mcs scales as $1/p$)
+    - lower efficiency, as dechanneling probability increases at lower energy (trajectory more easily perturbed out of the channel)
+    - why channeling peak shifted by $~70\,\mu\text{rad}$? the tracker calibration itself is not the source of the anomaly (see [offset results](#calibrate-the-detectors-and-alignment-check))
+
+- ✅ look into the spikes: select bins with spikes vs the ones that have not: 
+    - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
+
+- ✅ my current method to find the crystal edges is isolating the channeled particles, then use their impact position distribution to find where the population is the densest and call that the crystal footprint, but this only uses the channeled fraction, so ~20% of all the particles that actually crossed the crystal. what Luigi was suggesting instead is instead of relying on channeling at all, i can use the fact that every particle that physically traverses the crystal, picks up extra multiple coulomb scatterings that a particle passing beside the crystal does not:  
+    $\to$ performed in []()
+    - with the whole dataset
+    - in small bins $(x,y)$ across the beam spot, compute the width (rms or gaussian sigma) of the outgoing angular distribution $(\theta_{out}$ or $\Delta\theta_x)$ rather than its channeled peak position
+    - map the local width as a function of impact position: outside the crystal, the width sits at the baseline, inside the crystal it should jump to $\theta_0\sim66.5\,\mu\text{rad}$ contribution added in quadrature
+    - edges are were there should be a sharp, well-defined transition - that can be fitted through a step function
+    - $\to$ this method provides indipendence from channeling efficiency or torsion
 
 - torsion error (by the fit):
     - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
@@ -224,13 +240,9 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 this would be wrong, because it would be before torsion correction and lindhard critical angle cut, and also the bins have different statistics, it is correct instead to recompute the efficiency over the full dataset  
     - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
-- ✅ explore 8650:
-    - correct its critical angle since we discovered is at 150 GeV
-    - Luigi and Melanie said there were some problems during the data taking and with one magnet
+
 - confidence level and similar stuffs
 - consider also angle errors (which i have)
-- ✅ look into the spikes: select bins with spikes vs the ones that have not: 
-    - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
 - ✅ understand MCS multiple coulomb scattering
 - look into MCS: select one outcoming angle and and check the arrival one([check into pdg about mcs](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3))
