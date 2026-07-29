@@ -38,6 +38,8 @@ $\to$ citation [28] from European Physical Journal article
 - [TCCP and TCCS prototypes photos](https://cds.cern.ch/record/2921818)
 - [PRINTED] Hall, G., T. James, and M. Pesaresi. "*Optimisation of a silicon microstrip telescope for UA9 crystal channeling studies.*" Journal of Instrumentation 15.05 (2020): C05014-C05014.  
 [http://dx.doi.org/10.1088/1748-0221/15/05/C05014](http://dx.doi.org/10.1088/1748-0221/15/05/C05014)
+- Anghinolfi, Francis. "*Silicon strip detectors and their readout electronics.*" Electronic Systems for Experiments Seminar presentation. 2009.  
+[https://indico.cern.ch/event/69666/attachments/1029489/1466033/ESE_0_all.pdf](https://indico.cern.ch/event/69666/attachments/1029489/1466033/ESE_0_all.pdf)
 
 
 ## SIMULATION

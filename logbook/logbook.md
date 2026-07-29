@@ -224,16 +224,17 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 this would be wrong, because it would be before torsion correction and lindhard critical angle cut, and also the bins have different statistics, it is correct instead to recompute the efficiency over the full dataset  
     - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
-- explore 8650:
-    - ✅ correct its critical angle since we discovered is at 150 GeV
-    - plot the histograms on top of each others
+- ✅ explore 8650:
+    - correct its critical angle since we discovered is at 150 GeV
+    - Luigi and Melanie said there were some problems during the data taking and with one magnet
 - confidence level and similar stuffs
 - consider also angle errors (which i have)
-- look into the spikes: select bins with spikes vs the ones that have not: check their angle distribution
-- ask luigi for a systematic error
+- ✅ look into the spikes: select bins with spikes vs the ones that have not: 
+    - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
 - ✅ understand MCS multiple coulomb scattering
 - look into MCS: select one outcoming angle and and check the arrival one([check into pdg about mcs](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3))
+- draw a better experimental layout, ask Luigi about beam window and be sure were the vacuum pipes are
 
 ### Multiple Coulomb Scattering
 ![alt text](image-3.png)  
