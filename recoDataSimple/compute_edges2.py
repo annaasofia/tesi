@@ -7,41 +7,21 @@ from array import array
 
 
 ROOT.ROOT.EnableImplicitMT() 
+ROOT.gStyle.SetOptStat(0)
 
-# file = input("File number: ")
 file = 8430
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
-ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
 # VARIABLES
-theta_L = 0 # Lindhard angle for TCCP and TCCPA in urad
-width = 0 # width of the crystal in mm (for spatial cut)
-height = 0 # height of the crystal in mm (for spatial cut)
-delta_x = 0 # shift in x (for spatial cut)
-theta_0 = 0 # centro della tua isola di channeling - looking at 2D "h scan" find on which x (thetaIn) the channeling isle is centered
-max_value = 0 # histograms range
-deflection_peak = 0 # urad
-
-if file in [8430, 8431, 8655, 8656]:
-    theta_L = 12.992
-    deflection_peak = 6010.0
-    width = 12.8
-    height = 2
-    delta_x = 0.5*74*6.01*pow(10,-3) # 0.222 mm
-    max_value = 8000
-elif file in [8650]:
-    theta_L = 14.294
-    deflection_peak = 6010.0
-    width = 12.8
-    height = 2
-    delta_x = 0.5*74*6.01*pow(10,-3) # 0.222 mm
-    max_value = 8000
-else:
-    print("Run not found...")
-    sys.exit(1)
+width = 12.8 # width of the crystal in mm (for spatial cut)
+height = 2 # height of the crystal in mm (for spatial cut)
+max_value = 8000 # histograms range
+deflection_peak = 6010 # urad
+fit_range = 150 # urad
+minimum_entries = 30
 
 # ROOT DATA FRAME
 df = ROOT.RDataFrame("simpleEvent", filename)
@@ -54,186 +34,210 @@ df_phys = df.Filter("SingleTrack == 1")
 df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")
 print("="*50)
 
-# HISTOGRAMS PRE SPATIAL CUT
-h_d0_xy = df_phys.Histo2D(("h_d0_xy", "Incoming d0_x vs d0_y of all particles; d0_x [mm]; d0_y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0_x", "Tracks.d0_y")
-h_d0_Out_xy = df_phys.Histo2D(("h_d0_Out_xy", "Outgoing d0_x vs d0_y of all particles; d0_x [mm]; d0_y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0Out_x", "Tracks.d0Out_y")
-c0 = ROOT.TCanvas("c0", "d0_x and d0_y of all particles", 1700, 900)
-c0.Divide(2, 2)
-c0.cd(1); h_d0_xy.Draw("COLZ")
-x1, y1, x2, y2 = -2.0, -8.0, 2.0, 8.0
-box1 = ROOT.TBox(x1, y1, x2, y2); box1.SetLineColor(ROOT.kMagenta); box1.SetLineWidth(2); box1.SetFillStyle(0); box1.Draw("SAME")
-c0.cd(2); h_d0_Out_xy.Draw("COLZ")
-box2 = ROOT.TBox(x1, y1, x2, y2); box2.SetLineColor(ROOT.kMagenta); box2.SetLineWidth(2); box2.SetFillStyle(0); box2.Draw("SAME")
+def book_scan_histogram(df_in, scan_var, scan_min, scan_max, n_bins, slice_var=None, slice_min=None, slice_max=None, n_dtheta_bins=300):
 
-# FILTER 3: spatial cut (d0_x and d0_y within the crystal area)
-# as first thing i choose a cut on Deltatheta_x to select only channeled particles
-preliminary_cut = 0
-h_defl_before = df_phys.Histo1D(("h_defl_before", "Angular Deflection; #Delta#theta_{x} [#murad]; Counts", 500, -2000, max_value), "Deltatheta_x") 
-h_defl_val = h_defl_before.GetValue()
+    df_slice = df_in
+    if slice_var is not None:
+        df_slice = df_slice.Filter(f"{slice_var} > {slice_min} && {slice_var} < {slice_max}")
+ 
+    h2 = df_slice.Histo2D((f"h2_scat_{scan_var}", "", n_bins, scan_min, scan_max, n_dtheta_bins, -fit_range, fit_range), scan_var, "Deltatheta_x")
+    return h2
 
-pre_fit = ROOT.TF1("pre_fit", "gaus", deflection_peak - 500, deflection_peak + 500)
-h_defl_val.Fit(pre_fit, "RQ0") # R=Range, Q=Quiet, 0=NoDraw
-pre_mean = pre_fit.GetParameter(1); pre_sigma = pre_fit.GetParameter(2)
-preliminary_cut = pre_mean - 3.0 * pre_sigma
-df_cut = df_phys.Filter(f"Deltatheta_x > {preliminary_cut}", "Preliminary cut on Deltatheta_x to select channeled particles")
+def extract_widths_from_h2(h2_lazy, min_entries=minimum_entries):
+    h2v = h2_lazy.GetValue()
+    centers, sigmas, sigma_errs = [], [], []
+ 
+    n_bins = h2v.GetNbinsX()
+    for ix in range(1, n_bins + 1):
+        h1 = h2v.ProjectionY(f"py_{h2v.GetName()}_{ix}", ix, ix)
+ 
+        if h1.GetEntries() < min_entries:
+            continue
+ 
+        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -fit_range, fit_range)
+        f.SetParameters(h1.GetMaximum(), h1.GetMean(), max(h1.GetRMS(), 5.0))
+        h1.Fit(f, "RQ0")
+ 
+        centers.append(h2v.GetXaxis().GetBinCenter(ix))
+        sigmas.append(f.GetParameter(2))
+        sigma_errs.append(f.GetParError(2))
+ 
+    return centers, sigmas, sigma_errs
+ 
+def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, baseline_guess=None, amplitude_guess=None, transition_guess=0.05):
 
-# i look at the beam profile of d0 of those who channeled, and find the region (width x length)
-h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; d0_x [mm]; d0_y [mm]", 5000, -2, 3, 1700, -8, 9), "Tracks.d0_x", "Tracks.d0_y")
-h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; d0Out_x [mm]; d0Out_y [mm]", 5000, -2, 3, 1700, -8, 9), "Tracks.d0Out_x", "Tracks.d0Out_y")
+    n = len(centers)
+    if n == 0:
+        print("ERROR: Zero data points! The previous cut filtered out all events.")
+        return 0, 0, 0, 0, None, None
 
-h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "d0_x of channeled particles; d0_x [mm]; Counts", 5000, -2, 3), "Tracks.d0_x")
-h_d0_y_ch = df_cut.Histo1D(("h_d0_y_ch", "d0_y of channeled particles; d0_y [mm]; Counts", 1700, -8, 9), "Tracks.d0_y")
-h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "d0Out_x of channeled particles; d0Out_x [mm]; Counts", 5000, -2, 3), "Tracks.d0Out_x")
-h_d0_Out_y_ch = df_cut.Histo1D(("h_d0_Out_y_ch", "d0Out_y of channeled particles; d0Out_y [mm]; Counts", 1700, -8, 9), "Tracks.d0Out_y")
+    gr = ROOT.TGraphErrors(n, array('d', centers), array('d', sigmas), array('d', [0.0] * n), array('d', sigma_errs))
+ 
+    # 1. Rilevamento Intelligente: Guardiamo i dati per capire la forma
+    mid_val = sigmas[n // 2] # Valore al centro
+    edge_val = (sigmas[0] + sigmas[-1]) / 2.0 # Valore medio ai bordi esterni
+ 
+    if baseline_guess is None:
+        baseline_guess = edge_val
+    if amplitude_guess is None:
+        # Se è una buca (mid_val < edge_val), l'ampiezza diventa automaticamente negativa!
+        amplitude_guess = mid_val - edge_val 
+ 
+    f = ROOT.TF1("f_step_edges", "[0] + [1]*0.5*(TMath::Erf((x-[2])/[4]) - TMath::Erf((x-[3])/[4]))", min(centers), max(centers))
+    f.SetParameters(baseline_guess, amplitude_guess, edge_lo_guess, edge_hi_guess, transition_guess)
+    f.SetParLimits(4, 0.001, (max(centers) - min(centers)) / 4.0) 
+ 
+    gr.Fit(f, "RQ0") # Aggiunto "0" per non sovrascrivere la Canvas di default
+ 
+    edge_lo = f.GetParameter(2)
+    edge_hi = f.GetParameter(3)
+    edge_lo_err = f.GetParError(2)
+    edge_hi_err = f.GetParError(3)
+ 
+    # 2. Sicurezza: Se il fit si è "girato", rimettiamo i bordi nell'ordine giusto (minore, maggiore)
+    if edge_lo > edge_hi:
+        edge_lo, edge_hi = edge_hi, edge_lo
+        edge_lo_err, edge_hi_err = edge_hi_err, edge_lo_err
+ 
+    return edge_lo, edge_hi, edge_lo_err, edge_hi_err, f, gr
+
+ 
+# y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run if you have one)
+h2 = book_scan_histogram(df_phys, "Tracks.d0Out_y", scan_min=-10, scan_max=10, n_bins=200) # 0.01 mm precision
+y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2)
+ 
+y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
+ 
+print(f"Y edges (scattering method): [{y_lo:.4f} +/- {y_lo_err:.4f}, {y_hi:.4f} +/- {y_hi_err:.4f}] mm")
+ 
+c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
+gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{x}) [#murad]")
+gr_y.SetMarkerStyle(20); gr_y.SetMarkerSize(0.6)
+gr_y.Draw("AP")
+f_y.SetLineColor(ROOT.kRed)
+f_y.Draw("SAME")
+c_y.Update()
+ 
+# x edges (scan x, restricted to the just-found y window)
+h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_lo, slice_max=y_hi)
+x_centers, x_sigmas, x_sigma_errs = extract_widths_from_h2(h2_x)
+ 
+x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
+ 
+print(f"X edges (scattering method): [{x_lo:.4f} +/- {x_lo_err:.4f}, {x_hi:.4f} +/- {x_hi_err:.4f}] mm")
+ 
+c_x = ROOT.TCanvas("c_x", "Scattering width vs x", 900, 600)
+gr_x.SetTitle("Local scattering width vs x; d0_x [mm]; #sigma(#Delta#theta_{x}) [#murad]")
+gr_x.SetMarkerStyle(20); gr_x.SetMarkerSize(0.6)
+gr_x.Draw("AP")
+f_x.SetLineColor(ROOT.kRed)
+f_x.Draw("SAME")
+c_x.Update()
+
+ 
+print("=" * 50)
+print(f"Crystal footprint from scattering method:")
+print(f"\tx = [{x_lo:.4f}, {x_hi:.4f}] mm  (width = {x_hi - x_lo:.4f} mm)")
+print(f"\ty = [{y_lo:.4f}, {y_hi:.4f}] mm  (width = {y_hi - y_lo:.4f} mm)")
+print(f"\tbaseline sigma  = {f_x.GetParameter(0):.2f} urad")
+print(f"\tin-crystal jump = {f_x.GetParameter(1):.2f} urad  (expect ~ theta_0 ~ 66.5 urad added in quadrature)")
+
+# Plot della mappa 2D Posizione Y vs Deflessione (h2_scat_y)
+c_2d_y = ROOT.TCanvas("c_2d_y", "Position Y vs Deflection", 900, 600)
+h2_y_val = h2.GetValue()
+h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{x}; d0_y [mm]; #Delta#theta_{x} [#murad]")
+h2_y_val.Draw("COLZ")
+c_2d_y.Update()
+
+# Plot della mappa 2D Posizione X vs Deflessione (h2_scat_x)
+c_2d_x = ROOT.TCanvas("c_2d_x", "Position X vs Deflection", 900, 600)
+h2_x_val = h2_x.GetValue()
+h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; d0_x [mm]; #Delta#theta_{x} [#murad]")
+h2_x_val.Draw("COLZ")
+c_2d_x.Update()
+
+# Estrazione e plot di DUE singole fettine (Una DENTRO e una FUORI dal cristallo)
+# Scegliamo due bin a caso basandoci sui centri Y trovati
+bin_dentro = h2_y_val.GetXaxis().FindBin((y_lo + y_hi) / 2.0) # Esattamente a metà cristallo
+bin_fuori = h2_y_val.GetXaxis().FindBin(y_lo - 2.0)           # 2 mm fuori dal bordo inferiore (zona Titanio)
+
+# Estraiamo gli istogrammi 1D
+h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro)
+h1_fuori = h2_y_val.ProjectionY("h1_fuori", bin_fuori, bin_fuori)
+
+# Fit e Plot per la zona DENTRO il cristallo
+c_slice_in = ROOT.TCanvas("c_slice_in", "Fit Slice (INSIDE Crystal)", 800, 600)
+h1_dentro.SetTitle(f"Fettina DENTRO il cristallo (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_dentro.SetLineColor(ROOT.kBlue); h1_dentro.SetLineWidth(2)
+f_in = ROOT.TF1("f_in", "gaus", -fit_range, fit_range)
+f_in.SetLineColor(ROOT.kRed)
+h1_dentro.Fit(f_in, "RQ")
+h1_dentro.Draw("HIST")
+f_in.Draw("SAME")
+
+leg_in = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_in.SetBorderSize(0)
+leg_in.AddEntry(f_in, f"#sigma = {f_in.GetParameter(2):.1f} #murad", "l")
+leg_in.Draw("SAME")
+c_slice_in.Update()
+
+# Fit e Plot per la zona FUORI dal cristallo
+c_slice_out = ROOT.TCanvas("c_slice_out", "Fit Slice (OUTSIDE Crystal)", 800, 600)
+h1_fuori.SetTitle(f"Fettina FUORI dal cristallo (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_fuori.SetLineColor(ROOT.kMagenta); h1_fuori.SetLineWidth(2)
+f_out = ROOT.TF1("f_out", "gaus", -fit_range, fit_range)
+f_out.SetLineColor(ROOT.kRed)
+h1_fuori.Fit(f_out, "RQ")
+h1_fuori.Draw("HIST")
+f_out.Draw("SAME")
+
+leg_out = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_out.SetBorderSize(0)
+leg_out.AddEntry(f_out, f"#sigma = {f_out.GetParameter(2):.1f} #murad", "l")
+leg_out.Draw("SAME")
+c_slice_out.Update()
+
+# Scegliamo un bin al centro del cristallo e uno 1.5 mm fuori dal bordo destro
+bin_dentro_x = h2_x_val.GetXaxis().FindBin((x_lo + x_hi) / 2.0) 
+bin_fuori_x  = h2_x_val.GetXaxis().FindBin(x_hi + 1.5)           
+
+# Estraiamo gli istogrammi 1D
+h1_dentro_x = h2_x_val.ProjectionY("h1_dentro_x", bin_dentro_x, bin_dentro_x)
+h1_fuori_x  = h2_x_val.ProjectionY("h1_fuori_x", bin_fuori_x, bin_fuori_x)
+
+# Fit e Plot per la zona DENTRO il cristallo (Asse X)
+c_slice_in_x = ROOT.TCanvas("c_slice_in_x", "Fit Slice X (INSIDE Crystal)", 800, 600)
+h1_dentro_x.SetTitle(f"Fettina X DENTRO il cristallo (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_dentro_x.SetLineColor(ROOT.kBlue+2); h1_dentro_x.SetLineWidth(2)
+
+f_in_x = ROOT.TF1("f_in_x", "gaus", -fit_range, fit_range)
+f_in_x.SetLineColor(ROOT.kRed)
+h1_dentro_x.Fit(f_in_x, "RQ")
+h1_dentro_x.Draw("HIST")
+f_in_x.Draw("SAME")
+
+leg_in_x = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_in_x.SetBorderSize(0)
+leg_in_x.AddEntry(f_in_x, f"#sigma = {f_in_x.GetParameter(2):.1f} #murad", "l")
+leg_in_x.Draw("SAME")
+c_slice_in_x.Update()
+
+# Fit e Plot per la zona FUORI dal cristallo (Asse X)
+c_slice_out_x = ROOT.TCanvas("c_slice_out_x", "Fit Slice X (OUTSIDE Crystal)", 800, 600)
+h1_fuori_x.SetTitle(f"Fettina X FUORI dal cristallo (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_fuori_x.SetLineColor(ROOT.kMagenta+2); h1_fuori_x.SetLineWidth(2)
+
+f_out_x = ROOT.TF1("f_out_x", "gaus", -fit_range, fit_range)
+f_out_x.SetLineColor(ROOT.kRed)
+h1_fuori_x.Fit(f_out_x, "RQ")
+h1_fuori_x.Draw("HIST")
+f_out_x.Draw("SAME")
+
+leg_out_x = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_out_x.SetBorderSize(0)
+leg_out_x.AddEntry(f_out_x, f"#sigma = {f_out_x.GetParameter(2):.1f} #murad", "l")
+leg_out_x.Draw("SAME")
+c_slice_out_x.Update()
+
+for obj in [c_2d_y, c_2d_x, c_slice_in, c_slice_out, h1_dentro, h1_fuori, f_in, f_out, leg_in, leg_out,
+            c_slice_in_x, c_slice_out_x, h1_dentro_x, h1_fuori_x, f_in_x, f_out_x, leg_in_x, leg_out_x]:
+    ROOT.SetOwnership(obj, False)
 
 
-f_gaus_in = ROOT.TF1("f_gaus_in", "gaus", -8, 9)
-h_d0_y_ch.Fit(f_gaus_in, "RQ0")
-y_c_in, y_c_in_err = f_gaus_in.GetParameter(1), f_gaus_in.GetParError(1)
-f_gaus_out = ROOT.TF1("f_gaus_out", "gaus", -8, 9)
-h_d0_Out_y_ch.Fit(f_gaus_out, "RQ0")
-y_c_out, y_c_out_err = f_gaus_out.GetParameter(1), f_gaus_out.GetParError(1)
-
-w_in, w_out = 1.0/y_c_in_err**2, 1.0/y_c_out_err**2
-y_c = (y_c_in*w_in + y_c_out*w_out) / (w_in + w_out)
-y_c_err = (1.0/(w_in + w_out))**0.5
-
-print(f"mean(in) = {y_c_in:.3f} +/- {y_c_in_err:.3f}")
-print(f"mean(out) = {y_c_out:.3f} +/- {y_c_out_err:.3f}")
-
-if file in [0]:
-    print(f"mean = {y_c:.3f} +/- {y_c_err:.3f}")
-    y_min, y_max = y_c - width / 2.0, y_c + width / 2.0
-
-if file in [8430, 8431, 8650, 8655, 8656]:
-    # sliding window method along y
-    h_y_in = h_d0_y_ch.GetValue()
-    max_particles = -1
-    best_y_min_in = 0
-    for i in range(1, h_y_in.GetNbinsX() + 1):
-
-        current_y_start = h_y_in.GetBinLowEdge(i)
-        current_y_end = current_y_start + width
-        
-        bin_start = i
-        bin_end = h_y_in.FindBin(current_y_end)
-        
-        particles_in_window = h_y_in.Integral(bin_start, bin_end)
-        
-        if particles_in_window > max_particles:
-            max_particles = particles_in_window
-            best_y_min_in = current_y_start
-
-    y_min_in = best_y_min_in
-    y_max_in = best_y_min_in + width
-    print(f"upstream window: [{y_min_in:.3f}:{y_max_in:.3f}]")
-
-    h_y_out = h_d0_Out_y_ch.GetValue()
-    max_particles = -1
-    best_y_min_out = 0
-    for i in range(1, h_y_out.GetNbinsX() + 1):
-
-        current_y_start = h_y_out.GetBinLowEdge(i)
-        current_y_end = current_y_start + width
-        
-        bin_start = i
-        bin_end = h_y_out.FindBin(current_y_end)
-        
-        particles_in_window = h_y_out.Integral(bin_start, bin_end)
-        
-        if particles_in_window > max_particles:
-            max_particles = particles_in_window
-            best_y_min_out = current_y_start
-
-    y_min_out = best_y_min_out
-    y_max_out = best_y_min_out + width
-    print(f"downstream window: [{y_min_out:.3f}:{y_max_out:.3f}]")
-
-    y_min, y_max = (y_min_in + y_min_out)/2.0, (y_max_in + y_max_out)/2.0
-
-# sliding window method along x since the distribution is not symmetric neither gaussian
-h_xy = h_d0_Out_xy_ch.GetValue() if hasattr(h_d0_Out_xy_ch, 'GetValue') else h_d0_Out_xy_ch
-y_bin_min = h_xy.GetYaxis().FindBin(y_min)
-y_bin_max = h_xy.GetYaxis().FindBin(y_max)
-h_x_restricted = h_xy.ProjectionX("h_x_restricted", y_bin_min, y_bin_max)
-
-max_particles = -1
-best_x_min = 0
-for i in range(1, h_x_restricted.GetNbinsX() + 1):
-
-    current_x_start = h_x_restricted.GetBinLowEdge(i)
-    current_x_end = current_x_start + height
-    
-    bin_start = i
-    bin_end = h_x_restricted.FindBin(current_x_end)
-    
-    particles_in_window = h_x_restricted.Integral(bin_start, bin_end)
-    
-    if particles_in_window > max_particles:
-        max_particles = particles_in_window
-        best_x_min = current_x_start
-
-best_x_max = best_x_min + height
-print(f"\tTaglio ottimale in x trovato: [{best_x_min:.3f} mm, {best_x_max:.3f} mm]")
-
-x_min, x_max = best_x_min - delta_x, best_x_max - delta_x
-print(f"\tTaglio finale in x (dopo shift di {delta_x:.3f} mm): x = [{x_min:.4f} mm, {x_max:.4f} mm], y = [{y_min:.4f} mm, {y_max:.4f} mm]")
-
-c0.cd(3); h_d0_xy_ch.Draw("COLZ")
-box3 = ROOT.TBox(x_min, y_min, x_max, y_max); box3.SetLineColor(ROOT.kRed); box3.SetLineWidth(2); box3.SetFillStyle(0); box3.Draw("SAME")
-c0.cd(4); h_d0_Out_xy_ch.Draw("COLZ")
-box4 = ROOT.TBox(x_min+delta_x, y_min, x_max+delta_x, y_max); box4.SetLineColor(ROOT.kRed); box4.SetLineWidth(2); box4.SetFillStyle(0); box4.Draw("SAME")
-box5 = ROOT.TBox(x_min, y_min, x_max, y_max); box5.SetLineColor(ROOT.kRed); box5.SetLineWidth(1); box5.SetLineStyle(2); box5.SetFillStyle(0); box5.Draw("SAME")
-c0.Update()
-
-c0b = ROOT.TCanvas("c0b", "d0_x and d0_y of channeled particles", 1200, 900)
-h_d0_xy.Draw("COLZ"); h_d0_xy.SetTitle("Incoming beam of all particles; d0_x [mm]; d0_y [mm]")
-box_selected = ROOT.TBox(x_min, y_min, x_max, y_max); box_selected.SetLineColor(ROOT.kRed); box_selected.SetLineWidth(2); box_selected.SetFillStyle(0); box_selected.Draw("SAME")
-c0b.Update()
-
-c1 = ROOT.TCanvas("c1", "d0_x and d0_y of channeled particles", 1000, 900)
-pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 0.65)
-pad_center.Draw()
-pad_top = ROOT.TPad("pad_top", "pad_top", 0.0, 0.60, 0.65, 1.0)
-pad_top.Draw()
-pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 0.65)
-pad_right.Draw()
-h_d0_Out_xy_ch.SetTitle(""); pad_center.cd(); h_d0_Out_xy_ch.Draw("COL"); box4.Draw("SAME")
-h_d0_Out_x_ch.SetTitle(""); h_d0_Out_x_ch.GetXaxis().SetTitle(""); pad_top.cd(); h_d0_Out_x_ch.SetFillColor(ROOT.kAzure-3); h_d0_Out_x_ch.Draw("BAR X+")
-l1 = ROOT.TLine(x_min+delta_x, 0, x_min+delta_x, h_d0_Out_x_ch.GetMaximum()); l1.SetLineColor(ROOT.kRed); l1.SetLineStyle(2); l1.SetLineWidth(2); l1.Draw("SAME")
-l2 = ROOT.TLine(x_max+delta_x, 0, x_max+delta_x, h_d0_Out_x_ch.GetMaximum()); l2.SetLineColor(ROOT.kRed); l2.SetLineStyle(2); l2.SetLineWidth(2); l2.Draw("SAME")
-h_d0_Out_y_ch.SetTitle(""); h_d0_Out_y_ch.GetXaxis().SetTitle(""); pad_right.cd(); h_d0_Out_y_ch.SetFillColor(ROOT.kAzure-3); h_d0_Out_y_ch.Draw("HBAR Y+")
-l3 = ROOT.TLine(0, y_min, h_d0_Out_y_ch.GetMaximum(), y_min); l3.SetLineColor(ROOT.kRed); l3.SetLineStyle(2); l3.SetLineWidth(2); l3.Draw("SAME")
-l4 = ROOT.TLine(0, y_max, h_d0_Out_y_ch.GetMaximum(), y_max); l4.SetLineColor(ROOT.kRed); l4.SetLineStyle(2); l4.SetLineWidth(2); l4.Draw("SAME")
-g_fit_out = ROOT.TGraph(); step = (y_max - y_min) / 1700
-for i in range(1700):
-    y_val = y_min + i * step
-    x_val = f_gaus_out.Eval(y_val) 
-    g_fit_out.SetPoint(i, x_val, y_val) 
-g_fit_out.SetLineColor(ROOT.kBlue+2); g_fit_out.SetLineWidth(2); g_fit_out.Draw("L SAME")
-c1.Update()
-
-c2 = ROOT.TCanvas("c2", "d0_x and d0_y of channeled particles", 1000, 900)
-pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 0.65)
-pad_center.Draw()
-pad_top = ROOT.TPad("pad_top", "pad_top", 0.0, 0.60, 0.65, 1.0)
-pad_top.Draw()
-pad_right = ROOT.TPad("pad_right", "pad_right", 0.60, 0.0, 1.0, 0.65)
-pad_right.Draw()
-h_d0_xy_ch.SetTitle(""); pad_center.cd(); h_d0_xy_ch.Draw("COL"); box3.Draw("SAME")
-h_d0_x_ch.SetTitle(""); h_d0_x_ch.GetXaxis().SetTitle(""); pad_top.cd(); h_d0_x_ch.SetFillColor(ROOT.kAzure-3); h_d0_x_ch.Draw("BAR X+"); 
-l5 = ROOT.TLine(x_min, 0, x_min, h_d0_x_ch.GetMaximum()); l5.SetLineColor(ROOT.kRed); l5.SetLineStyle(2); l5.SetLineWidth(2); l5.Draw("SAME")
-l6 = ROOT.TLine(x_max, 0, x_max, h_d0_x_ch.GetMaximum()); l6.SetLineColor(ROOT.kRed); l6.SetLineStyle(2); l6.SetLineWidth(2); l6.Draw("SAME")
-h_d0_y_ch.SetTitle(""); h_d0_y_ch.GetXaxis().SetTitle(""); pad_right.cd(); h_d0_y_ch.SetFillColor(ROOT.kAzure-3); h_d0_y_ch.Draw("HBAR Y+");
-g_fit_in = ROOT.TGraph(); step = (y_max - y_min) / 1700
-for i in range(1700):
-    y_val = y_min + i * step
-    x_val = f_gaus_in.Eval(y_val) 
-    g_fit_in.SetPoint(i, x_val, y_val) 
-g_fit_in.SetLineColor(ROOT.kBlue+2); g_fit_in.SetLineWidth(2); g_fit_in.Draw("L SAME")
-l3.Draw("SAME"); l4.Draw("SAME")
-c2.Update()
-
-# now that we have the crystal area/position, we can apply the spatial cut to the entire dataframe
-spatial_cut = f"Tracks.d0_x > {x_min} && Tracks.d0_x < {x_max} && Tracks.d0_y > {y_min} && Tracks.d0_y < {y_max}"
-df_phys = df_phys.Filter(spatial_cut, "Spatial Cut (Crystal Area)")
+ 
