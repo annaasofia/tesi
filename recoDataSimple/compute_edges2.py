@@ -31,19 +31,19 @@ print(f"Analyzing {filename} ...")
 
 # FILTERING the data: single tracks and conversion from rad to urad
 df_phys = df.Filter("SingleTrack == 1")
-df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")
+df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6").Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")
 print("="*50)
 
-def book_scan_histogram(df_in, scan_var, scan_min, scan_max, n_bins, slice_var=None, slice_min=None, slice_max=None, n_dtheta_bins=300):
+def book_scan_histogram(df_in, scan_var, delta_var, scan_min, scan_max, n_bins, slice_var=None, slice_min=None, slice_max=None, n_dtheta_bins=300):
 
     df_slice = df_in
     if slice_var is not None:
         df_slice = df_slice.Filter(f"{slice_var} > {slice_min} && {slice_var} < {slice_max}")
  
-    h2 = df_slice.Histo2D((f"h2_scat_{scan_var}", "", n_bins, scan_min, scan_max, n_dtheta_bins, -fit_range, fit_range), scan_var, "Deltatheta_x")
+    h2 = df_slice.Histo2D((f"h2_scat_{scan_var}", "", n_bins, scan_min, scan_max, n_dtheta_bins, -fit_range, fit_range), scan_var, delta_var)
     return h2
 
-def extract_widths_from_h2(h2_lazy, min_entries=minimum_entries):
+def extract_widths_from_h2(h2_lazy, range_fit_gaus=fit_range, min_entries=minimum_entries):
     h2v = h2_lazy.GetValue()
     centers, sigmas, sigma_errs = [], [], []
  
@@ -54,7 +54,7 @@ def extract_widths_from_h2(h2_lazy, min_entries=minimum_entries):
         if h1.GetEntries() < min_entries:
             continue
  
-        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -fit_range, fit_range)
+        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -range_fit_gaus, range_fit_gaus)
         f.SetParameters(h1.GetMaximum(), h1.GetMean(), max(h1.GetRMS(), 5.0))
         h1.Fit(f, "RQ0")
  
@@ -103,15 +103,15 @@ def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, ba
 
  
 # y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run if you have one)
-h2 = book_scan_histogram(df_phys, "Tracks.d0Out_y", scan_min=-10, scan_max=10, n_bins=200) # 0.01 mm precision
-y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2)
+h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-10, scan_max=10, n_bins=200) # 0.01 mm precision
+y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2_y)
  
 y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
  
 print(f"Y edges (scattering method): [{y_lo:.4f} +/- {y_lo_err:.4f}, {y_hi:.4f} +/- {y_hi_err:.4f}] mm")
  
 c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
-gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{x}) [#murad]")
+gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")
 gr_y.SetMarkerStyle(20); gr_y.SetMarkerSize(0.6)
 gr_y.Draw("AP")
 f_y.SetLineColor(ROOT.kRed)
@@ -119,7 +119,7 @@ f_y.Draw("SAME")
 c_y.Update()
  
 # x edges (scan x, restricted to the just-found y window)
-h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_lo, slice_max=y_hi)
+h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_lo, slice_max=y_hi)
 x_centers, x_sigmas, x_sigma_errs = extract_widths_from_h2(h2_x)
  
 x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
@@ -144,22 +144,22 @@ print(f"\tin-crystal jump = {f_x.GetParameter(1):.2f} urad  (expect ~ theta_0 ~ 
 
 # Plot della mappa 2D Posizione Y vs Deflessione (h2_scat_y)
 c_2d_y = ROOT.TCanvas("c_2d_y", "Position Y vs Deflection", 900, 600)
-h2_y_val = h2.GetValue()
-h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{x}; d0_y [mm]; #Delta#theta_{x} [#murad]")
-h2_y_val.Draw("COLZ")
+h2_y_val = h2_y.GetValue()
+h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{y}; d0_y [mm]; #Delta#theta_{x} [#murad]")
+h2_y_val.Draw("colz")
 c_2d_y.Update()
 
 # Plot della mappa 2D Posizione X vs Deflessione (h2_scat_x)
 c_2d_x = ROOT.TCanvas("c_2d_x", "Position X vs Deflection", 900, 600)
 h2_x_val = h2_x.GetValue()
 h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; d0_x [mm]; #Delta#theta_{x} [#murad]")
-h2_x_val.Draw("COLZ")
+h2_x_val.Draw("colz")
 c_2d_x.Update()
 
 # Estrazione e plot di DUE singole fettine (Una DENTRO e una FUORI dal cristallo)
 # Scegliamo due bin a caso basandoci sui centri Y trovati
 bin_dentro = h2_y_val.GetXaxis().FindBin((y_lo + y_hi) / 2.0) # Esattamente a metà cristallo
-bin_fuori = h2_y_val.GetXaxis().FindBin(y_lo - 2.0)           # 2 mm fuori dal bordo inferiore (zona Titanio)
+bin_fuori = h2_y_val.GetXaxis().FindBin(y_lo - 2.0)           # 2 mm fuori dal bordo inferiore
 
 # Estraiamo gli istogrammi 1D
 h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro)

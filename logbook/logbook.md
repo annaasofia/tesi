@@ -13,8 +13,11 @@
     - [Mapping the torsion](#mapping-the-torsion)
     - [Studying the experimental setup](#studying-the-experimental-setup)
 5. [WEEK 5 (JUL 27)](#week-5)
-    - [To do](#to-do)
-    - [Multiple Coulomb Scattering](#msc)
+    - [Miscellaneous](#to-do)
+    - [Multiple Coulomb Scattering](#multiple-coulomb-scattering)
+    - [Measuring multiple coulomb scattering](#measuring-multiple-coulomb-scattering)
+    - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
+    - [Computing efficiency errors](#computing-efficiency-errors)
 6. [WEEK 6 (JUL 10)](#week-6)
 7. [WEEK 7 (JUL 17)](#week-7)
 
@@ -95,6 +98,8 @@ $\theta_L = (1-\frac{\rho_c}{\rho})\sqrt{\frac{2U_0}{E}}$ where: $\rho_c=\frac{E
 
 $\to$ [slides week 2](./slides/week2.pdf)
 
+([UP](#traineeship-al-cern))
+
 ## WEEK 3
 
 **TO DO:**
@@ -119,6 +124,9 @@ Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2
 (i was expecting (left image) but i obtain (right image))  
 ![this linear relation](image-1.png) ![alt text](image-4.png)
 
+$\to$ [slides week 3](./slides/week3.pdf)
+
+([UP](#traineeship-al-cern))
 
 ## WEEK 4
 
@@ -195,6 +203,9 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - for the long crystals only the first four planes were used: two for the incoming track and two for the outgoing tracks;
 - the crystals are 74 mm long.  
 
+$\to$ [slides week 4](./slides/week4.pdf)
+
+([UP](#traineeship-al-cern))
 
 ## WEEK 5
 
@@ -207,7 +218,7 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
     - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
     - correct margins in `compute_channeling.py`
 
-- ✅ do not consider the edges (cannot measure a local torsion angle where there's no beam so only considering the beam-illuminated window):
+- ✅ do not consider the edges in the analysis (cannot measure a local torsion angle where there's no beam so only considering the beam-illuminated window):
     - need a different consideration for edges for `filter2_spatial_cut` and for the fit: crop to where the data lives
     - torsion-map grid range: i can consider along y the area $\mu\pm 3 \sigma$ from the beam or the quantiles (does not assume gaussian tails), should be a separate, narrower range that tracks where the beam actually has statistics
     - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
@@ -223,26 +234,7 @@ From [Luigi email:](https://outlook.cloud.microsoft/mail/inbox/id/AAQkADk0YWZmMD
 - ✅ look into the spikes: select bins with spikes vs the ones that have not: 
     - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
 
-- ✅ my current method to find the crystal edges is isolating the channeled particles, then use their impact position distribution to find where the population is the densest and call that the crystal footprint, but this only uses the channeled fraction, so ~20% of all the particles that actually crossed the crystal. what Luigi was suggesting instead is instead of relying on channeling at all, i can use the fact that every particle that physically traverses the crystal, picks up extra multiple coulomb scatterings that a particle passing beside the crystal does not:  
-    $\to$ performed in [compute_edges2.py](../recoDataSimple/compute_edges2.py)
-    - with the whole dataset
-    - in small bins $(x,y)$ across the beam spot, compute the width (rms or gaussian sigma) of the outgoing angular distribution $\Delta\theta_x$ (or $\theta_{out}$) rather than its channeled peak position
-    - map the local width as a function of impact position: outside the crystal, the width sits at the baseline, inside the crystal it should jump to $\theta_0\sim66.5\,\mu\text{rad}$ contribution added in quadrature
-    - edges are were there should be a sharp, well-defined transition - that can be fitted through a step function
-    - $\to$ this method provides indipendence from channeling efficiency or torsion
-
-- torsion error (by the fit):
-    - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
-    - now `h2_torsion_map` carries real per-bin errors (from the local Gaussian fit above) instead of ROOT's default sqrt(content) fallback. This makes the fit below a proper inverse-variance-weighted chi2 fit: bins near the edges of the acceptance get a large local_theta_0_err and are automatically down-weighted, instead of contributing to the surface fit with the same weight as clean core bins.
-    - `eff_err_stat` is the binomial (statistical) error on eff_ch, as before. We add a systematic term from the torsion-map baseline uncertainty theta_0_baseline_err: re-run the Lindhard cut + efficiency with theta_0 shifted by +/-1 sigma and take half the resulting spread in eff_ch. This is deliberately a re-evaluation rather than an analytic slope propagation, because the sensitivity of the acceptance is NOT uniform: it is large where the local efficiency amplitude is still near its ~25% core value, and vanishes towards the edges where the local efficiency amplitude drops to ~0%. Re-running the actual cut captures that shape automatically instead of assuming one fixed slope.
-
-- efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%):  
-this would be wrong, because it would be before torsion correction and lindhard critical angle cut, and also the bins have different statistics, it is correct instead to recompute the efficiency over the full dataset  
-    - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
-    - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
-
 - confidence level and similar stuffs
-- consider also angle errors (which i have)
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
 - ✅ understand MCS multiple coulomb scattering
 - look into MCS: select one outcoming angle and and check the arrival one([check into pdg about mcs](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3))
@@ -292,7 +284,27 @@ $\theta_{plane}=z_2\,\theta_0$
 In this way the computer instantaneously gets an exit angle and a final position, which are correlated (no need of simulating all the small scatterings happening inside).  
 Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represents the displacement that would have occurred had the deflection $θ_{plane}$ all occurred at the single point $x/2$.  
 
-$\to$ **mcs theta/gaus width for the 74 mm long crystals:** $\theta_0=66.54 \,\mu\text{rad}$
+$\to$ **multiple coulomb scattering RMS of protons ($z=1$) for the $L=74\text{ mm}$ long silicon crystals ($X_0\sim9.37\text{ cm}$):**  
+$\theta_0=66.5 \,\mu\text{rad}$
+
+### Measuring multiple coulomb scattering
+### Find the crystal edges: scattering method
+
+$\to$ performed in [compute_edges2.py](../recoDataSimple/compute_edges2.py) (this method provides indipendence from channeling efficiency or torsion)
+
+My current method ([compute_edges1.py](../recoDataSimple/compute_edges1.py)) to find the crystal edges is isolating the channeled particles, then use their impact position distribution to find where the population is the densest and call that the crystal footprint, but this only uses the channeled fraction, so ~20% of all the particles that actually crossed the crystal. what Luigi was suggesting instead is instead of relying on channeling at all, i can use the fact that every particle that physically traverses the crystal, picks up extra multiple coulomb scatterings that a particle passing beside the crystal does not.
+
+- in small bins $(x,y)$ across the beam spot, compute the width (gaussian sigma or rms) of the outgoing angular distribution $\Delta\theta_x$ (or $\theta_{out}$) rather than its channeled peak position
+- i am considering $\Delta\theta_x$ only on a range $\pm 150\,\mu\text{rad}$, in order to exclude channeling particles, while mcs is a purely statistic process and can be described by a gaussian curve around zero.
+- map the local width as a function of impact position: outside the crystal, the width sits at the baseline, inside the crystal it should jump to $\theta_0\sim66.5\,\mu\text{rad}$ so the edges are were there should be a sharp, well-defined transition - that can be fitted through a step function  
+
+1. in reality $\sigma_{measured}$ has also detector resolution contribution (usually measured through a run without target) (added in quadrature): $\sigma_{meas}=\sqrt{\sigma_{mcs}^2+\sigma_{track,in}^2+\sigma_{track,out}^2}$
+2. why outside the crystal we don't get zero but $\sim12\,\mu\text{rad}$? even without the crystal, particles would still not travel with a perfect linear track, the beam has an intrinsic angular divergence (should be of $\sim12-15\,\mu\text{rad}$)
+
+RESULTS:  
+- i obtain a width in y of $\sim 8.4\text{ mm}$ instead of $12.8\text{ mm}$: re-try considering only one slide, but anyway could be because what we're getting it the *primary clean beam* (don't worry that for the torsion analysis we are not considering the edges anyway)
+- along x i obtain exactly $\sim2\text{ mm}$
+- along x outside the crystal i have $\sigma\sim12\,\mu\text{rad}$ which corresponds to the detector resolution, and inside the crystal i have 
 
 
 
@@ -300,11 +312,28 @@ $\to$ **mcs theta/gaus width for the 74 mm long crystals:** $\theta_0=66.54 \,\m
 
 
 
+### Computing efficiency errors
 
 
+- torsion error (by the fit):
+    - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
+    - now `h2_torsion_map` carries real per-bin errors (from the local Gaussian fit above) instead of ROOT's default sqrt(content) fallback. This makes the fit below a proper inverse-variance-weighted chi2 fit: bins near the edges of the acceptance get a large local_theta_0_err and are automatically down-weighted, instead of contributing to the surface fit with the same weight as clean core bins.
+    - `eff_err_stat` is the binomial (statistical) error on eff_ch, as before. We add a systematic term from the torsion-map baseline uncertainty theta_0_baseline_err: re-run the Lindhard cut + efficiency with theta_0 shifted by +/-1 sigma and take half the resulting spread in eff_ch. This is deliberately a re-evaluation rather than an analytic slope propagation, because the sensitivity of the acceptance is NOT uniform: it is large where the local efficiency amplitude is still near its ~25% core value, and vanishes towards the edges where the local efficiency amplitude drops to ~0%. Re-running the actual cut captures that shape automatically instead of assuming one fixed slope.
+
+- efficiency error for single bins, and then combined (std dev which takes into account the spread between 15 to 25%):  
+this would be wrong, because it would be before torsion correction and lindhard critical angle cut, and also the bins have different statistics, it is correct instead to recompute the efficiency over the full dataset  
+    - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
+    - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
+
+- consider also angle errors:
+    - $\theta_{in,x}$ and $\theta_{in,y}$ are $\sim8.89\,\mu\text{rad}$ for 8430/8431 and $\sim9.67\,\mu\text{rad}$ for 8650/8655/8656
+    - $\theta_{out,x}$ and $\theta_{out,y}$ are $\sim0\,\mu\text{rad}$
+    - considering as it was an error and also downstream angle have that error? so $\Delta\theta$ gets an error of $\sim12.57\,\mu\text{rad}$ or $\sim13.67\,\mu\text{rad}$
 
 
+$\to$ [slides week 5](./slides/week5.pdf)
 
+([UP](#traineeship-al-cern))
 
 
 ## WEEK 6
