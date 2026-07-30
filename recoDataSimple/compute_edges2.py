@@ -31,7 +31,11 @@ print(f"Analyzing {filename} ...")
 
 # FILTERING the data: single tracks and conversion from rad to urad
 df_phys = df.Filter("SingleTrack == 1")
-df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6").Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")
+df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6")\
+    .Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")\
+    .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")\
+    .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6")\
+    .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
 print("="*50)
 
 def book_scan_histogram(df_in, scan_var, delta_var, scan_min, scan_max, n_bins, slice_var=None, slice_min=None, slice_max=None, n_dtheta_bins=300):
@@ -87,14 +91,14 @@ def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, ba
     f.SetParameters(baseline_guess, amplitude_guess, edge_lo_guess, edge_hi_guess, transition_guess)
     f.SetParLimits(4, 0.001, (max(centers) - min(centers)) / 4.0) 
  
-    gr.Fit(f, "RQ0") # Aggiunto "0" per non sovrascrivere la Canvas di default
+    gr.Fit(f, "RQ0")
  
     edge_lo = f.GetParameter(2)
     edge_hi = f.GetParameter(3)
     edge_lo_err = f.GetParError(2)
     edge_hi_err = f.GetParError(3)
  
-    # 2. Sicurezza: Se il fit si è "girato", rimettiamo i bordi nell'ordine giusto (minore, maggiore)
+    # Se il fit si è "girato", rimettiamo i bordi nell'ordine giusto (minore, maggiore)
     if edge_lo > edge_hi:
         edge_lo, edge_hi = edge_hi, edge_lo
         edge_lo_err, edge_hi_err = edge_hi_err, edge_lo_err
@@ -107,8 +111,6 @@ h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-
 y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2_y)
  
 y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
- 
-print(f"Y edges (scattering method): [{y_lo:.4f} +/- {y_lo_err:.4f}, {y_hi:.4f} +/- {y_hi_err:.4f}] mm")
  
 c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
 gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")
@@ -124,7 +126,8 @@ x_centers, x_sigmas, x_sigma_errs = extract_widths_from_h2(h2_x)
  
 x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
  
-print(f"X edges (scattering method): [{x_lo:.4f} +/- {x_lo_err:.4f}, {x_hi:.4f} +/- {x_hi_err:.4f}] mm")
+print(f"X edges (scattering method): [{x_lo:.4f} ± {x_lo_err:.4f}, {x_hi:.4f} ± {x_hi_err:.4f}] mm")
+print(f"Y edges (scattering method): [{y_lo:.4f} ± {y_lo_err:.4f}, {y_hi:.4f} ± {y_hi_err:.4f}] mm")
  
 c_x = ROOT.TCanvas("c_x", "Scattering width vs x", 900, 600)
 gr_x.SetTitle("Local scattering width vs x; d0_x [mm]; #sigma(#Delta#theta_{x}) [#murad]")
@@ -137,10 +140,12 @@ c_x.Update()
  
 print("=" * 50)
 print(f"Crystal footprint from scattering method:")
-print(f"\tx = [{x_lo:.4f}, {x_hi:.4f}] mm  (width = {x_hi - x_lo:.4f} mm)")
-print(f"\ty = [{y_lo:.4f}, {y_hi:.4f}] mm  (width = {y_hi - y_lo:.4f} mm)")
-print(f"\tbaseline sigma  = {f_x.GetParameter(0):.2f} urad")
-print(f"\tin-crystal jump = {f_x.GetParameter(1):.2f} urad  (expect ~ theta_0 ~ 66.5 urad added in quadrature)")
+print(f"\tx = [{x_lo:.4f}({x_lo_err*1e4:.0f}), {x_hi:.4f}({x_hi_err*1e4:.0f})] mm  (width = {x_hi - x_lo:.4f} ± {pow(x_lo_err*x_lo_err + x_hi_err*x_hi_err,0.5):.4f} mm)")
+print(f"\ty = [{y_lo:.4f}({y_lo_err*1e4:.0f}), {y_hi:.4f}({y_hi_err*1e4:.0f})] mm  (width = {y_hi - y_lo:.4f} ± {pow(y_lo_err*y_lo_err + y_hi_err*y_hi_err,0.5):.4f} mm)")
+print(f"\tbaseline sigma x  = {f_x.GetParameter(0):.2f} ± {f_x.GetParError(0):.2f} urad")
+print(f"\tin-crystal jump x = {f_x.GetParameter(1):.2f} ± {f_x.GetParError(1):.2f} urad")
+print(f"\tbaseline sigma y  = {f_y.GetParameter(0):.2f} ± {f_y.GetParError(0):.2f} urad")
+print(f"\tin-crystal jump y = {f_y.GetParameter(1):.2f} ± {f_y.GetParError(1):.2f} urad")
 
 # Plot della mappa 2D Posizione Y vs Deflessione (h2_scat_y)
 c_2d_y = ROOT.TCanvas("c_2d_y", "Position Y vs Deflection", 900, 600)

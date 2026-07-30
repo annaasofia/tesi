@@ -1,9 +1,27 @@
 Title:
-Analysis and Characterization of CERN's New Long Bent Silicon Crystals for Channelling Applications at the LHC
+Characterization of Long Bent Silicon Crystals for Channelling Applications at the LHC
 
 Abstract:
 
-The phenomenon of planar channelling in bent silicon crystals enables high effective bending fields for positively charged hadrons, offering an opportunity for fixed-target experiments at the Large Hadron Collider (LHC). This technology is currently being studied for the measurement of the electromagnetic dipole moments of short-lived charmed baryons. Such measurements require very large deflections which cannot be obtained within manageable distances with current superconducting magnets. While previous studies have validated the performance of crystals bent via established techniques, this thesis focuses on the characterization of a new generation of long bent silicon crystals recently developed internally at CERN.
+The phenomenon of planar channelling in bent silicon crystals enables large-angle deflections for positively charged hadrons, offering an opportunity for fixed-target experiments at the Large Hadron Collider (LHC).
+This technology is currently being studied for the measurement of the electromagnetic dipole moments of short-lived charmed baryons that decay a few centimeters downstream of the production point.
+Such measurements require deflections of several milli radians which cannot be obtained with conventional magnets over the required distances.
+This thesis focuses on the experimental characterization with hadron-beam data of various bent silicon crystals developed for this purpose as part of the TWOCRYST project. 
 
-A detailed study has been performed combining the analysis of experimental data and Monte Carlo simulations to evaluate the feasibility of these new crystals for future experimental setup, e.g. the TWOCRYST project. The evaluation of key channeling parameters such as channeling efficiency and the deflection angle has been performed by analyzing real beam test data. Furthermore, dedicated simulations were developed and executed using Geant4. The comparison between the experimental data and the Geant4 simulations provides a robust assessment of the performance of these long crystals developed at CERN, outlining the potential for their implementation in high-energy accelerator applications.
 
+A detailed study has been performed combining the analysis of experimental data and Monte Carlo simulations to assess the performance of these crystals for future experimental setups.
+The evaluation of key channeling parameters such as channeling efficiency and the deflection angle has been performed both by analyzing beam test data and through dedicated simulations, developed and executed using various available simulation codes.
+The comparison between the experimental results and simulations are dicussed. 
+OR
+"The comparison between measurements and simulations provides a robust assessment of the performance of these long crystals developed at CERN, outlining the potential for their implementation in high-energy accelerator applications."
+
+
+
+--> the problem is that the particles are too short-lived to be measured using magnets, but instead of discussing these details (I would just simplify the sentence and simply state that using magnets we cannot do it, that we need the crystals with their larger deflection)
+--> these long crystals were also bent the same way as the operational crystal collimators, i.e. anticlastically. What is new about them is the length and the larger deflection.
+
+
+
+- also other available codes instead of only Geant4 as indicated (at least Xcoll)
+- just focus on comparisons vs measurements or perform also simulations are higher energies
+- make the tools compatible also with other data formats and also reproduce the analysis for previous crystals
