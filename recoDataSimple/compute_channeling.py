@@ -456,6 +456,13 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
 def channeling_efficiency(df, parameters, best_theta_0):
     N_tot = df.Count().GetValue()
 
+    gaus_fit = None
+    fit_parameters = [0.0, 0.0, 0.0, 0.0]
+
+    if N_tot == 0:
+        print("WARNING: channeling_efficiency called on an empty dataframe, returning zeros.")
+        return 0.0, 0.0, fit_parameters, None
+
     h_defl_cut = df.Histo1D(("h_defl_cut", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
     h_cut_value = h_defl_cut.GetValue().Clone("h_cut_value_cloned")
 
@@ -528,7 +535,8 @@ def channeling_efficiency(df, parameters, best_theta_0):
 
     ROOT.SetOwnership(c6, False)
     ROOT.SetOwnership(h_cut_value, False)
-    ROOT.SetOwnership(gaus_fit, False)
+    if gaus_fit is not None:
+        ROOT.SetOwnership(gaus_fit, False)
     ROOT.SetOwnership(legend, False)
 
     return eff_ch, eff_err, fit_parameters, h_cut_value
@@ -787,8 +795,9 @@ def main():
     mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
     print(f"Mean theta resolution = {mean_theta_res:.3f} urad")
 
-    df_res_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=+mean_theta_res)
-    df_res_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=-mean_theta_res/2)
+    shift = min(mean_theta_res, parameters['theta_L']/4.0)
+    df_res_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=+shift)
+    df_res_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=-shift)
     eff_res_up, _, _, _ = channeling_efficiency(df_res_up, parameters, best_theta_0=fit_params[0])
     eff_res_down, _, _, _ = channeling_efficiency(df_res_down, parameters, best_theta_0=fit_params[0])
 
@@ -799,7 +808,7 @@ def main():
     eff_up, _, _, _ = channeling_efficiency(df_up, parameters, best_theta_0=fit_params[0] + fit_errors[0])
     eff_down, _, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=fit_params[0] - fit_errors[0])
  
-    eff_err_syst = abs(eff_up - eff_down) / 2.0
+    eff_err_syst_eff = abs(eff_up - eff_down) / 2.0
 
     # systematic d0 resolution
     mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
@@ -817,7 +826,8 @@ def main():
 
     eff_err_syst_box = abs(eff_box_up - eff_box_down) / 2.0
 
-    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
+    eff_err_syst = math.sqrt(eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
+    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
 
     # print("="*50)
     # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
@@ -827,8 +837,11 @@ def main():
 
     print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
     print('='*50)
-    print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.3f} [syst, torsion map]) %")
+    print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.3f} [syst]) %")
     print(f"Total error = +/- {eff_err_total:.1f} %")
+    print(f"\tsyst (theta0 shift)  = {eff_err_syst_eff:.3f} %")
+    print(f"\tsyst (theta resol.)  = {eff_err_syst_res:.3f} %")
+    print(f"\tsyst (spatial box)   = {eff_err_syst_box:.3f} %")
     print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")

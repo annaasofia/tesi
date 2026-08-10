@@ -366,10 +366,11 @@ this would be wrong, because it would be before torsion correction and lindhard 
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
 
 
-- SYSTEMATICS (added in quadrature):
+- SYSTEMATICS (added in quadrature):  
+the systematic errors are propagated on the final result, not on the intermediate fit parameters
     - shifting $\theta_0$ by $\pm$ their fit error
-    - shifting the box margins by d0 error
-    - shifting lindhard angle: This tells you something real: your angular resolution (~8.9 µrad) is larger than θ_L/2 (~6.5 µrad), so treating "shift the cut edge by one full resolution sigma" as your systematic is too aggressive — it's not a small perturbation, it's larger than the window itself. Subtracting a smearing width from a hard cut boundary like this isn't really the right model anyway; smearing doesn't move the boundary, it lets nearby events leak across it. A more defensible (and numerically stable) choice is to shift by a fraction of the resolution — for example, the error on the mean, or a smaller fixed step — rather than the full σ:
+    - shifting lindhard angle: my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ.
+    - shifting the box margins by $d_0$ error up and down: *main source* - due to the fact that i am shifting the window by 10% in x direction and 2.5% in y direction (0.1 mm) $\to$ why efficiency changes so much near the edges of the crystal? is because the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage)? *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges )*
 
 
 $\to$ [slides week 5](./slides/week5.pdf)
