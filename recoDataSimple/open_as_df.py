@@ -3,7 +3,7 @@ import sys
 
 
 try:
-    df = ROOT.RDataFrame("simpleEvent", "recoDataSimple_8656_xtalMerging.root")
+    df = ROOT.RDataFrame("simpleEvent", "recoDataSimple_8430_xtalMerging.root")
     count = df.Count().GetValue()
     print(f"Dataset has {count/10000000}*e7 events.")
     df_clean = df.Filter("SingleTrack == 1")
@@ -32,18 +32,22 @@ df = df.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("thetaOut_x", "Trac
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6")\
     .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
 
-df.Display(["thetaIn_x", "thetaInErr_x", "thetaOut_y", "thetaOutErr_y"], 20).Print()
-df.Display(["Deltatheta_x", "DeltathetaErr_x", "Deltatheta_y", "DeltathetaErr_y"], 20).Print()
+# df.Display(["thetaIn_x", "thetaInErr_x", "thetaOut_y", "thetaOutErr_y"], 20).Print()
+# df.Display(["Deltatheta_x", "DeltathetaErr_x", "Deltatheta_y", "DeltathetaErr_y"], 20).Print()
+df.Display(["Tracks.d0_x", "Tracks.d0Err_x", "Tracks.d0_y", "Tracks.d0Err_y"], 20).Print()
+df.Display(["Tracks.d0Out_x", "Tracks.d0OutErr_x", "Tracks.d0Out_y", "Tracks.d0OutErr_y"], 20).Print()
+
+
 
 # Count how many events have strictly 0.0
-zero_count = df.Filter("Tracks.thetaOutErr_x == 0").Count().GetValue()
-total_count = df.Count().GetValue()
+zero_count = df.Filter("Tracks.thetaOutErr_x == 0").Count()
+total_count = df.Count()
 
 # Get the maximum value of thetaOutErr_x before you multiplied by 1e6
-max_out_err = df.Max("Tracks.thetaOutErr_x").GetValue()
+max_out_err = df.Max("Tracks.thetaOutErr_x")
 
-print(f"The maximum outgoing X error in the dataset is: {max_out_err}")
-print(f"Events with exactly 0 error: {zero_count} out of {total_count}")
+# print(f"The maximum outgoing X error in the dataset is: {max_out_err.GetValue()} rad")
+# print(f"Events with exactly 0 error: {zero_count.GetValue()} out of {total_count.GetValue()}")
 
 
 # istogramma di una variabile

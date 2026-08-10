@@ -468,7 +468,7 @@ def channeling_efficiency(df, parameters, best_theta_0):
     
     if N_tot > 0:
         # fitting only right side of the peak (cleanest one)
-        fit_min = parameters["deflection_peak"] - 30
+        fit_min = parameters["deflection_peak"] - 20
         fit_max = parameters["deflection_peak"] + 100
         # fit_max = parameters["max_value"]
         gaus_fit = ROOT.TF1("gaus_fit", "gaus", fit_min, fit_max)
@@ -718,8 +718,9 @@ def filter2_spatial_cut(df, x_min, x_max, y_min, y_max, x_cut_margin=0, y_cut_ma
     df_filtered = df.Filter(spatial_cut, "Spatial Cut (Crystal Area)")
     return df_filtered
 
-def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
-    Lindhard_cut = f"abs(thetaIn_x - {rdf_surface_expr}) <= {parameters['theta_L'] / 2.0}"
+def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr, halfwidth_shift=0.0):
+    halfwidth = parameters['theta_L'] / 2.0 + halfwidth_shift
+    Lindhard_cut = f"abs(thetaIn_x - {rdf_surface_expr}) <= {halfwidth}"
     df_filtered = df.Filter(Lindhard_cut, f"Torsion-corrected Lindhard cut")
     return df_filtered
 
@@ -728,7 +729,7 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr):
 def main():
 
     # file = input("File number: ")
-    file = 8650
+    file = 8430
     files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -745,6 +746,8 @@ def main():
     # FILTER 1: select single tracks
     df_phys = filter1_initial(df)
     count_1 = df_phys.Count()
+
+    df_singletrack = df_phys
 
     # FILTER 2: spatial cut (d0_x and d0_y within the crystal area)
     x_cut_margin = 0.2
@@ -777,8 +780,19 @@ def main():
     # h2_torsion_map.Write(f"h2_torsion_map_{file}")
     out_file.Close()
 
+    # systematic error due to torsion map
     surface_expr_up = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] + fit_errors[0]}", 1)
     surface_expr_down = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] - fit_errors[0]}", 1)
+
+    mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
+    print(f"Mean theta resolution = {mean_theta_res:.3f} urad")
+
+    df_res_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=+mean_theta_res)
+    df_res_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=-mean_theta_res/2)
+    eff_res_up, _, _, _ = channeling_efficiency(df_res_up, parameters, best_theta_0=fit_params[0])
+    eff_res_down, _, _, _ = channeling_efficiency(df_res_down, parameters, best_theta_0=fit_params[0])
+
+    eff_err_syst_res = abs(eff_res_up - eff_res_down) / 2.0
 
     df_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_up)
     df_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_down)
@@ -786,7 +800,24 @@ def main():
     eff_down, _, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=fit_params[0] - fit_errors[0])
  
     eff_err_syst = abs(eff_up - eff_down) / 2.0
-    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
+
+    # systematic d0 resolution
+    mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
+    mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
+
+    df_box_up = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x,
+                                        y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
+    df_box_down = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x,
+                                        y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
+
+    df_box_up = filter3_Lindhard_cut(df_box_up, parameters, fit_params, rdf_surface_expr)
+    df_box_down = filter3_Lindhard_cut(df_box_down, parameters, fit_params, rdf_surface_expr)
+    eff_box_up, _, _, _ = channeling_efficiency(df_box_up, parameters, best_theta_0=fit_params[0])
+    eff_box_down, _, _, _ = channeling_efficiency(df_box_down, parameters, best_theta_0=fit_params[0])
+
+    eff_err_syst_box = abs(eff_box_up - eff_box_down) / 2.0
+
+    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
 
     # print("="*50)
     # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
@@ -797,7 +828,7 @@ def main():
     print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
     print('='*50)
     print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.3f} [syst, torsion map]) %")
-    # print(f"Total error = +/- {eff_err_total:.1f} %")
+    print(f"Total error = +/- {eff_err_total:.1f} %")
     print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")

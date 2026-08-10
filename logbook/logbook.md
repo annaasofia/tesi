@@ -17,9 +17,11 @@
     - [Multiple Coulomb Scattering](#multiple-coulomb-scattering)
     - [Measuring multiple coulomb scattering](#measuring-multiple-coulomb-scattering)
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
+6. [WEEK 6 (AUG 10)](#week-6)
+    - [Taking into account d and theta errors](#taking-into-account-d-and-theta-errors)
     - [Computing efficiency errors](#computing-efficiency-errors)
-6. [WEEK 6 (JUL 10)](#week-6)
-7. [WEEK 7 (JUL 17)](#week-7)
+7. [WEEK 7 (AUG 17)](#week-7)
+8. [WEEK 8 (AUG 24)](#week-8)
 
 ## WEEK 1  
 
@@ -157,11 +159,11 @@ We can compute precisely the $x$ shift for channeled particles:
 
 | **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
 |-|-|-|-|-|
-|**8430**|[-1.1044 mm | 0.8965 mm]|[-5.0250 mm | 7.7750 mm]|
-|**8431**|[-1.1044 mm | 0.8956 mm]|[-5.1000 mm | 7.7000 mm]|
-|**8650**|[-0.2744 mm | 1.7256 mm]|[-5.7450 mm | 7.0550 mm]|
-|**8655**|[0.5536 mm | 2.5536 mm]|[-6.9150 mm | 5.8850 mm]|
-|**8656**|[0.5546 mm | 2.5546 mm]|[-6.8750 mm | 5.9250 mm]|
+|**8430**|[-1.1044 ± 0.1055 mm | 0.8965 ± 0.0933 mm]|[-5.0250 ± 0.1055 mm | 7.7750 ± 0.0933 mm]|
+|**8431**|[-1.1044 ± 0.1055 mm | 0.8956 ± 0.0933 mm]|[-5.1000 ± 0.1055 mm | 7.7000 ± 0.0933 mm]|
+|**8650**|[-0.2744 ± 0.1155 mm | 1.7256 ± 0.1117 mm]|[-5.7450 ± 0.1156 mm | 7.0550 ± 0.1117 mm]|
+|**8655**|[0.5536 ± 0.1155 mm | 2.5536 ± 0.1117 mm]|[-6.9150 ± 0.1156 mm | 5.8850 ± 0.1117 mm]|
+|**8656**|[0.5546 ± 0.1155 mm | 2.5546 ± 0.1117 mm]|[-6.8750 ± 0.1156 mm | 5.9250 ± 0.1117 mm]|
 
 So also we can correct the Lindhard angle estimation:
 $$\theta_L=\bigg(1-\frac{\rho_c}{\rho}\bigg)\sqrt{\frac{2U_0}{E}}$$
@@ -318,9 +320,40 @@ RESULTS:
 
 
 
+$\to$ [slides week 5](./slides/week5.pdf)
+
+([UP](#traineeship-al-cern))
+
+
+## WEEK 6
+
+### Taking into account d and theta errors
+
+- consider angle errors:
+    - $\theta_{in,x}$ and $\theta_{in,y}$ are $\sim8.89\,\mu\text{rad}$ for 8430/8431 and $\sim9.67\,\mu\text{rad}$ for 8650/8655/8656
+    - $\theta_{out,x}$ and $\theta_{out,y}$ are $\sim0\,\mu\text{rad}$
+    - considering as it was an error and also downstream angle have that error? so $\Delta\theta$ gets an error of $\sim12.57\,\mu\text{rad}$ or $\sim13.67\,\mu\text{rad}$
+    - no need of taking them into account in the edge finding
+
+- consider `d0` errors:
+    - $d_{in,x}$ and $d_{in,y}$ have $\sim0.105473\text{ mm}$ error for 8430/8431 and $\sim0.115547\text{ mm}$ for 8650/8655/8656
+    - $d_{out,x}$ and $d_{out,y}$ have $\sim0.093297\text{ mm}$ error for 8430/8431 and $\sim0.111709\text{ mm}$ for 8650/8655/8656
+
+in [`compute_edges1.py`](../recoDataSimple/compute_edges1.py):
+- adding in quadrature: `d0` errors (tracker resolution on the coordinates) + uncertainty due to binning choice
+- no error from fitting 
+
+in [`compute_edges2.py`](../recoDataSimple/compute_edges2.py):
+- resolution subtraction: since my mcs width is a convolution of physics and tracker resolution (the resolution adds in quadrature to a gaussian width, not linearly):
+    - same order of 
+- the transition parameter (4) is where d0 resolution shows up for edge finding - it's already fit from data but i can do a cross-check (if the fitted transition is noticeably larger than the mean resolution, that's telling that there's real edge roughness beyond pure detector blur):
+    - fitted transition x is $\sim 0.092$ and resolution is $0.105$ so the edge is what we expect from the tracker resolution (good sign)
+- systematic smearing: quantify how much my cuts are affected by finite d0 and theta resolution
+
+in [`compute_channeling.py`](../recoDataSimple/compute_channeling.py):
+- error on lindhard cut is computed doing a cut within $\theta_L/2\pm$ instead of just $\theta_L/2$ in order to compute an additional sys error for theta
 
 ### Computing efficiency errors
-
 
 - torsion error (by the fit):
     - now every square bin has local $\theta_0\pm\sigma$ and local $\epsilon_{ch}\pm\sigma$
@@ -332,19 +365,19 @@ this would be wrong, because it would be before torsion correction and lindhard 
     - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
 
-- consider also angle errors:
-    - $\theta_{in,x}$ and $\theta_{in,y}$ are $\sim8.89\,\mu\text{rad}$ for 8430/8431 and $\sim9.67\,\mu\text{rad}$ for 8650/8655/8656
-    - $\theta_{out,x}$ and $\theta_{out,y}$ are $\sim0\,\mu\text{rad}$
-    - considering as it was an error and also downstream angle have that error? so $\Delta\theta$ gets an error of $\sim12.57\,\mu\text{rad}$ or $\sim13.67\,\mu\text{rad}$
+
+- SYSTEMATICS (added in quadrature):
+    - shifting $\theta_0$ by $\pm$ their fit error
+    - shifting the box margins by d0 error
+    - shifting lindhard angle: This tells you something real: your angular resolution (~8.9 µrad) is larger than θ_L/2 (~6.5 µrad), so treating "shift the cut edge by one full resolution sigma" as your systematic is too aggressive — it's not a small perturbation, it's larger than the window itself. Subtracting a smearing width from a hard cut boundary like this isn't really the right model anyway; smearing doesn't move the boundary, it lets nearby events leak across it. A more defensible (and numerically stable) choice is to shift by a fraction of the resolution — for example, the error on the mean, or a smaller fixed step — rather than the full σ:
 
 
 $\to$ [slides week 5](./slides/week5.pdf)
 
 ([UP](#traineeship-al-cern))
 
-
-## WEEK 6
 ## WEEK 7
+## WEEK 8
 
 
 

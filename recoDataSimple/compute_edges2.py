@@ -106,8 +106,8 @@ def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, ba
     return edge_lo, edge_hi, edge_lo_err, edge_hi_err, f, gr
 
  
-# y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run if you have one)
-h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-10, scan_max=10, n_bins=200) # 0.01 mm precision
+# y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run)
+h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-5, scan_max=8, n_bins=200, slice_var="Tracks.d0_x", slice_min=-1.5, slice_max=1.5) # 0.01 mm precision
 y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2_y)
  
 y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
@@ -128,6 +128,26 @@ x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, 
  
 print(f"X edges (scattering method): [{x_lo:.4f} ± {x_lo_err:.4f}, {x_hi:.4f} ± {x_hi_err:.4f}] mm")
 print(f"Y edges (scattering method): [{y_lo:.4f} ± {y_lo_err:.4f}, {y_hi:.4f} ± {y_hi_err:.4f}] mm")
+
+
+mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue()
+mean_res_y = df_phys.Mean("DeltathetaErr_y").GetValue()
+
+sigma_bsl_x, sigma_jump_x = f_x.GetParameter(0), f_x.GetParameter(1)
+sigma_bsl_y, sigma_jump_y = f_y.GetParameter(0), f_y.GetParameter(1)
+
+sigma_mcs_out_x = math.sqrt(max(sigma_bsl_x**2 - mean_res_x**2, 0))
+sigma_mcs_in_x  = math.sqrt(max((sigma_bsl_x + sigma_jump_x)**2 - mean_res_x**2, 0))
+sigma_mcs_out_y = math.sqrt(max(sigma_bsl_y**2 - mean_res_y**2, 0))
+sigma_mcs_in_y  = math.sqrt(max((sigma_bsl_y + sigma_jump_y)**2 - mean_res_y**2, 0))
+
+print(f"theta_mcs (x): baseline {sigma_mcs_out_x:.2f} -> in-crystal {sigma_mcs_in_x:.2f} urad")
+print(f"theta_mcs (y): baseline {sigma_mcs_out_y:.2f} -> in-crystal {sigma_mcs_in_y:.2f} urad")
+
+mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
+mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
+print(f"fitted transition x = {f_x.GetParameter(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
+print(f"fitted transition y = {f_y.GetParameter(4):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")
  
 c_x = ROOT.TCanvas("c_x", "Scattering width vs x", 900, 600)
 gr_x.SetTitle("Local scattering width vs x; d0_x [mm]; #sigma(#Delta#theta_{x}) [#murad]")

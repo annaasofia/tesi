@@ -187,6 +187,26 @@ print(f"\tTaglio ottimale in x trovato: [{best_x_min:.3f} mm, {best_x_max:.3f} m
 x_min, x_max = best_x_min - delta_x, best_x_max - delta_x
 print(f"\tTaglio finale in x (dopo shift di {delta_x:.3f} mm): x = [{x_min:.4f} mm, {x_max:.4f} mm], y = [{y_min:.4f} mm, {y_max:.4f} mm]")
 
+mean_d0Err_in_x  = df_cut.Mean("Tracks.d0Err_x").GetValue()
+mean_d0Err_in_y  = df_cut.Mean("Tracks.d0Err_y").GetValue()
+mean_d0Err_out_x = df_cut.Mean("Tracks.d0OutErr_x").GetValue()
+mean_d0Err_out_y = df_cut.Mean("Tracks.d0OutErr_y").GetValue()
+
+# uncertainty due to binning choice in the sliding window (uniform distribution over the bin width -> variance = bin_width^2/12)
+bin_w_y = h_y_in.GetBinWidth(1)
+bin_w_x = h_x_restricted.GetBinWidth(1)
+disc_err_y = bin_w_y / math.sqrt(12)
+disc_err_x = bin_w_x / math.sqrt(12)
+
+# quadrature combination: detector resolution + discretization
+y_min_err = math.sqrt(mean_d0Err_in_y**2 + disc_err_y**2)
+y_max_err = math.sqrt(mean_d0Err_out_y**2 + disc_err_y**2)
+x_min_err = math.sqrt(mean_d0Err_in_x**2 + disc_err_x**2)
+x_max_err = math.sqrt(mean_d0Err_out_x**2 + disc_err_x**2)
+
+print(f"x = [{x_min:.4f} ± {x_min_err:.4f}, {x_max:.4f} ± {x_max_err:.4f}] mm")
+print(f"y = [{y_min:.4f} ± {y_min_err:.4f}, {y_max:.4f} ± {y_max_err:.4f}] mm")
+
 c0.cd(3); h_d0_xy_ch.Draw("COLZ")
 box3 = ROOT.TBox(x_min, y_min, x_max, y_max); box3.SetLineColor(ROOT.kRed); box3.SetLineWidth(2); box3.SetFillStyle(0); box3.Draw("SAME")
 c0.cd(4); h_d0_Out_xy_ch.Draw("COLZ")

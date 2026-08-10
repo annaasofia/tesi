@@ -51,5 +51,5 @@ leg.Draw("SAME")
 
 canvas.Update()
 
-# ROOT.SetOwnership(canvas, False)
-# ROOT.SetOwnership(leg, False)
+ROOT.SetOwnership(canvas, False)
+ROOT.SetOwnership(leg, False)
