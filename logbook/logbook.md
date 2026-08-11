@@ -380,33 +380,37 @@ HOW:
 MAIN SOURCES:
 - *fit model choice* - $\tau_x,\,\tau_y,\,c_y$ dependence:  
 `parabolic_y` vs `full_quadratic` differ in $\tau_y$, rerun the whole efficiency chain and take the eff difference (one-sided difference)
-- torsion map/grid bin choice:  
+- torsion map/grid bin choice - nx_slices, ny_slices dependence:  
 rerun torsion_map with a coarser (nx_slices=5) or finer x-binning and check $\tau_x$ stability (if $\tau_x$ shifts by more than its statistical error, that's a systematic worth quoting)
-- n sigma integration for $N_{ch}$ (bin min and bin max):  
+- n sigma integration for $N_{ch}$ - bin min and bin max dependence:  
 Varying that lower bound (e.g. $2.5σ$ vs $3.5σ$) and taking half the spread in efficiency is a clean shift-and-rerun systematic, and it's cheap since it doesn't require re-running the spatial/torsion/Lindhard chain — only the final channeling_efficiency integration step.
 - preliminary channeling selection cut $\mu-3\sigma$:  
 This threshold (preliminary_cut_on_deltatheta) determines who counts as "channeled" for computing the torsion map and spatial box in the first place — it's used upstream of everything. Varying it (e.g. $μ − 2.5σ$ vs $μ − 3.5σ$) and checking how much $τ_x$, $τ_y$, and the final edges shift would test whether your whole downstream chain is sensitive to this somewhat arbitrary choice.
-- crystal margins:  
-shifting the x margins of $\pm$ the $d_0$ error ($0.1\text{ mm}=5%$)
+- crystal dimension box:  
+shifting the x margins of $\pm$ the $d_0$ error ($0.1\text{ mm}=5%$)  
+as expected, the efficiency is higher if the margins are narrower and lower if margins are broader, meaning that the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage) *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges)*: this is not an artifact of the method: 0.105 mm out of 2 mm is literally the spatial resolution relative to the smallest dimension of the crystal, so it makes sense that the efficiency would be sensitive to this.
+- crystal cut margins:  
+defines where i compute the final efficiency, subset of the entrance surface - needa refit of the torsion map with different margins
 - critical angle $\theta_L$
 - bkg subtraction? NO
-- shift of $\theta_0$ by $\pm$ their fit error? NO
+- shift of $\theta_0$ by $\pm$ their fit error?   
+this is testing how much the efficiency is changed if we shift the baseline by $\pm 1\sigma$ of its fit error
 
 
 
 
 what i did:
 
-- shifting lindhard angle:  
+1. shift of $\theta_0$ by $\pm$ their fit error  
+even if small is worth mentioning it in the total budget
+2. shifting lindhard angle:  
 my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ.
-- shifting the box margins by $d_0$ error along x *(main source)*:  
-due to the fact that i am shifting the window by 10% in x direction (0.1 mm) $\to$ why efficiency changes so much near the edges of the crystal (box bigger lower efficiency, box smaller higher efficiency)? is because the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage)? *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges )* $\to$ this is not an artifact of the method: 0.105 mm out of 2 mm is literally the spatial resolution relative to the smallest dimension of the crystal, so it makes sense that the efficiency would be sensitive to this
-- shifting the box margins by $d_0$ error along y (shift of 2.5% of y length):  
+3. shifting the box margins by $d_0$ error along x *(main source)*:  
+1.098%  
+-  shifting the box margins by $d_0$ error along y (shift of 2.5% of y length):  
 0.001%
+4. 
 
-|$\theta_0\pm fit err$|$\theta_L$|margins x|margins y|
-|-|-|-|-|
-|0.003%|0.385%|1.098%|0.001%|
 
 
 $\to$ [slides week 6](./slides/week6.pdf)

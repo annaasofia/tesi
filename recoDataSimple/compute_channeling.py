@@ -732,134 +732,180 @@ def filter3_Lindhard_cut(df, parameters, fit_params, rdf_surface_expr, halfwidth
     df_filtered = df.Filter(Lindhard_cut, f"Torsion-corrected Lindhard cut")
     return df_filtered
 
-# ==========================================================================================
+def evaluate_channeling_efficiency_variant(df_source, parameters, fit_params, x_bounds, y_bounds, surface_expr, halfwidth_shift=0.0):
+    """
+    Applies the spatial cut (x_bounds, y_bounds) and the Lindhard cut
+    (surface_expr, optionally widened/narrowed by halfwidth_shift) to df_source,
+    then computes the channeling efficiency.
+    df_source should be the pre-spatial-cut dataframe (df_singletrack), so that
+    every systematic variant is self-contained and independent of others.
+    """
+    df = filter2_spatial_cut(df_source, x_bounds[0], x_bounds[1], y_bounds[0], y_bounds[1], restricted=False)
+    df = filter3_Lindhard_cut(df, parameters, fit_params, surface_expr, halfwidth_shift=halfwidth_shift)
+    return channeling_efficiency(df, parameters, best_theta_0=fit_params[0])
+
+
+def shift_and_rerun_systematic(name, df_source, parameters, fit_params, nominal_kwargs, up_overrides, down_overrides):
+    """
+    Generic one-sigma shift-and-rerun systematic: evaluates efficiency at the
+    'up' and 'down' variant (nominal_kwargs updated with the given overrides),
+    returns half the spread as the systematic uncertainty.
+    """
+    kwargs_up = {**nominal_kwargs, **up_overrides}
+    kwargs_down = {**nominal_kwargs, **down_overrides}
+
+    eff_up, _, _, _ = evaluate_channeling_efficiency_variant(df_source, parameters, fit_params, **kwargs_up)
+    eff_down, _, _, _ = evaluate_channeling_efficiency_variant(df_source, parameters, fit_params, **kwargs_down)
+
+    syst = abs(eff_up - eff_down) / 2.0
+    print(f"\tsyst ({name}): up={eff_up:.3f}%  down={eff_down:.3f}%  -> +/-{syst:.3f}%")
+    return syst, eff_up, eff_down
+
+
+def compute_efficiency_systematics(df_singletrack, df_phys, parameters, fit_params, fit_errors, x_min, x_max, y_min, y_max, rdf_surface_expr):
+    nominal_kwargs = dict(x_bounds=(x_min, x_max), y_bounds=(y_min, y_max), surface_expr=rdf_surface_expr, halfwidth_shift=0.0)
+
+    systematics = {}
+
+    # --- 1. Torsion baseline (theta_0) fit uncertainty ---
+    surface_expr_up = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] + fit_errors[0]}", 1)
+    surface_expr_down = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] - fit_errors[0]}", 1)
+    systematics["theta0_shift"], _, _ = shift_and_rerun_systematic(
+        "theta0 shift", df_singletrack, parameters, fit_params, nominal_kwargs,
+        up_overrides=dict(surface_expr=surface_expr_up),
+        down_overrides=dict(surface_expr=surface_expr_down))
+
+    # --- 2. Angular (theta_in) resolution on the Lindhard window ---
+    mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
+    shift = min(mean_theta_res, parameters['theta_L'] / 4.0)
+    print(f"Mean theta resolution = {mean_theta_res:.3f} urad (applied shift = {shift:.3f} urad)")
+    systematics["theta_resolution"], _, _ = shift_and_rerun_systematic(
+        "theta resolution", df_singletrack, parameters, fit_params, nominal_kwargs,
+        up_overrides=dict(halfwidth_shift=+shift),
+        down_overrides=dict(halfwidth_shift=-shift))
+
+    # --- 3. Spatial box boundary (d0 resolution), x and y treated separately ---
+    mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
+    mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
+
+    systematics["spatial_box_x"], _, _ = shift_and_rerun_systematic(
+        "spatial box x", df_singletrack, parameters, fit_params, nominal_kwargs,
+        up_overrides=dict(x_bounds=(x_min - mean_d0err_x, x_max + mean_d0err_x)),
+        down_overrides=dict(x_bounds=(x_min + mean_d0err_x, x_max - mean_d0err_x)))
+
+    systematics["spatial_box_y"], _, _ = shift_and_rerun_systematic(
+        "spatial box y", df_singletrack, parameters, fit_params, nominal_kwargs,
+        up_overrides=dict(y_bounds=(y_min - mean_d0err_y, y_max + mean_d0err_y)),
+        down_overrides=dict(y_bounds=(y_min + mean_d0err_y, y_max - mean_d0err_y)))
+
+    return systematics
+
+
+def compute_margin_systematic(df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+                               nx_slices, ny_slices, eff_nominal,
+                               margin_up=(0.35, 0.8), margin_down=(0.1, 0.25)):
+    """
+    Systematic on the torsion-map fit-region margins (x_cut_margin, y_cut_margin).
+    Heavier than the others: re-runs the torsion surface fit (and its plotting)
+    for each variant. Call separately, not inside the main quadrature-sum loop,
+    if you want to keep runtime low during routine reruns.
+    """
+    effs = []
+    for margin_x, margin_y in (margin_up, margin_down):
+        fit_params_v, fit_errors_v, _, _, surface_expr_v = torsion_map(
+            df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+            margin_x, margin_y, nx_slices=nx_slices, ny_slices=ny_slices,
+            restricted=True, linear=False, chosen_model="parabolic_y")
+
+        df_v = filter3_Lindhard_cut(df_phys, parameters, fit_params_v, surface_expr_v)
+        eff_v, _, _, _ = channeling_efficiency(df_v, parameters, best_theta_0=fit_params_v[0])
+        effs.append(eff_v)
+        print(f"\tmargins ({margin_x}, {margin_y}) -> eff = {eff_v:.3f}%")
+
+    syst_margin = abs(effs[0] - effs[1]) / 2.0
+    print(f"\tsyst (torsion-fit margins): +/-{syst_margin:.3f}%  (nominal = {eff_nominal:.3f}%)")
+    return syst_margin
+
+
+# ============================================================
+# MAIN
+# ============================================================
 
 def main():
 
-    # file = input("File number: ")
     file = 8430
-    files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
     df = ROOT.RDataFrame("simpleEvent", filename)
-    # df = ROOT.RDataFrame("simpleEvent", files)
     print(f"Analyzing {filename} ...")
-    print("="*50)
+    print("=" * 50)
 
-    # CONVERT angles from rad to urad and define Deltatheta_x
     df = df_convert_to_urad_define_deltatheta(df)
     count_0 = df.Count()
 
-    # FILTER 1: select single tracks
+    # ===================== FILTERS =====================
+    # FILTER 1: single tracks
     df_phys = filter1_initial(df)
     count_1 = df_phys.Count()
+    df_singletrack = df_phys  # kept for systematic variants (pre-spatial-cut)
 
-    df_singletrack = df_phys
-
-    # FILTER 2: spatial cut (d0_x and d0_y within the crystal area)
+    # FILTER 2: nominal spatial cut
     x_cut_margin = 0.2
     y_cut_margin = 0.5
     x_min, x_max, y_min, y_max = compute_spatial_cut_bounds(df_phys, parameters)
-    df_phys = filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_margin, restricted=False)
+    df_phys = filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max,
+                                   x_cut_margin, y_cut_margin, restricted=False)
     count_2 = df_phys.Count()
 
-    # plot_mean_impact_angle(df_phys, y_min, y_max)
-
-    # FILTER 3: 2D torsion mapping and dynamic Lindhard cut
+    # FILTER 3: torsion map + dynamic Lindhard cut (nominal)
     y_min_grid, y_max_grid = compute_torsion_grid_bounds(df_phys, parameters, sigma_mult=2.0)
-    fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = torsion_map(df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid, 
-                                                                                       x_cut_margin, y_cut_margin, nx_slices=10, ny_slices=65, 
-                                                                                       restricted=True, linear=False, chosen_model="parabolic_y")
-
-    # not needed anymore because the torsion fit is not linear but parabolic
-    # scan_y_margins(df_phys, parameters, x_min, x_max, y_min, y_max, h2_torsion_map, rdf_surface_expr)
+    nx_slices, ny_slices = 10, 65
+    fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = torsion_map(
+        df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+        x_cut_margin, y_cut_margin, nx_slices=nx_slices, ny_slices=ny_slices,
+        restricted=True, linear=False, chosen_model="parabolic_y")
 
     max_eff_global, max_eff_global_err = plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr)
 
     df_phys = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()
 
-    # CHANNELING EFFICIENCY
+    # NOMINAL CHANNELING EFFICIENCY
     eff_ch, eff_err_stat, fit_efficiency, histo_final = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0])
-    out_filename = f"final_histo_run_{file}.root"
-    out_file = ROOT.TFile(out_filename, "RECREATE")
-    histo_final.Write(f"h_defl_run_{file}")
-    # h2_torsion_map.Write(f"h2_torsion_map_{file}")
-    out_file.Close()
 
-    # systematic error due to torsion map
-    surface_expr_up = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] + fit_errors[0]}", 1)
-    surface_expr_down = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] - fit_errors[0]}", 1)
+    # out_filename = f"final_histo_run_{file}.root"
+    # out_file = ROOT.TFile(out_filename, "RECREATE")
+    # histo_final.Write(f"h_defl_run_{file}")
+    # out_file.Close()
 
-    mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
-    print(f"Mean theta resolution = {mean_theta_res:.3f} urad")
+    # ===================== SYSTEMATICS =====================
+    print("\n" + "=" * 50)
+    print("Systematic error breakdown:")
+    systematics = compute_efficiency_systematics(
+        df_singletrack, df_phys, parameters, fit_params, fit_errors,
+        x_min, x_max, y_min, y_max, rdf_surface_expr)
 
-    shift = min(mean_theta_res, parameters['theta_L']/4.0)
-    df_res_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=+shift)
-    df_res_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr, halfwidth_shift=-shift)
-    eff_res_up, _, _, _ = channeling_efficiency(df_res_up, parameters, best_theta_0=fit_params[0])
-    eff_res_down, _, _, _ = channeling_efficiency(df_res_down, parameters, best_theta_0=fit_params[0])
+    # optional, heavier: torsion-fit margin systematic (uncomment to run)
+    # systematics["torsion_margins"] = compute_margin_systematic(
+    #     df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+    #     nx_slices, ny_slices, eff_nominal=eff_ch)
 
-    eff_err_syst_res = abs(eff_res_up - eff_res_down) / 2.0
+    eff_err_syst = math.sqrt(sum(v**2 for v in systematics.values()))
+    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
 
-    df_up = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_up)
-    df_down = filter3_Lindhard_cut(df_phys, parameters, fit_params, surface_expr_down)
-    eff_up, _, _, _ = channeling_efficiency(df_up, parameters, best_theta_0=fit_params[0] + fit_errors[0])
-    eff_down, _, _, _ = channeling_efficiency(df_down, parameters, best_theta_0=fit_params[0] - fit_errors[0])
- 
-    eff_err_syst_eff = abs(eff_up - eff_down) / 2.0
-
-    # systematic d0 resolution
-    mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
-    mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
-
-    # df_box_up = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x,
-    #                                     y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
-    # df_box_down = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x,
-    #                                     y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
-    df_box_up_x = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x, y_min, y_max, restricted=False)
-    df_box_down_x = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x, y_min, y_max, restricted=False)
-    df_box_up_y = filter2_spatial_cut(df_singletrack, x_min, x_max, y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
-    df_box_down_y = filter2_spatial_cut(df_singletrack, x_min, x_max, y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
-
-    df_box_up_x = filter3_Lindhard_cut(df_box_up_x, parameters, fit_params, rdf_surface_expr)
-    df_box_down_x = filter3_Lindhard_cut(df_box_down_x, parameters, fit_params, rdf_surface_expr)
-    eff_box_up_x, _, _, _ = channeling_efficiency(df_box_up_x, parameters, best_theta_0=fit_params[0]); print(f"eff_box_up_x = {eff_box_up_x:.3f}")
-    eff_box_down_x, _, _, _ = channeling_efficiency(df_box_down_x, parameters, best_theta_0=fit_params[0]); print(f"eff_box_down_x = {eff_box_down_x:.3f}")
-    df_box_up_y = filter3_Lindhard_cut(df_box_up_y, parameters, fit_params, rdf_surface_expr)
-    df_box_down_y = filter3_Lindhard_cut(df_box_down_y, parameters, fit_params, rdf_surface_expr)
-    eff_box_up_y, _, _, _ = channeling_efficiency(df_box_up_y, parameters, best_theta_0=fit_params[0])
-    eff_box_down_y, _, _, _ = channeling_efficiency(df_box_down_y, parameters, best_theta_0=fit_params[0])
-
-    eff_err_syst_box_x = abs(eff_box_up_x - eff_box_down_x) / 2.0
-    eff_err_syst_box_y = abs(eff_box_up_y - eff_box_down_y) / 2.0
-
-    eff_err_syst = math.sqrt(eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box_x**2 + eff_err_syst_box_y**2)
-    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box_x**2 + eff_err_syst_box_y**2)
-
-    # print("="*50)
-    # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
-    # print(filter_message(2, count_1.GetValue(), count_2.GetValue()))
-    # print(filter_message(3, count_2.GetValue(), count_3.GetValue()))
-    # print("="*50)
-
+    # ===================== REPORT =====================
+    print("=" * 50)
     print(filter_message("1+2+3", count_0.GetValue(), count_3.GetValue()))
-    print('='*50)
+    print("=" * 50)
     print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.3f} [syst]) %")
     print(f"Total error = +/- {eff_err_total:.1f} %")
-    print(f"\tsyst (theta0 shift)  = {eff_err_syst_eff:.3f} %")
-    print(f"\tsyst (theta resol.)  = {eff_err_syst_res:.3f} %")
-    print(f"\tsyst (spatial box x)   = {eff_err_syst_box_x:.3f} %")
-    print(f"\tsyst (spatial box y)   = {eff_err_syst_box_y:.3f} %")
-    print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
+    for name, val in systematics.items():
+        print(f"\tsyst ({name}) = {val:.3f} %")
+    print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad, sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
