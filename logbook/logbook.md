@@ -351,7 +351,7 @@ in [`compute_edges2.py`](../recoDataSimple/compute_edges2.py):
 - systematic smearing: quantify how much my cuts are affected by finite d0 and theta resolution
 
 in [`compute_channeling.py`](../recoDataSimple/compute_channeling.py):
-- error on lindhard cut is computed doing a cut within $\theta_L/2\pm$ instead of just $\theta_L/2$ in order to compute an additional sys error for theta
+- error on lindhard cut is computed doing a cut within $\theta_L/2\,\pm ...$ instead of just $\theta_L/2$ in order to compute an additional sys error for theta
 
 ### Computing efficiency errors
 
@@ -366,14 +366,50 @@ this would be wrong, because it would be before torsion correction and lindhard 
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
 
 
-- SYSTEMATICS (added in quadrature):  
-the systematic errors are propagated on the final result, not on the intermediate fit parameters
-    - shifting $\theta_0$ by $\pm$ their fit error
-    - shifting lindhard angle: my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ.
-    - shifting the box margins by $d_0$ error up and down: *main source* - due to the fact that i am shifting the window by 10% in x direction and 2.5% in y direction (0.1 mm) $\to$ why efficiency changes so much near the edges of the crystal? is because the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage)? *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges )*
+### SYSTEMATICS 
+
+*the systematic errors are propagated on the final result, not on the intermediate fit parameters*
+
+HOW:  
+1) recompute `filter3_Lindhard_cut()` 
+2) recompute `channeling_efficiency()` 
+3) systematic error as mean between the two computed efficiencies $|\epsilon_{up}-\epsilon_{down}|/2$  
+*And to find the total error:*  
+4) add the errors in quadrature, assuming indipendence.Two of these are not obviously independent: the spatial-box shift changes which particles enter the torsion-map fit, which in turn slightly changes fit_params - but i am reusing the nominal fit_params for the box variation, which effectively assumes independence by construction. *"systematics treated as uncorrelated; box and torsion-map re-fit not jointly propagated."*
+
+MAIN SOURCES:
+- *fit model choice* - $\tau_x,\,\tau_y,\,c_y$ dependence:  
+`parabolic_y` vs `full_quadratic` differ in $\tau_y$, rerun the whole efficiency chain and take the eff difference (one-sided difference)
+- torsion map/grid bin choice:  
+rerun torsion_map with a coarser (nx_slices=5) or finer x-binning and check $\tau_x$ stability (if $\tau_x$ shifts by more than its statistical error, that's a systematic worth quoting)
+- n sigma integration for $N_{ch}$ (bin min and bin max):  
+Varying that lower bound (e.g. $2.5σ$ vs $3.5σ$) and taking half the spread in efficiency is a clean shift-and-rerun systematic, and it's cheap since it doesn't require re-running the spatial/torsion/Lindhard chain — only the final channeling_efficiency integration step.
+- preliminary channeling selection cut $\mu-3\sigma$:  
+This threshold (preliminary_cut_on_deltatheta) determines who counts as "channeled" for computing the torsion map and spatial box in the first place — it's used upstream of everything. Varying it (e.g. $μ − 2.5σ$ vs $μ − 3.5σ$) and checking how much $τ_x$, $τ_y$, and the final edges shift would test whether your whole downstream chain is sensitive to this somewhat arbitrary choice.
+- crystal margins:  
+shifting the x margins of $\pm$ the $d_0$ error ($0.1\text{ mm}=5%$)
+- critical angle $\theta_L$
+- bkg subtraction? NO
+- shift of $\theta_0$ by $\pm$ their fit error? NO
 
 
-$\to$ [slides week 5](./slides/week5.pdf)
+
+
+what i did:
+
+- shifting lindhard angle:  
+my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ.
+- shifting the box margins by $d_0$ error along x *(main source)*:  
+due to the fact that i am shifting the window by 10% in x direction (0.1 mm) $\to$ why efficiency changes so much near the edges of the crystal (box bigger lower efficiency, box smaller higher efficiency)? is because the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage)? *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges )* $\to$ this is not an artifact of the method: 0.105 mm out of 2 mm is literally the spatial resolution relative to the smallest dimension of the crystal, so it makes sense that the efficiency would be sensitive to this
+- shifting the box margins by $d_0$ error along y (shift of 2.5% of y length):  
+0.001%
+
+|$\theta_0\pm fit err$|$\theta_L$|margins x|margins y|
+|-|-|-|-|
+|0.003%|0.385%|1.098%|0.001%|
+
+
+$\to$ [slides week 6](./slides/week6.pdf)
 
 ([UP](#traineeship-al-cern))
 

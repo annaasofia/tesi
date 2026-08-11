@@ -814,20 +814,29 @@ def main():
     mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
     mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 
-    df_box_up = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x,
-                                        y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
-    df_box_down = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x,
-                                        y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
+    # df_box_up = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x,
+    #                                     y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
+    # df_box_down = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x,
+    #                                     y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
+    df_box_up_x = filter2_spatial_cut(df_singletrack, x_min - mean_d0err_x, x_max + mean_d0err_x, y_min, y_max, restricted=False)
+    df_box_down_x = filter2_spatial_cut(df_singletrack, x_min + mean_d0err_x, x_max - mean_d0err_x, y_min, y_max, restricted=False)
+    df_box_up_y = filter2_spatial_cut(df_singletrack, x_min, x_max, y_min - mean_d0err_y, y_max + mean_d0err_y, restricted=False)
+    df_box_down_y = filter2_spatial_cut(df_singletrack, x_min, x_max, y_min + mean_d0err_y, y_max - mean_d0err_y, restricted=False)
 
-    df_box_up = filter3_Lindhard_cut(df_box_up, parameters, fit_params, rdf_surface_expr)
-    df_box_down = filter3_Lindhard_cut(df_box_down, parameters, fit_params, rdf_surface_expr)
-    eff_box_up, _, _, _ = channeling_efficiency(df_box_up, parameters, best_theta_0=fit_params[0])
-    eff_box_down, _, _, _ = channeling_efficiency(df_box_down, parameters, best_theta_0=fit_params[0])
+    df_box_up_x = filter3_Lindhard_cut(df_box_up_x, parameters, fit_params, rdf_surface_expr)
+    df_box_down_x = filter3_Lindhard_cut(df_box_down_x, parameters, fit_params, rdf_surface_expr)
+    eff_box_up_x, _, _, _ = channeling_efficiency(df_box_up_x, parameters, best_theta_0=fit_params[0]); print(f"eff_box_up_x = {eff_box_up_x:.3f}")
+    eff_box_down_x, _, _, _ = channeling_efficiency(df_box_down_x, parameters, best_theta_0=fit_params[0]); print(f"eff_box_down_x = {eff_box_down_x:.3f}")
+    df_box_up_y = filter3_Lindhard_cut(df_box_up_y, parameters, fit_params, rdf_surface_expr)
+    df_box_down_y = filter3_Lindhard_cut(df_box_down_y, parameters, fit_params, rdf_surface_expr)
+    eff_box_up_y, _, _, _ = channeling_efficiency(df_box_up_y, parameters, best_theta_0=fit_params[0])
+    eff_box_down_y, _, _, _ = channeling_efficiency(df_box_down_y, parameters, best_theta_0=fit_params[0])
 
-    eff_err_syst_box = abs(eff_box_up - eff_box_down) / 2.0
+    eff_err_syst_box_x = abs(eff_box_up_x - eff_box_down_x) / 2.0
+    eff_err_syst_box_y = abs(eff_box_up_y - eff_box_down_y) / 2.0
 
-    eff_err_syst = math.sqrt(eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
-    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box**2)
+    eff_err_syst = math.sqrt(eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box_x**2 + eff_err_syst_box_y**2)
+    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst_eff**2 + eff_err_syst_res**2 + eff_err_syst_box_x**2 + eff_err_syst_box_y**2)
 
     # print("="*50)
     # print(filter_message(1, count_0.GetValue(), count_1.GetValue()))
@@ -841,7 +850,8 @@ def main():
     print(f"Total error = +/- {eff_err_total:.1f} %")
     print(f"\tsyst (theta0 shift)  = {eff_err_syst_eff:.3f} %")
     print(f"\tsyst (theta resol.)  = {eff_err_syst_res:.3f} %")
-    print(f"\tsyst (spatial box)   = {eff_err_syst_box:.3f} %")
+    print(f"\tsyst (spatial box x)   = {eff_err_syst_box_x:.3f} %")
+    print(f"\tsyst (spatial box y)   = {eff_err_syst_box_y:.3f} %")
     print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad , sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")
