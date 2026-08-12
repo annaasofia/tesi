@@ -399,18 +399,38 @@ this is testing how much the efficiency is changed if we shift the baseline by $
 
 
 
-what i did:
-
+what i did:  
+*(easy)*  
 1. shift of $\theta_0$ by $\pm$ their fit error  
-even if small is worth mentioning it in the total budget
-2. shifting lindhard angle:  
-my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ.
+even if small is worth mentioning it in the total budget  
+0.004%  
+2. shifting lindhard angle by $\theta_in$ error:  
+my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ  
+0.981%
 3. shifting the box margins by $d_0$ error along x *(main source)*:  
 1.098%  
 -  shifting the box margins by $d_0$ error along y (shift of 2.5% of y length):  
 0.001%
-4. 
+4. n sigma integration window (changing bin min (2.5σ - 3.5σ) from which i integrate n_ch):  
+0.054%
 
+*(heavier)*
+1. fit model choice (full quadratic vs parabolic y):  
+0.031%
+2. nx/ny slice choice:  
+0.003%
+3. crystal margins cut:
+0.077%
+4. preliminary cut threshold:  
+0.063%
+
+| %        | **total** | stat | $\theta_0$ | $\theta_L$ | shift $x$ | shift $y$ | bin min | fit model choice | nx ny choice | crystal margins cut | preliminary cut |
+|----------|-----------|------|------------|------------|-----------|-----------|---------|------------------|--------------|---------------------|-----------------|
+| **8430** | **1.5**   | 0.1  | 0.004      | 0.981      | 1.098     | 0.001     | 0.054   | 0.031            | 0.003        | 0.077               | 0.063           |
+| **8431** | **1.5**   | 0.1  | 0.007      | 0.957      | 1.079     | 0.001     | 0.054   | 0.188            | 0.130        | 0.017               | 0.072           |
+| **8650** | **1.3**   | 0.1  | 0.003      | 0.755      | 1.001     | 0.001     | 0.066   | 0.004            | 0.034        | 0.009               | 0.000           |
+| **8655** | **1.4**   | 0.1  | 0.009      | 0.737      | 1.187     | 0.002     | 0.076   | 0.016            | 0.199        | 0.180               | 0.036           |
+| **8656** | **1.4**   | 0.1  | 0.006      | 0.814      | 1.191     | 0.001     | 0.080   | 0.010            | 0.104        | 0.164               | 0.094           |
 
 
 $\to$ [slides week 6](./slides/week6.pdf)
