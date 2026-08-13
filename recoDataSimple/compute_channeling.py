@@ -823,7 +823,7 @@ def compute_fit_uncertainty_systematic(df_phys, parameters, fit_efficiency, tag=
 
 def main():
 
-    file = 8656
+    file = 8430
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
