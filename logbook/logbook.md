@@ -20,6 +20,8 @@
 6. [WEEK 6 (AUG 10)](#week-6)
     - [Taking into account d and theta errors](#taking-into-account-d-and-theta-errors)
     - [Computing efficiency errors](#computing-efficiency-errors)
+    - [Systematics](#systematics)
+    - [PDG on errors](#pdg-on-errors)
 7. [WEEK 7 (AUG 17)](#week-7)
 8. [WEEK 8 (AUG 24)](#week-8)
 
@@ -365,8 +367,16 @@ this would be wrong, because it would be before torsion correction and lindhard 
     - we can treat `h2_eff_map` as validation to check spatial uniformity across the crystal surface, and if done after is to diagnose if the ploynomial is correct or is missing a term or if a region of the crystal is channeling differently (edges/miscuts)
     - also `plot_global_efficiency_curve` can be used as diagnostic: if the peak efficiency is centered at $\theta=0$ after correction, the torsion fit is correct (a mean of $\sim 0.56 \pm 0.02$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution); it is checking that the correction surface correctly recenters the whole angular distribution
 
+- the fit uncertainty on the gaussian fits gives <0.001%, probably due to the high statistics   
+(i shifted mean and sigma by their fit error and tried to redo the efficiency computation, errors so small that nothing changes)
 
-### SYSTEMATICS 
+- also checked for time correlation via block splitting: divide the run in 10 blocks and redo the calculation of the efficiency, if ratio >1 there could be non homogeneous behaviour during the run  
+RMS across blocks     = 0.238 %  
+Mean binomial error   = 0.200 %  
+Ratio (RMS/stat_err)  = 1.19  (consistent with binomial)  
+
+
+### Systematics 
 
 *the systematic errors are propagated on the final result, not on the intermediate fit parameters*
 
@@ -396,9 +406,6 @@ defines where i compute the final efficiency, subset of the entrance surface - n
 - shift of $\theta_0$ by $\pm$ their fit error?   
 this is testing how much the efficiency is changed if we shift the baseline by $\pm 1\sigma$ of its fit error
 
-
-
-
 what i did:  
 *(easy)*  
 1. shift of $\theta_0$ by $\pm$ their fit error  
@@ -424,14 +431,36 @@ my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$)
 4. preliminary cut threshold:  
 0.063%
 
-| %        | **total** | stat | $\theta_0$ | $\theta_L$ | shift $x$ | shift $y$ | bin min | fit model choice | nx ny choice | crystal margins cut | preliminary cut |
-|----------|-----------|------|------------|------------|-----------|-----------|---------|------------------|--------------|---------------------|-----------------|
-| **8430** | **1.5**   | 0.1  | 0.004      | 0.981      | 1.098     | 0.001     | 0.054   | 0.031            | 0.003        | 0.077               | 0.063           |
-| **8431** | **1.5**   | 0.1  | 0.007      | 0.957      | 1.079     | 0.001     | 0.054   | 0.188            | 0.130        | 0.017               | 0.072           |
-| **8650** | **1.3**   | 0.1  | 0.003      | 0.755      | 1.001     | 0.001     | 0.066   | 0.004            | 0.034        | 0.009               | 0.000           |
-| **8655** | **1.4**   | 0.1  | 0.009      | 0.737      | 1.187     | 0.002     | 0.076   | 0.016            | 0.199        | 0.180               | 0.036           |
-| **8656** | **1.4**   | 0.1  | 0.006      | 0.814      | 1.191     | 0.001     | 0.080   | 0.010            | 0.104        | 0.164               | 0.094           |
+| %        | **total** | binomial| $\theta_0$ | $\theta_L$ | shift $x$ | shift $y$ | bin min | fit model choice | nx ny choice | crystal margins cut | preliminary cut |
+|----------|-----------|---------|------------|------------|-----------|-----------|---------|------------------|--------------|---------------------|-----------------|
+| **8430** | **1.5**   | 0.063   | 0.004      | 0.981      | 1.098     | 0.001     | 0.054   | 0.031            | 0.003        | 0.077               | 0.063           |
+| **8431** | **1.5**   | 0.064   | 0.007      | 0.957      | 1.079     | 0.001     | 0.054   | 0.188            | 0.130        | 0.017               | 0.072           |
+| **8650** | **1.3**   | 0.051   | 0.003      | 0.755      | 1.001     | 0.001     | 0.066   | 0.004            | 0.034        | 0.009               | 0.000           |
+| **8655** | **1.4**   | 0.062   | 0.009      | 0.737      | 1.187     | 0.002     | 0.076   | 0.016            | 0.199        | 0.180               | 0.036           |
+| **8656** | **1.4**   | 0.058   | 0.006      | 0.814      | 1.191     | 0.001     | 0.080   | 0.010            | 0.104        | 0.164               | 0.094           |
 
+### PDG on errors
+
+**40.2.6**  
+Including additional parameters may eliminate or at least reduce the effect of systematic uncertainties, their presence will result in increased statistical uncertainties for the parameters of interest. This occurs because the estimators for the nuisance parameters and those of interest will in general be correlated.  
+($\to$ correlation between $\tau_y$ and $\epsilon$ uncertainties)  
+$\to$ standard method is *profile likelihood*: fixing all nuissance parameters to their optimal value (instead of their nominal value)
+
+**40.2.2.1**  
+In the large-sample limit the likelihood function itself takes on a Gaussian shape, so that the log-likelihood becomes a quadratic function.
+$\to$ la matrice di covarianza dei parametri del fit si ottiene dalle derivate seconde della log-likelihood al minimo, esattamente quello che fit_result. (GetCovarianceMatrix("S"))
+
+**40.3.3.1**  
+Check $\chi^2/ndf$ of the torsion fit.  
+Poor goodness-of-fit, however, does not mean that one will have large statistical errors for parameter estimates. If, for example, the error bars (or covariance matrix) used in constructing the $\chi^2$ are underestimated, then this will lead to underestimated statistical errors for the fitted parameters and an increased value of the minimized $\chi^2$.  
+
+**40.4.2.4**  
+Estimating the binomial error for the efficiency is fine since $N$ is large and $p$ not so near 0% or 100% (we have ~20%).  
+Also exist the alternative Clopper-Pearson, for less statistics (es. se calcoli efficienze locali per singolo bin della torsion map con poca statistica, dove l'approssimazione gaussiana può fallire).
+
+**40.4.2.3** and **Eq.40.80**  
+If N independent measurements result in log-likelihood functions $\ln Li(θ)$, then the combined log-likelihood function is simply the sum, $\ln L(θ) = \sum \ln Li(θ)$. This can then be used to determine an approximate confidence interval or region.  
+Questo è il modo statisticamente corretto di combinare stime da run diverse (es. τ_y da 8430 e 8431 separatamente) invece di fare una media pesata ad-hoc — rilevante se in futuro si vuole combinare i risultati dei diversi run in un unico numero finale per la tesi.
 
 $\to$ [slides week 6](./slides/week6.pdf)
 

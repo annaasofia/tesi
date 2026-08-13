@@ -756,6 +756,66 @@ def compute_preliminary_cut_systematic(df_phys, parameters, nx_slices, ny_slices
     print(f"\tsyst (preliminary cut threshold): +/-{syst:.3f}%")
     return syst
 
+def compute_block_stability_check(df_phys, parameters, fit_params, n_blocks=10):
+
+    # based on event number, split the dataset into n_blocks contiguous blocks, compute channeling efficiency in each block
+    # and compare the observed spread (RMS) to the average binomial statistical error
+    # if rms_observed >> mean_stat_err, there is time-correlation / overdispersion not captured by the simple binomial formula (e.g. beam drift, slow alignment changes during the run)
+    min_evt = df_phys.Min("Event.evtnum").GetValue()
+    max_evt = df_phys.Max("Event.evtnum").GetValue()
+    block_width = (max_evt - min_evt) / n_blocks
+
+    effs, errs = [], []
+    print(f"\n\tBlock stability check ({n_blocks} blocks, evtnum {min_evt:.0f}-{max_evt:.0f}):")
+    for i in range(n_blocks):
+        lo = min_evt + i * block_width
+        hi = min_evt + (i + 1) * block_width
+        df_block = df_phys.Filter(f"Event.evtnum >= {lo} && Event.evtnum < {hi}")
+        eff, err, _, _ = channeling_efficiency(df_block, parameters, best_theta_0=fit_params[0], tag=f"block_{i}")
+        if eff > 0:
+            effs.append(eff)
+            errs.append(err)
+            print(f"\t\tblock {i}: eff = {eff:.3f} +/- {err:.3f} %")
+
+    if len(effs) < 2:
+        print("\tWARNING: not enough non-empty blocks for stability check.")
+        return 0.0, 0.0
+
+    mean_eff = sum(effs) / len(effs)
+    rms_observed = math.sqrt(sum((e - mean_eff)**2 for e in effs) / (len(effs) - 1))
+    mean_stat_err = sum(errs) / len(errs)
+
+    ratio = rms_observed / mean_stat_err if mean_stat_err > 0 else float('nan')
+    print(f"\tRMS across blocks     = {rms_observed:.3f} %")
+    print(f"\tMean binomial error   = {mean_stat_err:.3f} %")
+    print(f"\tRatio (RMS/stat_err)  = {ratio:.2f}  ({'consistent with binomial' if ratio < 1.5 else 'possible overdispersion / time correlation'})")
+
+    return rms_observed, mean_stat_err
+
+def compute_fit_uncertainty_systematic(df_phys, parameters, fit_efficiency, tag="fitunc"):
+
+    # error on n ch propagated from the uncertainty on the fit parameters used to define the integration window for n_ch
+    fit_mean, fit_mean_err, fit_sigma, fit_sigma_err = fit_efficiency
+
+    N_tot = df_phys.Count().GetValue()
+    if N_tot == 0:
+        return 0.0
+
+    h_defl_cut = df_phys.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
+    h_cut_value = h_defl_cut.GetValue().Clone(f"h_cut_value_cloned_{tag}")
+
+    def eff_from_bounds(mean, sigma, n_sigma_low=3.0):
+        bin_min = h_cut_value.FindBin(mean - n_sigma_low * sigma)
+        bin_max = h_cut_value.FindBin(parameters["max_value"])
+        N_ch = h_cut_value.Integral(bin_min, bin_max)
+        return (N_ch / N_tot) * 100.0
+
+    eff_up = eff_from_bounds(fit_mean + fit_mean_err, fit_sigma + fit_sigma_err)
+    eff_down = eff_from_bounds(fit_mean - fit_mean_err, fit_sigma - fit_sigma_err)
+
+    syst = abs(eff_up - eff_down) / 2.0
+    print(f"\tstat (fit uncertainty on N_ch window): up={eff_up:.3f}%  down={eff_down:.3f}%  -> +/-{syst:.3f}%")
+    return syst
 
 # ============================================================
 # MAIN
@@ -763,7 +823,7 @@ def compute_preliminary_cut_systematic(df_phys, parameters, nx_slices, ny_slices
 
 def main():
 
-    file = 8430
+    file = 8656
     parameters = get_run_parameters(file)
     filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 
@@ -802,7 +862,22 @@ def main():
     count_3 = df_phys.Count()
 
     # NOMINAL CHANNELING EFFICIENCY
-    eff_ch, eff_err_stat, fit_efficiency, histo_final = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0], tag="nominal")
+    eff_ch, eff_err_stat_binomial, fit_efficiency, histo_final = channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0], tag="nominal")
+
+    # ===================== STATISTICAL ERROR BUDGET =====================
+    print("\n" + "=" * 50)
+    print("Statistical error breakdown:")
+
+    eff_err_stat_fitunc = compute_fit_uncertainty_systematic(df_phys, parameters, fit_efficiency)
+
+    eff_err_stat = math.sqrt(eff_err_stat_binomial**2 + eff_err_stat_fitunc**2)
+    print(f"\tbinomial              = {eff_err_stat_binomial:.3f} %")
+    print(f"\tfit uncertainty       = {eff_err_stat_fitunc:.3f} %")
+    print(f"\tcombined statistical  = {eff_err_stat:.3f} %")
+
+    rms_blocks, mean_stat_err_blocks = compute_block_stability_check(df_phys, parameters, fit_params, n_blocks=10)
+
+    # ===================== SAVE FINAL HISTO =====================
 
     # out_filename = f"final_histo_run_{file}.root"
     # out_file = ROOT.TFile(out_filename, "RECREATE")
@@ -816,24 +891,24 @@ def main():
         df_singletrack, df_phys, parameters, fit_params, fit_errors,
         x_min, x_max, y_min, y_max, rdf_surface_expr)
 
-    systematics["fit_model"] = compute_torsion_variant_systematic(
-        "fit model choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
-        x_cut_margin, y_cut_margin,
-        variant_a_kwargs=dict(chosen_model="parabolic_y"),
-        variant_b_kwargs=dict(chosen_model="full_quadratic"))
+    # systematics["fit_model"] = compute_torsion_variant_systematic(
+    #     "fit model choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+    #     x_cut_margin, y_cut_margin,
+    #     variant_a_kwargs=dict(chosen_model="parabolic_y"),
+    #     variant_b_kwargs=dict(chosen_model="full_quadratic"))
 
-    systematics["grid_binning"] = compute_torsion_variant_systematic(
-        "grid bin choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
-        x_cut_margin, y_cut_margin,
-        variant_a_kwargs=dict(nx_slices=5, ny_slices=40),
-        variant_b_kwargs=dict(nx_slices=15, ny_slices=90))
+    # systematics["grid_binning"] = compute_torsion_variant_systematic(
+    #     "grid bin choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+    #     x_cut_margin, y_cut_margin,
+    #     variant_a_kwargs=dict(nx_slices=5, ny_slices=40),
+    #     variant_b_kwargs=dict(nx_slices=15, ny_slices=90))
 
-    systematics["torsion_margins"] = compute_margin_systematic(
-         df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
-         nx_slices, ny_slices, eff_nominal=eff_ch)
+    # systematics["torsion_margins"] = compute_margin_systematic(
+    #      df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+    #      nx_slices, ny_slices, eff_nominal=eff_ch)
 
-    systematics["preliminary_cut"] = compute_preliminary_cut_systematic(
-        df_phys, parameters, nx_slices, ny_slices, x_cut_margin, y_cut_margin)
+    # systematics["preliminary_cut"] = compute_preliminary_cut_systematic(
+    #     df_phys, parameters, nx_slices, ny_slices, x_cut_margin, y_cut_margin)
 
     eff_err_syst = math.sqrt(sum(v**2 for v in systematics.values()))
     eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
