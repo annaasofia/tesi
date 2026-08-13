@@ -1,7 +1,5 @@
 Title:
-
 Characterization of Long Bent Silicon Crystals for Channelling Applications at the LHC
-
 
 Abstract:
 
@@ -10,6 +8,20 @@ This technology is currently being studied for the measurement of the electromag
 Such measurements require deflections of several milli radians which cannot be obtained with conventional magnets over the required distances.
 This thesis focuses on the experimental characterization with hadron-beam data of various bent silicon crystals developed for this purpose as part of the TWOCRYST project. 
 
+
 A detailed study has been performed combining the analysis of experimental data and Monte Carlo simulations to assess the performance of these crystals for future experimental setups.
 The evaluation of key channeling parameters such as channeling efficiency and the deflection angle has been performed both by analyzing beam test data and through dedicated simulations, developed and executed using various available simulation codes.
 The comparison between the experimental results and simulations are dicussed. 
+OR
+"The comparison between measurements and simulations provides a robust assessment of the performance of these long crystals developed at CERN, outlining the potential for their implementation in high-energy accelerator applications."
+
+
+
+--> the problem is that the particles are too short-lived to be measured using magnets, but instead of discussing these details (I would just simplify the sentence and simply state that using magnets we cannot do it, that we need the crystals with their larger deflection)
+--> these long crystals were also bent the same way as the operational crystal collimators, i.e. anticlastically. What is new about them is the length and the larger deflection.
+
+
+
+- also other available codes instead of only Geant4 as indicated (at least Xcoll)
+- just focus on comparisons vs measurements or perform also simulations are higher energies
+- make the tools compatible also with other data formats and also reproduce the analysis for previous crystals
