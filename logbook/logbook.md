@@ -467,6 +467,11 @@ $\to$ [slides week 6](./slides/week6.pdf)
 ([UP](#traineeship-al-cern))
 
 ## WEEK 7
+
+### Simulation
+
+
+
 ## WEEK 8
 
 
