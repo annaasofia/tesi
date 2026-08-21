@@ -1,6 +1,7 @@
 # Traineeship al CERN
 
 1. [WEEK 1 (JUL 01)](#week-1)
+    - [Access office computer](#access-office-computer)
     - [Some bibliography](#some-bibliography)
     - [Looking at data structure](#looking-at-data-structure)
 2. [WEEK 2 (JUL 06)](#week-2)  
@@ -23,9 +24,19 @@
     - [Systematics](#systematics)
     - [PDG on errors](#pdg-on-errors)
 7. [WEEK 7 (AUG 17)](#week-7)
+    - [Finish week 6 work](#finish-week-6-work)
+    - [Simulation](#simulation)
 8. [WEEK 8 (AUG 24)](#week-8)
 
 ## WEEK 1  
+
+### Access office computer
+```
+ssh amoro@lxplus.cern.ch
+```
+```
+ssh amoro@pcbe16774
+```
 
 ### Some bibliography
 (more in [bibliography.md](../aboutcrystals/bibliography.md))
@@ -53,6 +64,22 @@ data to look at:
 - some leaves are `TLeafI` so integers, others `TLeafD` so double
 
 $\to$ code to open them [open.py](../recoDataSimple/open.py) or [open_as_df.py](../recoDataSimple/open_as_df.py)
+
+or from root terminal:
+```
+root -l file.root
+
+root [0] TFile file0 = TFile::Open(file.root)
+root [1] file0->ls()
+root [2] name_tree->GetListOfLeaves()->Print()
+root [3] name_tree->Print()
+root [4] new TTreeViewer(name_tree)
+root [5] name_tree->Draw("name_variable")
+```
+or also the command:
+```
+root [0] new TBrowser
+```
 
 
 
@@ -468,10 +495,38 @@ $\to$ [slides week 6](./slides/week6.pdf)
 
 ## WEEK 7
 
+### Finish week 6 work
+
+to do:
+- ✅ check $x$ width and its error from MCS
+- better explain systematics
+- check for mcs along y if i am really cutting away particles not inside the crystal
+- check for a pixel inside the clamps and compute the mcs for stainless steel
+
 ### Simulation
 
+to run the scripts:
+```
+conda activate bdsim_test
+export PYTHONPATH="$PWD:$PYTHONPATH"
+cd my/path/
+ipython
+```
+and them in the `ipython` environment i can run blocks of code one-at-a-time.
 
 
+in the folder [simulation/bdsim_test](../simulation/bdsim_test/) there is a [demo.py](../simulation/bdsim_test/demo.py) file which is the script:
+- tracking protons in a ring accelerator
+- with 2 objects: a helium target and a tungsten collimator
+- needs the file [trackerInterface.gmad](../simulation/bdsim_test/trackerInterface.gmad) for specifics
+
+in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is a [demo_crystal.py](../simulation/bdsim_crystal/demo_crystal.py) file which is the script:
+- tracking protons in short/long crystal
+- needs the file [trackerInterface.gmad](../simulation/bdsim_crystal/trackerInterface.gmad) for specifics
+
+$\to$ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
+
+([UP](#traineeship-al-cern))
 ## WEEK 8
 
 
