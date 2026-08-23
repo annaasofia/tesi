@@ -112,20 +112,16 @@ y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2_y)
  
 y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
  
-c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
-gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")
-gr_y.SetMarkerStyle(20); gr_y.SetMarkerSize(0.6)
-gr_y.Draw("AP")
-f_y.SetLineColor(ROOT.kRed)
-f_y.Draw("SAME")
-c_y.Update()
- 
 # x edges (scan x, restricted to the just-found y window)
 h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_lo, slice_max=y_hi)
 x_centers, x_sigmas, x_sigma_errs = extract_widths_from_h2(h2_x)
  
 x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
- 
+
+h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-5, scan_max=8, n_bins=200, slice_var="Tracks.d0_x", slice_min=x_lo, slice_max=x_hi)
+y_centers, y_sigmas, y_sigma_errs = extract_widths_from_h2(h2_y)
+y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=y_lo, edge_hi_guess=y_hi)
+
 print(f"X edges (scattering method): [{x_lo:.4f} ± {x_lo_err:.4f}, {x_hi:.4f} ± {x_hi_err:.4f}] mm")
 print(f"Y edges (scattering method): [{y_lo:.4f} ± {y_lo_err:.4f}, {y_hi:.4f} ± {y_hi_err:.4f}] mm")
 
@@ -148,7 +144,15 @@ mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
 mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 print(f"fitted transition x = {f_x.GetParameter(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
 print(f"fitted transition y = {f_y.GetParameter(4):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")
- 
+
+c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
+gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")
+gr_y.SetMarkerStyle(20); gr_y.SetMarkerSize(0.6)
+gr_y.Draw("AP")
+f_y.SetLineColor(ROOT.kRed)
+f_y.Draw("SAME")
+c_y.Update()
+
 c_x = ROOT.TCanvas("c_x", "Scattering width vs x", 900, 600)
 gr_x.SetTitle("Local scattering width vs x; d0_x [mm]; #sigma(#Delta#theta_{x}) [#murad]")
 gr_x.SetMarkerStyle(20); gr_x.SetMarkerSize(0.6)

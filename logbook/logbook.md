@@ -505,6 +505,12 @@ to do:
 
 ### Simulation
 
+**Geant4** is a Monte Carlo toolkit for simulating particles passing through matter. Given a geometry, a set of materials, and a physics list (which processes are switched on — multiple scattering, ionization, hadronic interactions, etc.), it steps particles through space and simulates their interactions stochastically. `g4FTFP_BERT` is a standard hadronic physics list (Fritiof model at high energy, Bertini cascade at low energy) — general-purpose, no crystal physics.  
+
+**BDSIM** is a Geant4-based application purpose-built for accelerator beamlines: it turns an accelerator lattice description into Geant4 geometry and tracks beam through it, including realistic material interactions in collimators, targets, and (via an extension) bent-crystal channeling. Its input language, *gmad*, looks like MAD-X syntax but describes beamline elements, materials, beam parameters, and physics options.  
+
+**BDSIM-Link** (what both scripts use) is a hybrid-tracking mode: an external code (here, xtrack/xsuite) does the fast, analytic tracking through magnets, and only hands particles to Geant4/BDSIM at the few elements where detailed matter interaction actually matters (a collimator jaw, a target, a crystal). This is much cheaper than tracking the whole ring in Geant4.
+
 to run the scripts:
 ```
 conda activate bdsim_test
@@ -517,11 +523,12 @@ and them in the `ipython` environment i can run blocks of code one-at-a-time.
 
 in the folder [simulation/bdsim_test](../simulation/bdsim_test/) there is a [demo.py](../simulation/bdsim_test/demo.py) file which is the script:
 - tracking protons in a ring accelerator
-- with 2 objects: a helium target and a tungsten collimator
+- with 2 objects: a helium target (generate a halo) and a tungsten jaw collimator (absorb the halo)
+- 100 turns, each turn particles are sent through coll1, emittance are recorded, then xtrack propagates the surving particles through the arc to coll2, then back to the start $\to$ surviving particle counts and coordinated at both elements are logged each turn
 - needs the file [trackerInterface.gmad](../simulation/bdsim_test/trackerInterface.gmad) for specifics
 
 in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is a [demo_crystal.py](../simulation/bdsim_crystal/demo_crystal.py) file which is the script:
-- tracking protons in short/long crystal
+- tracking 180 GeV protons in short/long crystal
 - needs the file [trackerInterface.gmad](../simulation/bdsim_crystal/trackerInterface.gmad) for specifics
 
 $\to$ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
