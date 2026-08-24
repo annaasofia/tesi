@@ -24,9 +24,9 @@
     - [Systematics](#systematics)
     - [PDG on errors](#pdg-on-errors)
 7. [WEEK 7 (AUG 17)](#week-7)
-    - [Finish week 6 work](#finish-week-6-work)
     - [Simulation](#simulation)
 8. [WEEK 8 (AUG 24)](#week-8)
+    - [Finish week 6 work](#finish-week-6-work)
 
 ## WEEK 1  
 
@@ -495,14 +495,6 @@ $\to$ [slides week 6](./slides/week6.pdf)
 
 ## WEEK 7
 
-### Finish week 6 work
-
-to do:
-- ✅ check $x$ width and its error from MCS
-- better explain systematics
-- check for mcs along y if i am really cutting away particles not inside the crystal
-- check for a pixel inside the clamps and compute the mcs for stainless steel
-
 ### Simulation
 
 **Geant4** is a Monte Carlo toolkit for simulating particles passing through matter. Given a geometry, a set of materials, and a physics list (which processes are switched on — multiple scattering, ionization, hadronic interactions, etc.), it steps particles through space and simulates their interactions stochastically. `g4FTFP_BERT` is a standard hadronic physics list (Fritiof model at high energy, Bertini cascade at low energy) — general-purpose, no crystal physics.  
@@ -514,8 +506,13 @@ to do:
 to run the scripts:
 ```
 conda activate bdsim_test
+```
+```
+cd /home/amoro/Desktop/bdsim/.install/lib/python
 export PYTHONPATH="$PWD:$PYTHONPATH"
-cd my/path/
+```
+```
+cd /home/amoro/Desktop/tesi/simulation/
 ipython
 ```
 and them in the `ipython` environment i can run blocks of code one-at-a-time.
@@ -533,9 +530,19 @@ in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is 
 
 $\to$ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
 
+$\to$ [slides Zanetti](./slides/presentazioneZanetti.pdf)
+$\to$ [slides NDC section meeting](./slides/NDC_260826_moro.pdf)
+
 ([UP](#traineeship-al-cern))
 ## WEEK 8
 
+### Finish week 6 work
+
+to do:
+- better explain systematics
+- check for mcs along y if i am really cutting away particles not inside the crystal
+- check for a pixel inside the clamps and compute the mcs for stainless steel
+- adjust my analysis with Melanie work
 
 
 

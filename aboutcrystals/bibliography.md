@@ -6,6 +6,8 @@
 [https://indico.cern.ch/event/1380440/contributions/6176607/attachments/2973355/5233336/SRedaelli_CAS_2024-11-21.pdf](https://indico.cern.ch/event/1380440/contributions/6176607/attachments/2973355/5233336/SRedaelli_CAS_2024-11-21.pdf)
 
 ## ARTICLES
+- Melanie Indico presentation  
+[https://indico.cern.ch/event/1720802/](https://indico.cern.ch/event/1720802/)
 - [PRINTED] Bandiera, L., et al. *Performance of short and long bent crystals for the TWOCRYST experiment at the Large Hadron Collider.* The European Physical Journal C 85.12 (2025): 1373.  
 [http://doi.org/10.1140/epjc/s10052-025-15092-y](http://doi.org/10.1140/epjc/s10052-025-15092-y)
 - P. Hermes, I. Meinke, S. Redaelli, *New directions for bent crystals* Cern Courier (2026).  
