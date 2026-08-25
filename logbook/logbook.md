@@ -509,13 +509,22 @@ conda activate bdsim_test
 ```
 ```
 cd /home/amoro/Desktop/bdsim/.install/lib/python
+```
+```
 export PYTHONPATH="$PWD:$PYTHONPATH"
 ```
 ```
-cd /home/amoro/Desktop/tesi/simulation/
+cd /home/amoro/Desktop/tesi/simulation/bdsim_crystal
+```
+```
 ipython
 ```
-and them in the `ipython` environment i can run blocks of code one-at-a-time.
+and them in the `ipython` environment i can run blocks of code one-at-a-time.  
+OR  
+```
+nohup python run_simulation.py &
+```
+to run the simulation (keep going if you close the terminal) and save the data in a file with timestamp (in order to then perform the analysis).
 
 
 in the folder [simulation/bdsim_test](../simulation/bdsim_test/) there is a [demo.py](../simulation/bdsim_test/demo.py) file which is the script:
@@ -528,7 +537,7 @@ in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is 
 - tracking 180 GeV protons in short/long crystal
 - needs the file [trackerInterface.gmad](../simulation/bdsim_crystal/trackerInterface.gmad) for specifics
 
-$\to$ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
+$\to$ ✅ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
 
 $\to$ [slides Zanetti](./slides/presentazioneZanetti.pdf)
 $\to$ [slides NDC section meeting](./slides/NDC_260826_moro.pdf)
