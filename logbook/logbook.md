@@ -515,6 +515,8 @@ export PYTHONPATH="$PWD:$PYTHONPATH"
 ```
 ```
 cd /home/amoro/Desktop/tesi/simulation/bdsim_crystal
+```
+```
 ipython
 ```
 and them in the `ipython` environment i can run blocks of code one-at-a-time.  

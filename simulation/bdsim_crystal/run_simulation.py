@@ -37,7 +37,7 @@ particles1 = line.build_particles(
     nemitt_x=2.5e-6, nemitt_y=1e-6,
     x=np.zeros(npart), y=np.zeros(npart),
     # px=(np.arange(-2,2,(2-(-2))/npart)+0)*1e-6
-    px=np.linspace(-40e-6, 100e-6, npart), # distribuzione piatta
+    px=np.linspace(-150e-6, 150e-6, npart), # distribuzione piatta
     py=np.zeros(npart),
     zeta=np.zeros(npart), delta=np.zeros(npart), _capacity = int(npart*2))
 particles1.pdg_id[:npart] = np.ones(npart)*2212
