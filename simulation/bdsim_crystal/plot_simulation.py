@@ -77,6 +77,7 @@ def angular_scan_plot(px_in, particle_id_in, px_out, particle_id_out, state_out,
 
 def channeling_efficiency(theta_in, dtheta, bending_angle, theta_L, tol_frac=0.2):
 
+    # cutting within the critical angle
     in_acceptance = np.abs(theta_in) < theta_L
     n_accepted = np.sum(in_acceptance)
 
