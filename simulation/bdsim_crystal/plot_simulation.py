@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-data = np.load('crystal_scan_cry1_20260825_163955.npz')
+filename = 'cry1_20260826_18.npz'
+data = np.load(filename)
 
 # reconstruct the arrays from the saved data
 theta_in_all = data['px_in']
@@ -54,13 +55,14 @@ def angular_scan_plot(px_in, particle_id_in, px_out, particle_id_out, state_out,
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-150, 150)
-    graph[0].axhline(0, color='gray', lw=0.8, ls='--')
-    graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
+    # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
+    graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
     graph[0].set_xlabel(rf'$\theta_{{in}}$ [${unit_str}$]')
     graph[0].set_ylabel(rf'$\Delta\theta = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
     graph[0].set_title(f'Angular scan – {label}')
     graph[0].grid(alpha=0.3)
+    graph[0].legend()
 
     graph[1].hist(dtheta * scale, bins=500, color='#1f77b4', edgecolor='white', linewidth=0.3)
     graph[1].set_xlim(-75, 100)

@@ -522,9 +522,13 @@ ipython
 and them in the `ipython` environment i can run blocks of code one-at-a-time.  
 OR  
 ```
-nohup python run_simulation.py &
+python run_simulation.py &
 ```
-to run the simulation (keep going if you close the terminal) and save the data in a file with timestamp (in order to then perform the analysis).
+to run the simulation (keep going if you close the terminal) and save the data in a file with timestamp (in order to then perform the analysis).  
+To live check the progress (`USER PID %CPU %MEM VSZ RSS TTY STAT START TIME`):
+```
+ps aux | grep run_simulation
+```
 
 
 in the folder [simulation/bdsim_test](../simulation/bdsim_test/) there is a [demo.py](../simulation/bdsim_test/demo.py) file which is the script:
@@ -552,6 +556,8 @@ to do:
 - check for mcs along y if i am really cutting away particles not inside the crystal
 - check for a pixel inside the clamps and compute the mcs for stainless steel
 - adjust my analysis with Melanie work
+- try plot in python
+- check not angle deflection but only distribution of $\theta_{out}$
 
 
 

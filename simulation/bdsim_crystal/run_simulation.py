@@ -22,23 +22,28 @@ cry1.type = bdsim.elementtype.ElementType.USERCOMPONENT
 cry1.userTypeName = "crystaldeflector"
 cry1.name = "crystaldeflector"
 cry1.material="G4_Si"
-cry1.xsize = 0.05
-cry1.ysize = 0.2
-cry1.materialThickness = 2e-3
-cry1.l = 2e-3
-cry1.horizontalWidth = 0.1
+cry1.xsize = 0.05 # meters
+cry1.ysize = 0.2 # meters
+cry1.materialThickness = 2e-3 # meters
+cry1.l = 2e-3 # meters
+cry1.horizontalWidth = 0.1 # meters
 cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:50e-6;"
 cry1.apertureType = "rectangular" # aperture of box around crystal
 cry1.aper1 = 10e1 # m
 l.AddLinkElement(cry1)
 
 npart = 200000
+x_half_range = cry1.xsize / 2
+y_half_range = cry1.ysize / 2
+x_impact = np.random.uniform(-x_half_range, x_half_range, npart)
+y_impact = np.random.uniform(-y_half_range, y_half_range, npart)
+px_impact = np.random.uniform(-150e-6, 150e-6, npart)
+
 particles1 = line.build_particles(
     nemitt_x=2.5e-6, nemitt_y=1e-6,
-    x=np.zeros(npart), y=np.zeros(npart),
-    # px=(np.arange(-2,2,(2-(-2))/npart)+0)*1e-6
-    px=np.linspace(-150e-6, 150e-6, npart), # distribuzione piatta
-    py=np.zeros(npart),
+    # x=np.zeros(npart), y=np.zeros(npart),
+    x=x_impact, y=y_impact,
+    px=px_impact, py=np.zeros(npart),
     zeta=np.zeros(npart), delta=np.zeros(npart), _capacity = int(npart*2))
 particles1.pdg_id[:npart] = np.ones(npart)*2212
 particles10 = particles1.copy()
@@ -70,8 +75,8 @@ bds_link.TrackXSuite(0,'crystaldeflector',particles1,180e3)
 # particles20 = particles2.copy()
 # bds_link.TrackXSuite(0,'crystaldeflector2',particles2,180e3)
 
-timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-outfile = f'crystal_scan_cry1_{timestamp}.npz'
+timestamp = datetime.now().strftime('%Y%m%d_%H')
+outfile = f'cry1_{timestamp}.npz'
 
 np.savez(outfile,
     # stato IN
