@@ -9,7 +9,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
-file = 8431
+file = 8430
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
@@ -149,28 +149,25 @@ def fit_three_step_edges(centers, sigmas, sigma_errs, e1_guess, e2_guess, e3_gue
 
  
 # y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run)
-h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=16, n_bins=200, slice_var="Tracks.d0_x", slice_min=-1.5, slice_max=1.5) # 0.01 mm precision
+h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=-1.5, slice_max=1.5) # 0.01 mm precision
 y_centers, y_sigmas, y_sigma_errs, y_entries = extract_widths_from_h2(h2_y)
 # print(f"Number of bins used for y edge fit: {len(y_centers)}")
-print(f"Entries per bin: {y_entries}")
+# print(f"Entries per bin: {y_entries}")
  
 # y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
 y_edges, y_levels, f_y, gr_y = fit_three_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=-11.5, e2_guess=-5.0, e3_guess=8.0)
  
 # x edges (scan x, restricted to the just-found y window)
-h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_edges["e1"][0], slice_max=y_edges["e3"][0])
+h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_edges["e2"][0], slice_max=y_edges["e3"][0])
 x_centers, x_sigmas, x_sigma_errs, _ = extract_widths_from_h2(h2_x)
 
 x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
 
-h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=200, slice_var="Tracks.d0_x", slice_min=x_lo, slice_max=x_hi)
+h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=x_lo, slice_max=x_hi)
 y_centers, y_sigmas, y_sigma_errs, _ = extract_widths_from_h2(h2_y)
 y_edges, y_levels, f_y, gr_y = fit_three_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=y_edges["e1"][0], e2_guess=y_edges["e2"][0], e3_guess=y_edges["e3"][0])
 y_lo, y_lo_err = y_edges["e2"]
 y_hi, y_hi_err = y_edges["e3"]
-
-print(f"X edges (scattering method): [{x_lo:.4f} ± {x_lo_err:.4f}, {x_hi:.4f} ± {x_hi_err:.4f}] mm")
-print(f"Y edges (scattering method): [{y_lo:.4f} ± {y_lo_err:.4f}, {y_hi:.4f} ± {y_hi_err:.4f}] mm")
 
 
 mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue()
@@ -188,6 +185,7 @@ sigma_mcs_clamp_y = math.sqrt(max(sigma_clamp_y**2 - mean_res_y**2, 0))
 print(f"theta_mcs (x): baseline {sigma_mcs_out_x:.2f} -> in-crystal {sigma_mcs_in_x:.2f} urad")
 print(f"theta_mcs (y): baseline {sigma_mcs_out_y:.2f} -> in-crystal {sigma_mcs_in_y:.2f} urad")
 
+# we are comapring the fitted erf transition point with the mean of the d0Err_x/y distributions, which is a good sanity check
 mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
 mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 print(f"fitted transition x = {f_x.GetParameter(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
@@ -212,14 +210,14 @@ c_y.Update()
  
 print("=" * 50)
 print(f"Crystal footprint from scattering method:")
-print(f"\tx = [{x_lo:.4f}({x_lo_err*1e4:.0f}), {x_hi:.4f}({x_hi_err*1e4:.0f})] mm  (width = {x_hi - x_lo:.4f} ± {pow(x_lo_err*x_lo_err + x_hi_err*x_hi_err,0.5):.4f} mm)")
-print(f"\ty = [{y_lo:.4f}({y_lo_err*1e4:.0f}), {y_hi:.4f}({y_hi_err*1e4:.0f})] mm  (width = {y_hi - y_lo:.4f} ± {pow(y_lo_err*y_lo_err + y_hi_err*y_hi_err,0.5):.4f} mm)")
+print(f"\tx = [{x_lo:.4f} ± {x_lo_err:.4f}, {x_hi:.4f} ± {x_hi_err:.4f}] mm  (width = {x_hi - x_lo:.4f} ± {pow(x_lo_err*x_lo_err + x_hi_err*x_hi_err,0.5):.4f} mm)")
+print(f"\ty = [{y_lo:.4f} ± {y_lo_err:.4f}, {y_hi:.4f} ± {y_hi_err:.4f}] mm  (width = {y_hi - y_lo:.4f} ± {pow(y_lo_err*y_lo_err + y_hi_err*y_hi_err,0.5):.4f} mm)")
 print(f"\tbaseline sigma x  = {f_x.GetParameter(0):.2f} ± {f_x.GetParError(0):.2f} urad")
 print(f"\tin-crystal jump x = {f_x.GetParameter(1):.2f} ± {f_x.GetParError(1):.2f} urad")
 print(f"\tbaseline sigma y  = {f_y.GetParameter(0):.2f} ± {f_y.GetParError(0):.2f} urad")
 print(f"\tin-crystal jump y = {f_y.GetParameter(1):.2f} ± {f_y.GetParError(1):.2f} urad")
 
-# Plot della mappa 2D Posizione x/y vs deflessione
+# Plot della mappa 2D Posizione x/y vs deflessione 
 # c_2d_y = ROOT.TCanvas("c_2d_y", "Position Y vs Deflection", 900, 600)
 h2_y_val = h2_y.GetValue()
 h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{y}; d0_y [mm]; #Delta#theta_{x} [#murad]")
@@ -237,7 +235,8 @@ h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; d0_x [mm]; #Delt
 # bin_dentro = h2_y_val.GetXaxis().FindBin((y_lo + y_hi) / 2.0) # Esattamente a metà cristallo
 bin_dentro = h2_y_val.GetXaxis().FindBin(0)
 bin_clamp = h2_y_val.GetXaxis().FindBin(-10)
-bin_fuori = h2_y_val.GetXaxis().FindBin(y_edges["e1"][0] - 2.0)
+bin_fuori = h2_y_val.GetXaxis().FindBin(y_edges["e1"][0] - 1.0)
+# bin_fuori = h2_y_val.GetXaxis().FindBin(-12.0)
 
 # Estraiamo gli istogrammi 1D
 h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro)
@@ -246,7 +245,7 @@ h1_fuori = h2_y_val.ProjectionY("h1_fuori", bin_fuori, bin_fuori)
 
 # Fit e Plot per la zona DENTRO il cristallo
 c_slice_in = ROOT.TCanvas("c_slice_in", "Fit Slice (INSIDE Crystal)", 800, 600)
-h1_dentro.SetTitle(f"Fettina DENTRO il cristallo (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_dentro.SetTitle(f"Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
 h1_dentro.SetLineColor(ROOT.kBlue); h1_dentro.SetLineWidth(2)
 f_in = ROOT.TF1("f_in", "gaus", -fit_range, fit_range)
 f_in.SetLineColor(ROOT.kRed)
@@ -260,7 +259,7 @@ leg_in.Draw("SAME")
 c_slice_in.Update()
 
 c_clamp = ROOT.TCanvas("c_clamp", "Fit Slice (CLAMP)", 800, 600)
-h1_clamp.SetTitle(f"Fettina CLAMP (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_clamp.SetTitle(f"Crystal slice (clamp) (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
 h1_clamp.SetLineColor(ROOT.kGreen+2); h1_clamp.SetLineWidth(2)
 f_clamp = ROOT.TF1("f_clamp", "gaus", -fit_range, fit_range)
 f_clamp.SetLineColor(ROOT.kRed)
@@ -275,7 +274,7 @@ c_clamp.Update()
 
 # Fit e Plot per la zona FUORI dal cristallo
 c_slice_out = ROOT.TCanvas("c_slice_out", "Fit Slice (OUTSIDE Crystal)", 800, 600)
-h1_fuori.SetTitle(f"Fettina FUORI dal cristallo (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+h1_fuori.SetTitle(f"OUTSIDE Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
 h1_fuori.SetLineColor(ROOT.kMagenta); h1_fuori.SetLineWidth(2)
 f_out = ROOT.TF1("f_out", "gaus", -fit_range, fit_range)
 f_out.SetLineColor(ROOT.kRed)
@@ -298,7 +297,7 @@ c_slice_out.Update()
 
 # # Fit e Plot per la zona DENTRO il cristallo (Asse X)
 # c_slice_in_x = ROOT.TCanvas("c_slice_in_x", "Fit Slice X (INSIDE Crystal)", 800, 600)
-# h1_dentro_x.SetTitle(f"Fettina X DENTRO il cristallo (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+# h1_dentro_x.SetTitle(f"Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
 # h1_dentro_x.SetLineColor(ROOT.kBlue+2); h1_dentro_x.SetLineWidth(2)
 
 # f_in_x = ROOT.TF1("f_in_x", "gaus", -fit_range, fit_range)
@@ -314,7 +313,7 @@ c_slice_out.Update()
 
 # # Fit e Plot per la zona FUORI dal cristallo (Asse X)
 # c_slice_out_x = ROOT.TCanvas("c_slice_out_x", "Fit Slice X (OUTSIDE Crystal)", 800, 600)
-# h1_fuori_x.SetTitle(f"Fettina X FUORI dal cristallo (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
+# h1_fuori_x.SetTitle(f"OUTSIDE Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
 # h1_fuori_x.SetLineColor(ROOT.kMagenta+2); h1_fuori_x.SetLineWidth(2)
 
 # f_out_x = ROOT.TF1("f_out_x", "gaus", -fit_range, fit_range)

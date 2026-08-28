@@ -82,7 +82,7 @@ np.savez(outfile,
     # stato IN
     x_in=particles10.x, px_in=particles10.px,
     y_in=particles10.y, py_in=particles10.py,
-    particle_id_in=particles10.particle_id,
+    particle_id_in=particles10.particle_id, 
     state_in=particles10.state,
     # stato OUT
     x_out=particles1.x, px_out=particles1.px,

@@ -17,7 +17,6 @@
     - [Miscellaneous](#to-do)
     - [Multiple Coulomb Scattering](#multiple-coulomb-scattering)
     - [Measuring multiple coulomb scattering](#measuring-multiple-coulomb-scattering)
-    - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 6. [WEEK 6 (AUG 10)](#week-6)
     - [Taking into account d and theta errors](#taking-into-account-d-and-theta-errors)
     - [Computing efficiency errors](#computing-efficiency-errors)
@@ -27,6 +26,7 @@
     - [Simulation](#simulation)
 8. [WEEK 8 (AUG 24)](#week-8)
     - [Finish week 6 work](#finish-week-6-work)
+    - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 
 ## WEEK 1  
 
@@ -319,7 +319,6 @@ $\to$ **multiple coulomb scattering RMS of protons ($z=1$) for the $L=74\text{ m
 $\theta_0=66.5 \,\mu\text{rad}$
 
 ### Measuring multiple coulomb scattering
-### Find the crystal edges: scattering method
 
 $\to$ performed in [compute_edges2.py](../recoDataSimple/compute_edges2.py) (this method provides indipendence from channeling efficiency or torsion)
 
@@ -333,21 +332,11 @@ My current method ([compute_edges1.py](../recoDataSimple/compute_edges1.py)) to 
 2. why outside the crystal we don't get zero but $\sim12\,\mu\text{rad}$? even without the crystal, particles would still not travel with a perfect linear track, the beam has an intrinsic angular divergence (should be of $\sim12-15\,\mu\text{rad}$)
 
 RESULTS:  
-- i obtain a width in y of $\sim 8.4\text{ mm}$ instead of $12.8\text{ mm}$: re-try considering only one slide, but anyway could be because what we're getting it the *primary clean beam* (don't worry that for the torsion analysis we are not considering the edges anyway)
+- i obtain a width in y of $\sim 8.4\text{ mm}$ instead of $12.8\text{ mm}$: re-try considering only one slide, but anyway could be because what we're getting it the *primary clean beam* (don't worry that for the torsion analysis we are not considering the edges anyway) $\to$ infact we are detecting the clamps and the clean beam
 - along x i obtain exactly $\sim2\text{ mm}$
 - along x outside the crystal i have $\sigma\sim12\,\mu\text{rad}$ which corresponds to the detector resolution, and inside the crystal i have   
 
-|          | **$x$ [mm]**        | $x_{low}$  | $x_{high}$ | $\sigma_{x,bsl}$ [urad] | $\theta_{x,mcs}$ | **$y$ [mm]**        | $y_{low}$   | $y_{high}$ | $\sigma_{y,bsl}$ [urad] | $\theta_{y,mcs}$ |  
-|----------|---------------------|------------|------------|-------------------------|------------------|---------------------|-------------|------------|-------------------------|------------------|  
-| **8430** | **2.0796 ± 0.0004** | -1.0530(3) | 1.0266(2)  | 12.38 ± 0.00            | 67.05 ± 0.07     | **8.4470 ± 0.0026** | -2.5787(14) | 5.8683(22) | 69.78 ± 0.10            | -52.58 ± 0.10    |
-| **8431** | **2.0789 ± 0.0004** | -1.0530(3) | 1.0259(3)  | 12.38 ± 0.00            | 67.08 ± 0.07     | **8.4528 ± 0.0028** | -2.5856(15) | 5.8672(23) | 68.87 ± 0.10            | -51.85 ± 0.11    |
-| **8650** | **2.0703 ± 0.0007** | -0.2039(5) | 1.8664(4)  | 14.37 ± 0.01            | 85.21 ± 0.17     | **8.8781 ± 0.0028** | -3.6331(19)  | 5.2451(20) | 69.15 ± 0.14            | -50.81 ± 0.14    |
-| **8655** | **2.1081 ± 0.0006** | 0.6081(5)  | 2.7162(4)  | 14.65 ± 0.01            | 72.79 ± 0.13     | **8.7125 ± 0.0065** | -4.9377(47) | 3.7748(44) | 63.78 ± 0.15            | -46.52 ± 0.15    |
-| **8656** | **2.1093 ± 0.0006** | 0.6072(5)  | 2.7165(4)  | 14.66 ± 0.01            | 72.80 ± 0.12     | **8.6314 ± 0.0054** | -4.8957(40) | 3.7357(37) | 63.84 ± 0.13            | -46.52 ± 0.13    |
-
-
-
-
+[results continued in week 8](#find-the-crystal-edges-scattering-method)
 
 $\to$ [slides week 5](./slides/week5.pdf)
 
@@ -543,7 +532,7 @@ in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is 
 
 $\to$ ✅ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
 
-$\to$ [slides Zanetti](./slides/presentazioneZanetti.pdf)
+$\to$ [slides Zanetti](./slides/presentazioneZanetti.pdf)  
 $\to$ [slides NDC section meeting](./slides/NDC_260826_moro.pdf)
 
 ([UP](#traineeship-al-cern))
@@ -558,7 +547,9 @@ to do:
 - adjust my analysis with Melanie work
 - try plot in python
 - check not angle deflection but only distribution of $\theta_{out}$
+- for the simulation put the original beam distrib of real data
+- for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
+- run pions 
 
-
-
+### Find the crystal edges: scattering method
 

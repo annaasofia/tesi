@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-filename = 'cry1_20260826_18.npz'
+filename = 'cry1_20260827_18.npz'
 data = np.load(filename)
 
 # reconstruct the arrays from the saved data
