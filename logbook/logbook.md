@@ -27,6 +27,8 @@
 8. [WEEK 8 (AUG 24)](#week-8)
     - [Finish week 6 work](#finish-week-6-work)
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
+9. [WEEK 9 (AUG 31)](#week-9)
+10. [WEEK 10 (SEP 07)](#week-10)
 
 ## WEEK 1  
 
@@ -553,3 +555,34 @@ to do:
 
 ### Find the crystal edges: scattering method
 
+Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
+
+$\theta_{MCS} = \sqrt{\sigma_{measured}^2​−\sigma_{resolution}^2​}$
+
+**Considerations:**
+- besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
+- consider the angle resolution (of $\Delta\theta_x$) of $\sim 8.89$ (8430/8431) or $9.67$ (8650/8655/8656)
+- compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
+
+run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
+-- | -- | -- | -- 
+8430 |  0.0917|  0.2127 | 0.1055 
+8431 | |  | 
+8430/8431 |  | 
+8650 |  | 
+8655 |  | 
+8656 |  | 
+
+run [urad] | **x:** $\theta_{bsl}$ | $\theta_{high}$ | $\sqrt{\theta_h^2-\theta_b^2}$| **y:** $\theta_{bsl}$ | $\theta_{high}$ | $\theta_{clamp}$ | $\sqrt{\theta_h^2-\theta_b^2}$
+-- | -- | -- | -- | -- | -- | -- 
+8430 | 12.47 | 11.58(9) |  |  |  |  | 
+8431 | |  | 
+8430/8431 |  | 
+8650 |  | 
+8655 |  | 
+8656 |  | 
+
+
+([UP](#traineeship-al-cern))
+
+## WEEK 9
