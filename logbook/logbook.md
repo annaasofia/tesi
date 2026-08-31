@@ -557,7 +557,7 @@ to do:
 
 Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
 
-$\theta_{MCS} = \sqrt{\sigma_{measured}^2​−\sigma_{resolution}^2​}$
+$\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{baseline}^2​}$
 
 **Considerations:**
 - besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
@@ -565,22 +565,22 @@ $\theta_{MCS} = \sqrt{\sigma_{measured}^2​−\sigma_{resolution}^2​}$
 - compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
 
 run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
--- | -- | -- | -- 
-8430 |  0.0917|  0.2127 | 0.1055 
-8431 | |  | 
-8430/8431 |  | 
-8650 |  | 
-8655 |  | 
-8656 |  | 
+-------- | --------------------- | --------------------- | -------------------------
+8430     |  0.0917               |  0.2127               | 0.1055 
+8431     |  0.0900               |  0.2058               | 0.1055 
+8430/8431|  0.0915               |  0.2596               | 0.1055 
+8650     |  | 
+8655     |  | 
+8656     |  | 
 
-run [urad] | **x:** $\theta_{bsl}$ | $\theta_{high}$ | $\sqrt{\theta_h^2-\theta_b^2}$| **y:** $\theta_{bsl}$ | $\theta_{high}$ | $\theta_{clamp}$ | $\sqrt{\theta_h^2-\theta_b^2}$
--- | -- | -- | -- | -- | -- | -- 
-8430 | 12.47 | 11.58(9) |  |  |  |  | 
-8431 | |  | 
-8430/8431 |  | 
-8650 |  | 
-8655 |  | 
-8656 |  | 
+run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\theta_{mcs}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}$ | $\theta_{clamp}$
+--         | --         | --                    | --             | --                    | --             | --             
+8430       | 8.89       | 12.47 ± 0.00          |78.44 ± 0.07    | 11.58 ± 0.09          | 63.10 ± 0.04   | 97.04 ± 0.68 
+8431       | 8.89       |  12.68 ± 0.01         |78.36 ± 0.07    | 11.76 ± 0.10          | 62.97 ± 0.04   | 97.20 ± 0.72 
+8430/8431  | 8.89       | 12.48 ± 0.00          |78.58 ± 0.05    | 11.80 ± 0.06          | 63.19 ± 0.03   | 99.05 ± 0.49 
+8650       | 9.67       |  | 
+8655       | 9.67       |  | 
+8656       | 9.67       |  | 
 
 
 ([UP](#traineeship-al-cern))

@@ -9,7 +9,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
-file = 8430
+file = 8431
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
@@ -24,8 +24,8 @@ fit_range = 150 # urad
 minimum_entries = 500
 
 # ROOT DATA FRAME
-df = ROOT.RDataFrame("simpleEvent", filename)
-# df = ROOT.RDataFrame("simpleEvent", files)
+# df = ROOT.RDataFrame("simpleEvent", filename)
+df = ROOT.RDataFrame("simpleEvent", files)
 print("="*50)
 print(f"Analyzing {filename} ...")
 
