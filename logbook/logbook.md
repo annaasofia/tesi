@@ -25,7 +25,6 @@
 7. [WEEK 7 (AUG 17)](#week-7)
     - [Simulation](#simulation)
 8. [WEEK 8 (AUG 24)](#week-8)
-    - [Finish week 6 work](#finish-week-6-work)
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 9. [WEEK 9 (AUG 31)](#week-9)
 10. [WEEK 10 (SEP 07)](#week-10)
@@ -541,19 +540,6 @@ $\to$ [slides NDC section meeting](./slides/NDC_260826_moro.pdf)
 ([UP](#traineeship-al-cern))
 ## WEEK 8
 
-### Finish week 6 work
-
-to do:
-- better explain systematics
-- check for mcs along y if i am really cutting away particles not inside the crystal
-- check for a pixel inside the clamps and compute the mcs for stainless steel
-- adjust my analysis with Melanie work
-- try plot in python
-- check not angle deflection but only distribution of $\theta_{out}$
-- for the simulation put the original beam distrib of real data
-- for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
-- run pions 
-
 ### Find the crystal edges: scattering method
 
 Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
@@ -599,11 +585,20 @@ run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sig
 | **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
 | **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 |
 
-
-
 ([UP](#traineeship-al-cern))
 
 ## WEEK 9
+
+to do:
+- better explain systematics
+- check for mcs along y if i am really cutting away particles not inside the crystal
+- check for a pixel inside the clamps and compute the mcs for stainless steel
+- adjust my analysis with Melanie work
+- try plot in python
+- check not angle deflection but only distribution of $\theta_{out}$
+- for the simulation put the original beam distrib of real data
+- for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
+- run pions 
 
 ([UP](#traineeship-al-cern))
 
