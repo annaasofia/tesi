@@ -9,7 +9,7 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
-file = 8431
+file = 8655
 filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
 
@@ -24,8 +24,8 @@ fit_range = 150 # urad
 minimum_entries = 500
 
 # ROOT DATA FRAME
-# df = ROOT.RDataFrame("simpleEvent", filename)
-df = ROOT.RDataFrame("simpleEvent", files)
+df = ROOT.RDataFrame("simpleEvent", filename)
+# df = ROOT.RDataFrame("simpleEvent", files)
 print("="*50)
 print(f"Analyzing {filename} ...")
 
@@ -106,12 +106,14 @@ def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, ba
  
     return edge_lo, edge_hi, edge_lo_err, edge_hi_err, f, gr
 
-def fit_three_step_edges(centers, sigmas, sigma_errs, e1_guess, e2_guess, e3_guess, baseline_guess=None, clamp_level_guess=None, crystal_level_guess=None, transition_guess=0.1):
-
-    # Fits a triple-step (vuoto -> clamp -> crystal -> clamp) profile:
-    # p0 = baseline (outside), p1 = clamp level, p2 = crystal level
-
+def fit_four_step_edges(centers, sigmas, sigma_errs,
+                         e1_guess, e2_guess, e3_guess, e4_guess,
+                         baseline_guess=None, clamp_level_guess=None, crystal_level_guess=None,
+                         transition_guess=0.1):
     n = len(centers)
+    if n == 0:
+        print("ERROR: Zero data points! The previous cut filtered out all events.")
+        return None, None, None, None
     gr = ROOT.TGraphErrors(n, array('d', centers), array('d', sigmas),
                             array('d', [0.0] * n), array('d', sigma_errs))
 
@@ -120,58 +122,146 @@ def fit_three_step_edges(centers, sigmas, sigma_errs, e1_guess, e2_guess, e3_gue
     if clamp_level_guess is None:
         clamp_level_guess = max(sigmas)
     if crystal_level_guess is None:
-        crystal_level_guess = sorted(sigmas)[len(sigmas) // 2]  # rough plateau estimate
+        crystal_level_guess = sorted(sigmas)[len(sigmas) // 2]
 
     formula = ("[0]"
-               " + ([1]-[0])*0.5*(1+TMath::Erf((x-[3])/[6]))"
-               " + ([2]-[1])*0.5*(1+TMath::Erf((x-[4])/[6]))"
-               " + ([0]-[2])*0.5*(1+TMath::Erf((x-[5])/[6]))")
+               " + ([1]-[0])*0.5*(1+TMath::Erf((x-[3])/[7]))"   # e1: vuoto->clamp
+               " + ([2]-[1])*0.5*(1+TMath::Erf((x-[4])/[7]))"   # e2: clamp->crystal
+               " + ([1]-[2])*0.5*(1+TMath::Erf((x-[5])/[7]))"   # e3: crystal->clamp
+               " + ([0]-[1])*0.5*(1+TMath::Erf((x-[6])/[7]))")  # e4: clamp->vuoto
 
-    f = ROOT.TF1("f_three_step", formula, min(centers), max(centers))
+    f = ROOT.TF1("f_four_step", formula, min(centers), max(centers))
     f.SetParameters(baseline_guess, clamp_level_guess, crystal_level_guess,
-                     e1_guess, e2_guess, e3_guess, transition_guess)
-    f.SetParLimits(6, 0.001, (max(centers) - min(centers)) / 4.0)
-    # keep the edges ordered and inside the scanned range, otherwise the
-    # minimizer can happily swap e2/e3 or wander off to the plot's edge
-    f.SetParLimits(3, min(centers), max(centers))
-    f.SetParLimits(4, min(centers), max(centers))
-    f.SetParLimits(5, min(centers), max(centers))
+                     e1_guess, e2_guess, e3_guess, e4_guess, transition_guess)
+    f.SetParLimits(7, 0.001, (max(centers) - min(centers)) / 4.0)
+    for i in (3, 4, 5, 6):
+        f.SetParLimits(i, min(centers), max(centers))
 
     gr.Fit(f, "RQ")
 
     edges = {"e1": (f.GetParameter(3), f.GetParError(3)),
              "e2": (f.GetParameter(4), f.GetParError(4)),
-             "e3": (f.GetParameter(5), f.GetParError(5))}
+             "e3": (f.GetParameter(5), f.GetParError(5)),
+             "e4": (f.GetParameter(6), f.GetParError(6))}
     levels = {"baseline": (f.GetParameter(0), f.GetParError(0)),
               "clamp": (f.GetParameter(1), f.GetParError(1)),
               "crystal": (f.GetParameter(2), f.GetParError(2))}
     return edges, levels, f, gr
 
  
-# y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run)
-h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=-1.5, slice_max=1.5) # 0.01 mm precision
-y_centers, y_sigmas, y_sigma_errs, y_entries = extract_widths_from_h2(h2_y)
-# print(f"Number of bins used for y edge fit: {len(y_centers)}")
-# print(f"Entries per bin: {y_entries}")
+# # y edges (scan y, using the full x range -- or restrict to rough x window from the old method / previous run)
+# h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=-1.5, slice_max=1.5) # 0.01 mm precision
+# y_centers, y_sigmas, y_sigma_errs, y_entries = extract_widths_from_h2(h2_y)
+# y_edges, y_levels, f_y, gr_y = fit_four_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=-11.5, e2_guess=-6.0, e3_guess=7.0, e4_guess=8.5)
  
-# y_lo, y_hi, y_lo_err, y_hi_err, f_y, gr_y = fit_step_edges(y_centers, y_sigmas, y_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=11.0)
-y_edges, y_levels, f_y, gr_y = fit_three_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=-11.5, e2_guess=-5.0, e3_guess=8.0)
- 
-# x edges (scan x, restricted to the just-found y window)
-h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_edges["e2"][0], slice_max=y_edges["e3"][0])
-x_centers, x_sigmas, x_sigma_errs, _ = extract_widths_from_h2(h2_x)
+# # x edges (scan x, restricted to the just-found y window)
+# h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_edges["e2"][0], slice_max=y_edges["e3"][0])
+# x_centers, x_sigmas, x_sigma_errs, _ = extract_widths_from_h2(h2_x)
+# x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
 
-x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
+# h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=x_lo, slice_max=x_hi)
+# y_centers, y_sigmas, y_sigma_errs, _ = extract_widths_from_h2(h2_y)
+# y_edges, y_levels, f_y, gr_y = fit_four_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=y_edges["e1"][0], e2_guess=y_edges["e2"][0], e3_guess=y_edges["e3"][0], e4_guess=y_edges["e4"][0])
 
-h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, slice_var="Tracks.d0_x", slice_min=x_lo, slice_max=x_hi)
-y_centers, y_sigmas, y_sigma_errs, _ = extract_widths_from_h2(h2_y)
-y_edges, y_levels, f_y, gr_y = fit_three_step_edges(y_centers, y_sigmas, y_sigma_errs, e1_guess=y_edges["e1"][0], e2_guess=y_edges["e2"][0], e3_guess=y_edges["e3"][0])
+# h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140, slice_var="Tracks.d0_y", slice_min=y_edges["e2"][0], slice_max=y_edges["e3"][0])
+# x_centers, x_sigmas, x_sigma_errs, _ = extract_widths_from_h2(h2_x)
+# x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(x_centers, x_sigmas, x_sigma_errs, edge_lo_guess=-1.0, edge_hi_guess=1.0, transition_guess=0.02)
+
+# y_lo, y_lo_err = y_edges["e2"]
+# y_hi, y_hi_err = y_edges["e3"]
+
+x_guess = (-1.0, 1.0)
+y_guess = (-11.5, -6.0, 7.0, 8.5)
+
+def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
+    x_lo, x_hi = x_guess
+    y_e1, y_e2, y_e3, y_e4 = y_guess
+    h2_x, h2_y = None, None
+
+    best_shift = float("inf")
+    best_state = None
+    prev_shift = None
+    diverging_count = 0
+
+    for it in range(max_iter):
+        h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,
+                                    slice_var="Tracks.d0_y", slice_min=y_e2, slice_max=y_e3)
+        xc, xs, xe, _ = extract_widths_from_h2(h2_x)
+        if len(xc) == 0:
+            print(f"iter {it}: x-scan produced zero bins (slice y=[{y_e2:.3f},{y_e3:.3f}]) -- stopping, keeping last good state.")
+            break
+
+        x_lo_new, x_hi_new, x_lo_err, x_hi_err, f_x, gr_x = fit_step_edges(xc, xs, xe, edge_lo_guess=x_lo, edge_hi_guess=x_hi, transition_guess=0.02)
+        if f_x is None:
+            print(f"iter {it}: x fit failed -- stopping, keeping last good state.")
+            break
+
+        # h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, # 8430/8431/8650
+        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=15, n_bins=150, # 8655/8656
+                                    slice_var="Tracks.d0_x", slice_min=x_lo_new, slice_max=x_hi_new)
+        yc, ys, yerr, _ = extract_widths_from_h2(h2_y)
+        if len(yc) == 0:
+            print(f"iter {it}: y-scan produced zero bins (slice x=[{x_lo_new:.3f},{x_hi_new:.3f}]) -- stopping, keeping last good state.")
+            break
+
+        y_edges, y_levels, f_y, gr_y = fit_four_step_edges(yc, ys, yerr, e1_guess=y_e1, e2_guess=y_e2, e3_guess=y_e3, e4_guess=y_e4)
+        if y_edges is None:
+            print(f"iter {it}: y fit failed -- stopping, keeping last good state.")
+            break
+
+        y_e2_new, y_e3_new = y_edges["e2"][0], y_edges["e3"][0]
+
+        # sanity: ordering must make physical sense
+        if not (y_edges["e1"][0] < y_e2_new < y_e3_new < y_edges["e4"][0]):
+            print(f"iter {it}: WARNING -- edges out of order (e1={y_edges['e1'][0]:.3f}, "
+                  f"e2={y_e2_new:.3f}, e3={y_e3_new:.3f}, e4={y_edges['e4'][0]:.3f}) -- stopping.")
+            break
+        if not (x_lo_new < x_hi_new):
+            print(f"iter {it}: WARNING -- x edges out of order (x_lo={x_lo_new:.3f}, x_hi={x_hi_new:.3f}) -- stopping.")
+            break
+
+        shift = max(abs(x_lo_new - x_lo), abs(x_hi_new - x_hi),
+                    abs(y_e2_new - y_e2), abs(y_e3_new - y_e3))
+        print(f"iter {it}: max shift = {shift:.5f} mm")
+
+        # keep the best (smallest-shift) state seen so far as a fallback
+        if shift < best_shift:
+            best_shift = shift
+            best_state = (x_lo_new, x_hi_new, x_lo_err, x_hi_err, f_x, gr_x, h2_x,
+                          y_edges, y_levels, f_y, gr_y, h2_y)
+
+        # divergence detection: shift growing for 2 iterations in a row
+        if prev_shift is not None and shift > prev_shift:
+            diverging_count += 1
+            if diverging_count >= 2:
+                print(f"iter {it}: shift increasing for {diverging_count} iterations in a row -- "
+                      f"diverging. Falling back to best state (shift={best_shift:.5f} at that point).")
+                break
+        else:
+            diverging_count = 0
+        prev_shift = shift
+
+        x_lo, x_hi = x_lo_new, x_hi_new
+        y_e1, y_e2, y_e3, y_e4 = y_edges["e1"][0], y_e2_new, y_e3_new, y_edges["e4"][0]
+
+        if shift < tol:
+            print(f"Converged after {it+1} iterations.")
+            best_state = (x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y)
+            break
+
+    if best_state is None:
+        raise RuntimeError("iterate_until_converged: never obtained a valid fit state.")
+
+    return best_state
+
+x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y = iterate_until_converged(df_phys, x_guess, y_guess)
+
 y_lo, y_lo_err = y_edges["e2"]
 y_hi, y_hi_err = y_edges["e3"]
 
-
 mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
 mean_res_y = df_phys.Mean("DeltathetaErr_y").GetValue()
+print("="*50)
 print(f"Mean resolution (x): {mean_res_x:.2f} urad")
 print(f"Mean resolution (y): {mean_res_y:.2f} urad")
 
@@ -205,15 +295,19 @@ if theta_clamp_y > 0:
 mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
 mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 
-print(f"fitted transition x = {f_x.GetParameter(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
-print(f"fitted transition y = {f_y.GetParameter(6):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")
+print(f"fitted transition x = {f_x.GetParameter(4):.4f} ± {f_x.GetParError(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
+print(f"fitted transition y = {f_y.GetParameter(7):.4f} ± {f_y.GetParError(7):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")
 print("="*50)
 
-print(f"baseline sigma x  = {sigma_bsl_x:.2f} ± {f_x.GetParError(0):.2f} urad")
-print(f"baseline sigma y  = {sigma_bsl_y:.2f} ± {f_y.GetParError(0):.2f} urad")
-print(f"sigma mcs x = {theta_crystal_x:.2f} ± {err_theta_crystal_x:.2f} urad")
-print(f"sigma mcs y = {theta_crystal_y:.2f} ± {err_theta_crystal_y:.2f} urad")
-print(f"sigma mcs clamp y = {theta_clamp_y:.2f} ± {err_theta_clamp_y:.2f} urad")
+print("x:")
+print(f"\tbaseline sigma x  = {sigma_bsl_x:.2f} ± {f_x.GetParError(0):.2f} urad")
+print(f"\tjump sigma x      = {sigma_jump_x:.2f} ± {f_x.GetParError(1):.2f} urad")
+print(f"\tsigma mcs x = {theta_crystal_x:.2f} ± {err_theta_crystal_x:.2f} urad")
+print('='*50)
+print("y:")
+print(f"\tbaseline sigma y  = {sigma_bsl_y:.2f} ± {f_y.GetParError(0):.2f} urad")
+print(f"\tsigma mcs y = {theta_crystal_y:.2f} ± {err_theta_crystal_y:.2f} urad")
+print(f"\tsigma mcs clamp y = {theta_clamp_y:.2f} ± {err_theta_clamp_y:.2f} urad")
 
 c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
 gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")

@@ -29,6 +29,7 @@
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 9. [WEEK 9 (AUG 31)](#week-9)
 10. [WEEK 10 (SEP 07)](#week-10)
+11. [WEEK 11 (SEP 14)](#week-11)
 
 ## WEEK 1  
 
@@ -557,38 +558,57 @@ to do:
 
 Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
 
-$\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{baseline}^2​}$
+$\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​} = \sqrt{(\sigma_{bsl} + \sigma_{jump})^2​−\sigma_{bsl}^2​}$  
+*but the jump $(\sigma_{high} - \sigma_{bsl})$ seems more compatible with $\theta_{mcs}^{th}$*
 
 **Considerations:**
 - besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
 - consider the angle resolution (of $\Delta\theta_x$) of $\sim 8.89$ (8430/8431) or $9.67$ (8650/8655/8656)
 - compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
 - **material of the clamps:** from Highland formula $p, \beta, z$ depend on the beam, while $x, X_0$ on the material traversed. Supposing $x$ (width in $z$) as the same of the crystal or slightly more ($\sim 80\,\text{mm}$) i can resolve for $X_0$:
-    - stainless steel (Fe based) $X_0\sim 1.76\,\text{cm}$
-    - titanium $X_0\sim 3.56\,\text{cm}$
-    - brass/copper $X_0\sim 1.4-1.5\,\text{cm}$
-    - aluminum $X_0\sim 8.9\,\text{cm}$
-    - tungsten $X_0\sim 0.35\,\text{cm}$
+    - stainless steel (Fe based) $X_0\sim 1.76\,\text{cm}$ $\to$ $\theta_{MCS} = 191.99$ (for $l=100\,\text{mm}$) 
+    - titanium $X_0\sim 3.56\,\text{cm}$ $\to$ $\theta_{MCS} = 131.60$ (for $l=100\,\text{mm}$)
+    - brass/copper $X_0\sim 1.4-1.5\,\text{cm}$ $\to$ $\theta_{MCS} = 209.90/213.77$ (for $l=100\,\text{mm}$)
+    - aluminum $X_0\sim 8.9\,\text{cm}$ $\to$ $\theta_{MCS} = 80.44$ (for $l=100\,\text{mm}$)
+    - tungsten $X_0\sim 0.35\,\text{cm}$ $\to$ $\theta_{MCS} = 455.32$ (for $l=100\,\text{mm}$)
 
 run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
 -------- | --------------------- | --------------------- | -------------------------
-8430     |  0.0917               |  0.2127               | 0.1055 
-8431     |  0.0900               |  0.2058               | 0.1055 
-8430/8431|  0.0915               |  0.2596               | 0.1055 
-8650     |  | 
-8655     |  | 
-8656     |  | 
+8430     |  0.0901 ± 0.0003      |  0.2167 ± 0.0094      | 0.1055 
+8431     |  0.0901 ± 0.0003      |  0.2069 ± 0.0095      | 0.1055
+8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055
+8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
+8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
+8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155 
 
-run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\theta_{mcs}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}$ | $\theta_{clamp}$
---         | --         | --                    | --             | --                    | --             | --             
-8430       | 8.89       | 12.47 ± 0.00          |78.44 ± 0.07    | 11.58 ± 0.09          | 63.10 ± 0.04   | 97.04 ± 0.68 
-8431       | 8.89       |  12.68 ± 0.01         |78.36 ± 0.07    | 11.76 ± 0.10          | 62.97 ± 0.04   | 97.20 ± 0.72 
-8430/8431  | 8.89       | 12.48 ± 0.00          |78.58 ± 0.05    | 11.80 ± 0.06          | 63.19 ± 0.03   | 99.05 ± 0.49 
-8650       | 9.67       |  | 
-8655       | 9.67       |  | 
-8656       | 9.67       |  | 
+run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
+--         | --         | --                    | -               |  --             | --                    | --             | --             
+8430       | 8.89       | 12.75 ± 0.00          | 66.58 ± 0.06    | 78.30 ± 0.06    | 11.59 ± 0.09          | 62.99 ± 0.04   | 97.16 ± 0.68 
+8431       | 8.89       |  12.72 ± 0.01         | 66.63 ± 0.07    | 78.33 ± 0.07    | 11.76 ± 0.10          | 62.95 ± 0.04   | 97.44 ± 0.74 
+8430/8431  | 8.89       | 12.75 ± 0.00          |  66.72 ± 0.05   | 78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49 
+8650       | 9.67       | 14.73 ± 0.01          |  81.43 ± 0.14   | 95.02 ± 0.14    | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
+8655       | 9.67       | 14.74 ± 0.01          | 73.32 ± 0.12    | 86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
+8656       | 9.67       | 14.76 ± 0.01          | 73.15 ± 0.11    | 86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ?
+
+| **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
+|-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
+| **8430**        | 2.0911 ± 0.0004 | -1.0601 ± 0.0003 | 1.0310 ± 0.0002 | 13.8905 ± 0.0333 | -11.1363 ± 0.0095 | -5.4226 ± 0.0124 | 8.4680 ± 0.0309 |
+| **8431**        | 2.0901 ± 0.0004 | -1.0598 ± 0.0003 | 1.0303 ± 0.0003 | 13.7961 ± 0.0330 | -11.1507 ± 0.0095 | -5.3864 ± 0.0140 | 8.4097 ± 0.0299 |
+| **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
+| **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
+| **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
+| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 |
+
 
 
 ([UP](#traineeship-al-cern))
 
 ## WEEK 9
+
+([UP](#traineeship-al-cern))
+
+## WEEK 10
+
+([UP](#traineeship-al-cern))
+
+## WEEK 11
