@@ -563,6 +563,12 @@ $\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{baseline}^2​}$
 - besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
 - consider the angle resolution (of $\Delta\theta_x$) of $\sim 8.89$ (8430/8431) or $9.67$ (8650/8655/8656)
 - compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
+- **material of the clamps:** from Highland formula $p, \beta, z$ depend on the beam, while $x, X_0$ on the material traversed. Supposing $x$ (width in $z$) as the same of the crystal or slightly more ($\sim 80\,\text{mm}$) i can resolve for $X_0$:
+    - stainless steel (Fe based) $X_0\sim 1.76\,\text{cm}$
+    - titanium $X_0\sim 3.56\,\text{cm}$
+    - brass/copper $X_0\sim 1.4-1.5\,\text{cm}$
+    - aluminum $X_0\sim 8.9\,\text{cm}$
+    - tungsten $X_0\sim 0.35\,\text{cm}$
 
 run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
 -------- | --------------------- | --------------------- | -------------------------
