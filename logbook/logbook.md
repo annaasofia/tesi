@@ -23,7 +23,7 @@
     - [Systematics](#systematics)
     - [PDG on errors](#pdg-on-errors)
 7. [WEEK 7 (AUG 17)](#week-7)
-    - [Simulation](#simulation)
+    - [Setting up the simulation](#simulation)
 8. [WEEK 8 (AUG 24)](#week-8)
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 9. [WEEK 9 (AUG 31)](#week-9)
@@ -591,10 +591,7 @@ run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sig
 
 to do:
 - better explain systematics
-- check for mcs along y if i am really cutting away particles not inside the crystal
-- check for a pixel inside the clamps and compute the mcs for stainless steel
 - adjust my analysis with Melanie work
-- try plot in python
 - check not angle deflection but only distribution of $\theta_{out}$
 - for the simulation put the original beam distrib of real data
 - for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
