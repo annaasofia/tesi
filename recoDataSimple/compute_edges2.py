@@ -313,20 +313,20 @@ print(f"\tbaseline sigma y  = {sigma_bsl_y:.2f} ± {f_y.GetParError(0):.2f} urad
 print(f"\tsigma mcs y = {theta_crystal_y:.2f} ± {err_theta_crystal_y:.2f} urad")
 print(f"\tsigma mcs clamp y = {theta_clamp_y:.2f} ± {err_theta_clamp_y:.2f} urad")
 
-os.makedirs(f"plots_{file}_edges", exist_ok=True)
+os.makedirs(f"plots_{file}_edges2", exist_ok=True)
 
 fig_y = plot_graph_with_fit(
     gr_y, f_y,
-    xlabel="d0_y [mm]", ylabel=r"$\sigma(\Delta\theta_y)$ [$\mu$rad]",
+    xlabel="y [mm]", ylabel=r"$\sigma(\Delta\theta_y)$ [$\mu$rad]",
     title="Local scattering width vs y",
-    save=f"plots_{file}_edges/scattering_width_vs_y.pdf"
+    save=f"plots_{file}_edges2/scattering_width_vs_y.pdf"
 )
 
 fig_x = plot_graph_with_fit(
     gr_x, f_x,
-    xlabel="d0_x [mm]", ylabel=r"$\sigma(\Delta\theta_x)$ [$\mu$rad]",
+    xlabel="x [mm]", ylabel=r"$\sigma(\Delta\theta_x)$ [$\mu$rad]",
     title="Local scattering width vs x",
-    save=f"plots_{file}_edges/scattering_width_vs_x.pdf"
+    save=f"plots_{file}_edges2/scattering_width_vs_x.pdf"
 )
 
  
@@ -339,13 +339,13 @@ print(f"\ty clamp position = {y_edges['e1'][0]:.4f} ± {y_edges['e1'][1]:.4f} mm
 # Plot della mappa 2D Posizione x/y vs deflessione 
 # c_2d_y = ROOT.TCanvas("c_2d_y", "Position Y vs Deflection", 900, 600)
 h2_y_val = h2_y.GetValue()
-h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{y}; d0_y [mm]; #Delta#theta_{x} [#murad]")
+h2_y_val.SetTitle("Posizione Y vs Deflessione #Delta#theta_{y}; y [mm]; #Delta#theta_{x} [#murad]")
 # h2_y_val.Draw("colz")
 # c_2d_y.Update()
 
 # c_2d_x = ROOT.TCanvas("c_2d_x", "Position X vs Deflection", 900, 600)
 h2_x_val = h2_x.GetValue()
-h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; d0_x [mm]; #Delta#theta_{x} [#murad]")
+h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; x [mm]; #Delta#theta_{x} [#murad]")
 # h2_x_val.Draw("colz")
 # c_2d_x.Update()
 
@@ -378,21 +378,21 @@ fig_in = plot_histo1d(
     h1_dentro, f_in, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
     title=(f"Crystal slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm)  "
            f"$\\sigma$ = {f_in.GetParameter(2):.1f} $\\mu$rad"),
-    save=f"plots_{file}_edges/slice_inside_y.pdf", color='tab:blue', style='fill'
+    save=f"plots_{file}_edges2/slice_inside_y.pdf", color='tab:blue', style='fill'
 )
 
 fig_clamp = plot_histo1d(
     h1_clamp, f_clamp, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
     title=(f"Crystal slice - clamp (y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)  "
            f"$\\sigma$ = {f_clamp.GetParameter(2):.1f} $\\mu$rad"),
-    save=f"plots_{file}_edges/slice_clamp_y.pdf", color='tab:green', style='fill'
+    save=f"plots_{file}_edges2/slice_clamp_y.pdf", color='tab:green', style='fill'
 )
 
 fig_out = plot_histo1d(
     h1_fuori, f_out, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
     title=(f"Outside slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm)  "
            f"$\\sigma$ = {f_out.GetParameter(2):.1f} $\\mu$rad"),
-    save=f"plots_{file}_edges/slice_outside_y.pdf", color='tab:pink', style='fill'
+    save=f"plots_{file}_edges2/slice_outside_y.pdf", color='tab:pink', style='fill'
 )
 
 # Scegliamo un bin al centro del cristallo e uno 1.5 mm fuori dal bordo destro
@@ -414,14 +414,14 @@ fig_in_x = plot_histo1d(
     h1_dentro_x, f_in_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
     title=(f"Crystal slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm)  "
            f"$\\sigma$ = {f_in_x.GetParameter(2):.1f} $\\mu$rad"),
-    save=f"plots_{file}_edges/slice_inside_x.pdf", color='tab:blue', style='fill'
+    save=f"plots_{file}_edges2/slice_inside_x.pdf", color='tab:blue', style='fill'
 )
 
 fig_out_x = plot_histo1d(
     h1_fuori_x, f_out_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
     title=(f"Outside slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm)  "
            f"$\\sigma$ = {f_out_x.GetParameter(2):.1f} $\\mu$rad"),
-    save=f"plots_{file}_edges/slice_outside_x.pdf", color='tab:pink', style='fill'
+    save=f"plots_{file}_edges2/slice_outside_x.pdf", color='tab:pink', style='fill'
 )
 
-print(f"\nAll matplotlib plots saved under plots_{file}_edges/")
+print(f"\nAll matplotlib plots saved under plots_{file}_edges2/")

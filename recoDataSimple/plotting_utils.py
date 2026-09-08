@@ -21,7 +21,7 @@ Typical usage inside one of your analysis scripts:
                     zlabel=r"$\\theta_0$ [$\\mu$rad]", save="torsion_map.pdf")
 
     # 4) Scattering-width scan: TGraphErrors + TF1
-    pu.plot_graph_with_fit(gr_y, f_y, xlabel="d0_y [mm]",
+    pu.plot_graph_with_fit(gr_y, f_y, xlabel="y [mm]",
                            ylabel=r"$\\sigma(\\Delta\\theta_y)$ [$\\mu$rad]",
                            save="edge_scan_y.pdf")
 """
@@ -33,6 +33,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator, LogLocator
 
+
+# Impostazioni per ingrandire il testo (ideale per A4)
+plt.rcParams.update({
+    'font.size': 14,          # Dimensione generale del testo
+    'axes.labelsize': 16,     # Etichette degli assi (es. "d0_y [mm]")
+    'axes.titlesize': 16,     # Titolo del grafico
+    'xtick.labelsize': 14,    # Numeri sull'asse X
+    'ytick.labelsize': 14,    # Numeri sull'asse Y
+    'legend.fontsize': 12,    # Testo all'interno della legenda
+})
 
 # ------------------------------------------------------------------
 # low-level: ROOT object -> numpy arrays
@@ -225,7 +235,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     elif style == "step":
         ax.stairs(contents, edges, fill=False, color=color, lw=1.5, label=data_label)
     elif style == "fill":
-        ax.stairs(contents, edges, fill=True, color=color, alpha=1.0, label=data_label)
+        ax.stairs(contents, edges, fill=True, color=color, alpha=0.55, label=data_label)
     else:
         raise ValueError("style must be 'errorbar', 'step', or 'fill'")
 
