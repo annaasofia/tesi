@@ -31,6 +31,8 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
+
 
 # ------------------------------------------------------------------
 # low-level: ROOT object -> numpy arrays
@@ -41,6 +43,16 @@ def _resolve(obj):
     if hasattr(obj, "GetValue"):
         return obj.GetValue()
     return obj
+ 
+ 
+def _style_axes(ax):
+    """Shared cosmetic touch-up: minor ticks between the major ones,
+    all ticks pointing inward, drawn on all four sides of the plot."""
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    ax.tick_params(which='both', direction='in', top=True, right=True)
+    ax.tick_params(which='minor', length=3)
+    ax.tick_params(which='major', length=5)
 
 
 def th1_to_arrays(h):
@@ -223,6 +235,8 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     if info_text is not None:
         add_info_box(ax, info_text, loc=info_loc)
 
+    _style_axes(ax)
+
     if save:
         fig.tight_layout()
         fig.savefig(save, dpi=150)
@@ -252,6 +266,8 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     if colorbar:
         cb = plt.colorbar(mesh, ax=ax)
         cb.set_label(zlabel)
+
+    _style_axes(ax)
 
     if save:
         fig.tight_layout()
@@ -295,6 +311,8 @@ def plot_graph_with_fit(g, fit_func=None, fit_range=None, ax=None,
         ax.legend(frameon=False)
     if info_text is not None:
         add_info_box(ax, info_text, loc=info_loc)
+
+    _style_axes(ax)
 
     if save:
         fig.tight_layout()
@@ -348,6 +366,8 @@ def plot_tf2(f, x_range, y_range, nx=120, ny=120, ax=None,
     if colorbar:
         cb = plt.colorbar(mesh, ax=ax)
         cb.set_label(zlabel)
+
+    _style_axes(ax)
 
     if save:
         fig.tight_layout()

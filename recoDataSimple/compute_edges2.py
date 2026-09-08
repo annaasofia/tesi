@@ -319,14 +319,14 @@ fig_y = plot_graph_with_fit(
     gr_y, f_y,
     xlabel="d0_y [mm]", ylabel=r"$\sigma(\Delta\theta_y)$ [$\mu$rad]",
     title="Local scattering width vs y",
-    save=f"plots_{file}_edges/scattering_width_vs_y.png"
+    save=f"plots_{file}_edges/scattering_width_vs_y.pdf"
 )
 
 fig_x = plot_graph_with_fit(
     gr_x, f_x,
     xlabel="d0_x [mm]", ylabel=r"$\sigma(\Delta\theta_x)$ [$\mu$rad]",
     title="Local scattering width vs x",
-    save=f"plots_{file}_edges/scattering_width_vs_x.png"
+    save=f"plots_{file}_edges/scattering_width_vs_x.pdf"
 )
 
  
@@ -376,20 +376,23 @@ h1_fuori.Fit(f_out, "RQ0")
 
 fig_in = plot_histo1d(
     h1_dentro, f_in, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-    title=f"Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm)",
-    save=f"plots_{file}_edges/slice_inside_y.png", color='tab:blue', style='fill'
+    title=(f"Crystal slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm)  "
+           f"$\\sigma$ = {f_in.GetParameter(2):.1f} $\\mu$rad"),
+    save=f"plots_{file}_edges/slice_inside_y.pdf", color='tab:blue', style='fill'
 )
 
 fig_clamp = plot_histo1d(
     h1_clamp, f_clamp, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-    title=f"Crystal slice - clamp (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)",
-    save=f"plots_{file}_edges/slice_clamp_y.png", color='tab:green', style='fill'
+    title=(f"Crystal slice - clamp (y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)  "
+           f"$\\sigma$ = {f_clamp.GetParameter(2):.1f} $\\mu$rad"),
+    save=f"plots_{file}_edges/slice_clamp_y.pdf", color='tab:green', style='fill'
 )
 
 fig_out = plot_histo1d(
     h1_fuori, f_out, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-    title=f"Outside slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm)",
-    save=f"plots_{file}_edges/slice_outside_y.png", color='tab:pink', style='fill'
+    title=(f"Outside slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm)  "
+           f"$\\sigma$ = {f_out.GetParameter(2):.1f} $\\mu$rad"),
+    save=f"plots_{file}_edges/slice_outside_y.pdf", color='tab:pink', style='fill'
 )
 
 # Scegliamo un bin al centro del cristallo e uno 1.5 mm fuori dal bordo destro
@@ -409,14 +412,16 @@ h1_fuori_x.Fit(f_out_x, "RQ0")
 
 fig_in_x = plot_histo1d(
     h1_dentro_x, f_in_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-    title=f"Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm)",
-    save=f"plots_{file}_edges/slice_inside_x.png", color='tab:blue', style='fill'
+    title=(f"Crystal slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm)  "
+           f"$\\sigma$ = {f_in_x.GetParameter(2):.1f} $\\mu$rad"),
+    save=f"plots_{file}_edges/slice_inside_x.pdf", color='tab:blue', style='fill'
 )
 
 fig_out_x = plot_histo1d(
     h1_fuori_x, f_out_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-    title=f"Outside slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm)",
-    save=f"plots_{file}_edges/slice_outside_x.png", color='tab:pink', style='fill'
+    title=(f"Outside slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm)  "
+           f"$\\sigma$ = {f_out_x.GetParameter(2):.1f} $\\mu$rad"),
+    save=f"plots_{file}_edges/slice_outside_x.pdf", color='tab:pink', style='fill'
 )
 
 print(f"\nAll matplotlib plots saved under plots_{file}_edges/")
