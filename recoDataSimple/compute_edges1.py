@@ -7,8 +7,8 @@ from array import array
 ROOT.ROOT.EnableImplicitMT() 
 
 file = 8430
-filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
-files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
+filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
+files = ["data/recoDataSimple_8430_xtalMerging.root", "data/recoDataSimple_8431_xtalMerging.root"]
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)

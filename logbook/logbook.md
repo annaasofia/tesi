@@ -65,7 +65,7 @@ data to look at:
 - time and date are `Char_t` so characters $\to$ to see them write on root terminal `root[1] simpleEvent->Scan("Time:Date")`
 - some leaves are `TLeafI` so integers, others `TLeafD` so double
 
-$\to$ code to open them [open.py](../recoDataSimple/open.py) or [open_as_df.py](../recoDataSimple/open_as_df.py)
+$\to$ code to open them [open.py](../recoDataSimple/preliminary_analysis/open.py) or [open_as_df.py](../recoDataSimple/preliminary_analysis/open_as_df.py)
 
 or from root terminal:
 ```
@@ -105,7 +105,7 @@ from [checkdata2.py](../recoDataSimple/checkdata2.py):
 ![alt text](image.png)
 
 what to do next:
-- ✅ check through [checkdata1.py](../recoDataSimple/checkdata1.py) that within the same run the position of the goniometer ($x,y,z$) does not change
+- ✅ check through [checkdata1.py](../recoDataSimple/preliminary_analysis/checkdata1.py) that within the same run the position of the goniometer ($x,y,z$) does not change
 - ✅ check about `SingleTrack`, `MultiHit`: they are either 0 or 1 and they always match in every run
 - ✅ look at the angle values from the [articles](./aboutcrystals/s10052-025-15092-y.pdf) vs mine  
     | | | TCCP | TCCPA | new long crystals |
@@ -164,7 +164,7 @@ $\to$ [slides week 3](./slides/week3.pdf)
 ## WEEK 4
 
 ### Calibrate the detectors and alignment check
-Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/check_alignment_detectors.py):  
+Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/preliminary_analysis/check_alignment_detectors.py):  
     1) compute histograms in $x$ and $y$ showing $d0_{out} - d0_{in}$: if the offset is smaller than $\sim 1–2\,\sigma$ of its own fit error, treat it as statistically consistent with zero;  
     2) fit linearly $d0_{in}$ vs $d0_{out}$, which slope should be $\sim 1$, in this way we also know there is no rotation and no scale mismatch between the two detectors planes (confirmation of alignment);  
     3) also check fit quality skewness (asymmetry of a data distribution around its mean) to ensure no asymmetric tail or contaminating subpopulation.  
@@ -257,7 +257,7 @@ $\to$ [slides week 4](./slides/week4.pdf)
     - if i restrict also the window for the spatial cut i am losing statistics, but i am also considering the data (maybe not from the fit but) still for the efficiency calculation
 
 - ✅ explore 8650:  
-    $\to$ compared in [compare_histo.py](../recoDataSimple/compare_histo.py)
+    $\to$ compared in [compare_histo.py](../recoDataSimple/preliminary_analysis/compare_histo.py)
     - Luigi and Melanie said there were some problems during the data taking and with one magnet: at energy 150GeV/c and by beamline hardware constraint also the current was lowered (otherwise particles would not follow the intended trajectory)
     - wider critical angle
     - channeling peak sigma is wider, as lower momentum particles get kicked around more (more multiple coulomb scattering, as mcs scales as $1/p$)

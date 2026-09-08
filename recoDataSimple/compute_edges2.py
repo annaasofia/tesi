@@ -1,17 +1,19 @@
 import ROOT
 import math
 import sys
+import os
 import numpy as np
 from array import array
+from plotting_utils import plot_graph_with_fit, plot_histo1d
 
 
 
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
-file = 8655
-filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
-files = ["recoDataSimple_8430_xtalMerging.root", "recoDataSimple_8431_xtalMerging.root"]
+file = 8430
+filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
+files = ["data/recoDataSimple_8430_xtalMerging.root", "data/recoDataSimple_8431_xtalMerging.root"]
 
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
@@ -195,9 +197,11 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
         if f_x is None:
             print(f"iter {it}: x fit failed -- stopping, keeping last good state.")
             break
-
-        # h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=9, n_bins=150, # 8430/8431/8650
-        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=-15, scan_max=15, n_bins=150, # 8655/8656
+        if file in [8430, 8431, 8650]:
+            scan_min_y, scan_max_y = -15, 9
+        elif file in [8655, 8656]:
+            scan_min_y, scan_max_y = -15, 15
+        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y, n_bins=150,
                                     slice_var="Tracks.d0_x", slice_min=x_lo_new, slice_max=x_hi_new)
         yc, ys, yerr, _ = extract_widths_from_h2(h2_y)
         if len(yc) == 0:
@@ -309,21 +313,21 @@ print(f"\tbaseline sigma y  = {sigma_bsl_y:.2f} ± {f_y.GetParError(0):.2f} urad
 print(f"\tsigma mcs y = {theta_crystal_y:.2f} ± {err_theta_crystal_y:.2f} urad")
 print(f"\tsigma mcs clamp y = {theta_clamp_y:.2f} ± {err_theta_clamp_y:.2f} urad")
 
-c_y = ROOT.TCanvas("c_y", "Scattering width vs y", 900, 600)
-gr_y.SetTitle("Local scattering width vs y; d0_y [mm]; #sigma(#Delta#theta_{y}) [#murad]")
-gr_y.SetMarkerStyle(20); gr_y.SetMarkerSize(0.6)
-gr_y.Draw("AP")
-f_y.SetLineColor(ROOT.kRed)
-f_y.Draw("SAME")
-c_y.Update()
+os.makedirs(f"plots_{file}_edges", exist_ok=True)
 
-c_x = ROOT.TCanvas("c_x", "Scattering width vs x", 900, 600)
-gr_x.SetTitle("Local scattering width vs x; d0_x [mm]; #sigma(#Delta#theta_{x}) [#murad]")
-gr_x.SetMarkerStyle(20); gr_x.SetMarkerSize(0.6)
-gr_x.Draw("AP")
-f_x.SetLineColor(ROOT.kRed)
-f_x.Draw("SAME")
-c_x.Update()
+fig_y = plot_graph_with_fit(
+    gr_y, f_y,
+    xlabel="d0_y [mm]", ylabel=r"$\sigma(\Delta\theta_y)$ [$\mu$rad]",
+    title="Local scattering width vs y",
+    save=f"plots_{file}_edges/scattering_width_vs_y.png"
+)
+
+fig_x = plot_graph_with_fit(
+    gr_x, f_x,
+    xlabel="d0_x [mm]", ylabel=r"$\sigma(\Delta\theta_x)$ [$\mu$rad]",
+    title="Local scattering width vs x",
+    save=f"plots_{file}_edges/scattering_width_vs_x.png"
+)
 
  
 print("=" * 50)
@@ -356,51 +360,37 @@ bin_fuori = h2_y_val.GetXaxis().FindBin(y_edges["e1"][0] - 1.0)
 # Estraiamo gli istogrammi 1D
 h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro)
 h1_clamp = h2_y_val.ProjectionY("h1_clamp", bin_clamp, bin_clamp)
+clamp_rebin_factor = 10  # 300 bins (1 urad/bin) -> 30 bins (10 urad/bin); must divide n_dtheta_bins evenly
+h1_clamp.Rebin(clamp_rebin_factor)
 h1_fuori = h2_y_val.ProjectionY("h1_fuori", bin_fuori, bin_fuori)
 
-# Fit e Plot per la zona DENTRO il cristallo
-c_slice_in = ROOT.TCanvas("c_slice_in", "Fit Slice (INSIDE Crystal)", 800, 600)
-h1_dentro.SetTitle(f"Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
-h1_dentro.SetLineColor(ROOT.kBlue); h1_dentro.SetLineWidth(2)
+# Fit gaussiano sulle 3 fette (dentro/clamp/fuori) -- fit resta in ROOT come sempre
 f_in = ROOT.TF1("f_in", "gaus", -fit_range, fit_range)
-f_in.SetLineColor(ROOT.kRed)
-h1_dentro.Fit(f_in, "RQ")
-h1_dentro.Draw("HIST")
-f_in.Draw("SAME")
+h1_dentro.Fit(f_in, "RQ0")
 
-leg_in = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_in.SetBorderSize(0)
-leg_in.AddEntry(f_in, f"#sigma = {f_in.GetParameter(2):.1f} #murad", "l")
-leg_in.Draw("SAME")
-c_slice_in.Update()
-
-c_clamp = ROOT.TCanvas("c_clamp", "Fit Slice (CLAMP)", 800, 600)
-h1_clamp.SetTitle(f"Crystal slice (clamp) (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
-h1_clamp.SetLineColor(ROOT.kGreen+2); h1_clamp.SetLineWidth(2)
 f_clamp = ROOT.TF1("f_clamp", "gaus", -fit_range, fit_range)
-f_clamp.SetLineColor(ROOT.kRed)
-h1_clamp.Fit(f_clamp, "RQ")
-h1_clamp.Draw("HIST")
-f_clamp.Draw("SAME")
+h1_clamp.Fit(f_clamp, "RQ0")
 
-leg_clamp = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_clamp.SetBorderSize(0)
-leg_clamp.AddEntry(f_clamp, f"#sigma = {f_clamp.GetParameter(2):.1f} #murad", "l")
-leg_clamp.Draw("SAME")
-c_clamp.Update()
-
-# Fit e Plot per la zona FUORI dal cristallo
-c_slice_out = ROOT.TCanvas("c_slice_out", "Fit Slice (OUTSIDE Crystal)", 800, 600)
-h1_fuori.SetTitle(f"OUTSIDE Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
-h1_fuori.SetLineColor(ROOT.kMagenta); h1_fuori.SetLineWidth(2)
 f_out = ROOT.TF1("f_out", "gaus", -fit_range, fit_range)
-f_out.SetLineColor(ROOT.kRed)
-h1_fuori.Fit(f_out, "RQ")
-h1_fuori.Draw("HIST")
-f_out.Draw("SAME")
+h1_fuori.Fit(f_out, "RQ0")
 
-leg_out = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_out.SetBorderSize(0)
-leg_out.AddEntry(f_out, f"#sigma = {f_out.GetParameter(2):.1f} #murad", "l")
-leg_out.Draw("SAME")
-c_slice_out.Update()
+fig_in = plot_histo1d(
+    h1_dentro, f_in, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    title=f"Crystal slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm)",
+    save=f"plots_{file}_edges/slice_inside_y.png", color='tab:blue', style='fill'
+)
+
+fig_clamp = plot_histo1d(
+    h1_clamp, f_clamp, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    title=f"Crystal slice - clamp (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)",
+    save=f"plots_{file}_edges/slice_clamp_y.png", color='tab:green', style='fill'
+)
+
+fig_out = plot_histo1d(
+    h1_fuori, f_out, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    title=f"Outside slice (Y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm)",
+    save=f"plots_{file}_edges/slice_outside_y.png", color='tab:pink', style='fill'
+)
 
 # Scegliamo un bin al centro del cristallo e uno 1.5 mm fuori dal bordo destro
 bin_dentro_x = h2_x_val.GetXaxis().FindBin((x_lo + x_hi) / 2.0) 
@@ -410,44 +400,23 @@ bin_fuori_x  = h2_x_val.GetXaxis().FindBin(x_hi + 1.5)
 h1_dentro_x = h2_x_val.ProjectionY("h1_dentro_x", bin_dentro_x, bin_dentro_x)
 h1_fuori_x  = h2_x_val.ProjectionY("h1_fuori_x", bin_fuori_x, bin_fuori_x)
 
-# Fit e Plot per la zona DENTRO il cristallo (Asse X)
-c_slice_in_x = ROOT.TCanvas("c_slice_in_x", "Fit Slice X (INSIDE Crystal)", 800, 600)
-h1_dentro_x.SetTitle(f"Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
-h1_dentro_x.SetLineColor(ROOT.kBlue+2); h1_dentro_x.SetLineWidth(2)
-
+# Fit gaussiano sulle 2 fette lungo x (dentro/fuori)
 f_in_x = ROOT.TF1("f_in_x", "gaus", -fit_range, fit_range)
-f_in_x.SetLineColor(ROOT.kRed)
-h1_dentro_x.Fit(f_in_x, "RQ")
-h1_dentro_x.Draw("HIST")
-f_in_x.Draw("SAME")
-
-leg_in_x = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_in_x.SetBorderSize(0)
-leg_in_x.AddEntry(f_in_x, f"#sigma = {f_in_x.GetParameter(2):.1f} #murad", "l")
-leg_in_x.Draw("SAME")
-c_slice_in_x.Update()
-
-# Fit e Plot per la zona FUORI dal cristallo (Asse X)
-c_slice_out_x = ROOT.TCanvas("c_slice_out_x", "Fit Slice X (OUTSIDE Crystal)", 800, 600)
-h1_fuori_x.SetTitle(f"OUTSIDE Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm); #Delta#theta_{{x}} [#murad]; Counts")
-h1_fuori_x.SetLineColor(ROOT.kMagenta+2); h1_fuori_x.SetLineWidth(2)
+h1_dentro_x.Fit(f_in_x, "RQ0")
 
 f_out_x = ROOT.TF1("f_out_x", "gaus", -fit_range, fit_range)
-f_out_x.SetLineColor(ROOT.kRed)
-h1_fuori_x.Fit(f_out_x, "RQ")
-h1_fuori_x.Draw("HIST")
-f_out_x.Draw("SAME")
+h1_fuori_x.Fit(f_out_x, "RQ0")
 
-leg_out_x = ROOT.TLegend(0.65, 0.75, 0.88, 0.88); leg_out_x.SetBorderSize(0)
-leg_out_x.AddEntry(f_out_x, f"#sigma = {f_out_x.GetParameter(2):.1f} #murad", "l")
-leg_out_x.Draw("SAME")
-c_slice_out_x.Update()
+fig_in_x = plot_histo1d(
+    h1_dentro_x, f_in_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    title=f"Crystal slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm)",
+    save=f"plots_{file}_edges/slice_inside_x.png", color='tab:blue', style='fill'
+)
 
-# for obj in [c_2d_y, c_2d_x]:
-#     ROOT.SetOwnership(obj, False)
-for obj in [c_slice_in, c_slice_out, h1_dentro, h1_fuori, f_in, f_out, leg_in, leg_out, c_clamp, h1_clamp, f_clamp]:
-    ROOT.SetOwnership(obj, False)
-for obj in [c_slice_in_x, c_slice_out_x, h1_dentro_x, h1_fuori_x, f_in_x, f_out_x, leg_in_x, leg_out_x]:
-    ROOT.SetOwnership(obj, False)
+fig_out_x = plot_histo1d(
+    h1_fuori_x, f_out_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    title=f"Outside slice (X = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm)",
+    save=f"plots_{file}_edges/slice_outside_x.png", color='tab:pink', style='fill'
+)
 
-
- 
+print(f"\nAll matplotlib plots saved under plots_{file}_edges/")

@@ -18,7 +18,7 @@ def main():
 
     file = 8430
     parameters = chfun.get_run_parameters(file)
-    filename = "recoDataSimple_" + str(file) + "_xtalMerging.root"
+    filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
 
     df = ROOT.RDataFrame("simpleEvent", filename)
     print(f"Analyzing {filename} ...")
