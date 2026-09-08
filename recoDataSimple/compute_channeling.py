@@ -12,13 +12,16 @@ ROOT.ROOT.EnableImplicitMT()
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
-PLOT_DIR = "plots"
-
 def main():
 
     file = 8430
     parameters = chfun.get_run_parameters(file)
     filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
+
+    # global PLOT_DIR
+    PLOT_DIR = f"plots_{file}_py"
+    os.makedirs(PLOT_DIR, exist_ok=True)
+    chfun.PLOT_DIR = PLOT_DIR
 
     df = ROOT.RDataFrame("simpleEvent", filename)
     print(f"Analyzing {filename} ...")
@@ -49,7 +52,7 @@ def main():
         x_cut_margin, y_cut_margin, nx_slices=nx_slices, ny_slices=ny_slices,
         restricted=True, linear=False, chosen_model="parabolic_y", tag="nominal")
 
-    # max_eff_global, max_eff_global_err = plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
+    max_eff_global, max_eff_global_err = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()
@@ -68,7 +71,7 @@ def main():
     print(f"\tfit uncertainty       = {eff_err_stat_fitunc:.3f} %")
     print(f"\tcombined statistical  = {eff_err_stat:.3f} %")
 
-    rms_blocks, mean_stat_err_blocks = chfun.compute_block_stability_check(df_phys, parameters, fit_params, n_blocks=10)
+    # rms_blocks, mean_stat_err_blocks = chfun.compute_block_stability_check(df_phys, parameters, fit_params, n_blocks=10)
 
     # ===================== SAVE FINAL HISTO =====================
 
@@ -78,11 +81,11 @@ def main():
     # out_file.Close()
 
     # ===================== SYSTEMATICS =====================
-    print("\n" + "=" * 50)
-    print("Systematic error breakdown:")
-    systematics = chfun.compute_efficiency_systematics(
-        df_singletrack, df_phys, parameters, fit_params, fit_errors,
-        x_min, x_max, y_min, y_max, rdf_surface_expr)
+    # print("\n" + "=" * 50)
+    # print("Systematic error breakdown:")
+    # systematics = chfun.compute_efficiency_systematics(
+    #     df_singletrack, df_phys, parameters, fit_params, fit_errors,
+    #     x_min, x_max, y_min, y_max, rdf_surface_expr)
 
     # systematics["fit_model"] = compute_torsion_variant_systematic(
     #     "fit model choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
@@ -103,8 +106,9 @@ def main():
     # systematics["preliminary_cut"] = compute_preliminary_cut_systematic(
     #     df_phys, parameters, nx_slices, ny_slices, x_cut_margin, y_cut_margin)
 
-    eff_err_syst = math.sqrt(sum(v**2 for v in systematics.values()))
-    eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
+    eff_err_syst, eff_err_total = 0.0, 0.0
+    # eff_err_syst = math.sqrt(sum(v**2 for v in systematics.values()))
+    # eff_err_total = math.sqrt(eff_err_stat**2 + eff_err_syst**2)
 
     # ===================== REPORT =====================
     print("=" * 50)
@@ -112,8 +116,8 @@ def main():
     print("=" * 50)
     print(f"Computed channeling efficiency = ({eff_ch:.1f} +/- {eff_err_stat:.1f} [stat] +/- {eff_err_syst:.3f} [syst]) %")
     print(f"Total error = +/- {eff_err_total:.1f} %")
-    for name, val in systematics.items():
-        print(f"\tsyst ({name}) = {val:.3f} %")
+    # for name, val in systematics.items():
+    #     print(f"\tsyst ({name}) = {val:.3f} %")
     print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad, sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")

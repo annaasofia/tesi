@@ -31,7 +31,7 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, LogLocator
 
 
 # ------------------------------------------------------------------
@@ -48,8 +48,19 @@ def _resolve(obj):
 def _style_axes(ax):
     """Shared cosmetic touch-up: minor ticks between the major ones,
     all ticks pointing inward, drawn on all four sides of the plot."""
-    ax.xaxis.set_minor_locator(AutoMinorLocator())
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    
+    # Asse X: usa LogLocator se la scala è log, altrimenti AutoMinorLocator
+    if ax.get_xscale() == 'log':
+        ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10)*0.1, numticks=100))
+    else:
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        
+    # Asse Y: usa LogLocator se la scala è log, altrimenti AutoMinorLocator
+    if ax.get_yscale() == 'log':
+        ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10)*0.1, numticks=100))
+    else:
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+
     ax.tick_params(which='both', direction='in', top=True, right=True)
     ax.tick_params(which='minor', length=3)
     ax.tick_params(which='major', length=5)
@@ -156,7 +167,7 @@ def tf2_to_grid(f, x_range, y_range, nx=120, ny=120):
 # ------------------------------------------------------------------
 
 _LOC_ANCHORS = {
-    "upper right":  (0.97, 0.94, "right", "top"),
+    "upper right":  (0.85, 0.94, "right", "top"),
     "upper left":   (0.03, 0.94, "left",  "top"),
     "upper center": (0.50, 0.94, "center", "top"),
     "lower right":  (0.97, 0.06, "right", "bottom"),
@@ -214,7 +225,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     elif style == "step":
         ax.stairs(contents, edges, fill=False, color=color, lw=1.5, label=data_label)
     elif style == "fill":
-        ax.stairs(contents, edges, fill=True, color=color, alpha=0.55, label=data_label)
+        ax.stairs(contents, edges, fill=True, color=color, alpha=1.0, label=data_label)
     else:
         raise ValueError("style must be 'errorbar', 'step', or 'fill'")
 
@@ -240,8 +251,12 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     if save:
         fig.tight_layout()
         fig.savefig(save, dpi=150)
+        
+        if save.endswith(".pdf"):
+            fig.savefig(save.replace(".pdf", ".png"), dpi=150)
+            
         if owns_axes:
-            plt.close(fig) # Prevent memory leaks in loops
+            plt.close(fig)
             
     return ax
 
@@ -272,6 +287,10 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     if save:
         fig.tight_layout()
         fig.savefig(save, dpi=150)
+        
+        if save.endswith(".pdf"):
+            fig.savefig(save.replace(".pdf", ".png"), dpi=150)
+            
         if owns_axes:
             plt.close(fig)
             
@@ -317,6 +336,10 @@ def plot_graph_with_fit(g, fit_func=None, fit_range=None, ax=None,
     if save:
         fig.tight_layout()
         fig.savefig(save, dpi=150)
+        
+        if save.endswith(".pdf"):
+            fig.savefig(save.replace(".pdf", ".png"), dpi=150)
+            
         if owns_axes:
             plt.close(fig)
             
@@ -372,6 +395,10 @@ def plot_tf2(f, x_range, y_range, nx=120, ny=120, ax=None,
     if save:
         fig.tight_layout()
         fig.savefig(save, dpi=150)
+
+        if save.endswith(".pdf"):
+            fig.savefig(save.replace(".pdf", ".png"), dpi=150)
+            
         if owns_axes:
             plt.close(fig)
             

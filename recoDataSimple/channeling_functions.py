@@ -1,7 +1,13 @@
 import ROOT
-import sys
 import math
+import sys
+import os
+import numpy as np
 from array import array
+import matplotlib.pyplot as plt
+import plotting_utils as pu
+
+PLOT_DIR = "plots"
 
 def get_run_parameters(file_id):
     if file_id in [8430, 8431]:
@@ -157,8 +163,8 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     h3_all = df.Histo3D((f"h3_all_{tag}", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
     h3_chan = df.Filter(f"Deltatheta_x > {preliminary_cut}").Histo3D((f"h3_chan_{tag}", "", 1000, -100, 100, nx_slices, x_min, x_max, ny_slices, y_min, y_max), "thetaIn_x", "Tracks.d0_x", "Tracks.d0_y").GetValue()
 
-    h2_torsion_map = ROOT.TH2D(f"h2_torsion_map_{tag}", "2D Torsion Map (bins 0.1 x 0.1 mm); x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
-    h2_eff_map = ROOT.TH2D(f"h2_eff_map_{tag}", "2D Efficiency Map; x [mm]; y [mm]; Local Efficiency [%]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_torsion_map = ROOT.TH2D(f"h2_torsion_map_{tag}", "Torsion Map; x [mm]; y [mm]; angle shift #theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_eff_map = ROOT.TH2D(f"h2_eff_map_{tag}", "Efficiency Map; x [mm]; y [mm]; Local Efficiency [%]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
 
     h2_torsion_map.Sumw2()
     h2_eff_map.Sumw2()
@@ -213,11 +219,12 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
                 h2_eff_map.SetBinContent(ix, iy, local_max_eff)
                 h2_eff_map.SetBinError(ix, iy, local_max_eff_err)
 
-    # c_torsion_2d = ROOT.TCanvas(f"c_torsion_2d_{tag}", "2D Torsion Map", 900, 700)
-    # c_torsion_2d.SetRightMargin(0.15)
-    # h2_torsion_map.SetStats(0)
-    # h2_torsion_map.Draw("colz")
-    # c_torsion_2d.Update()
+    if tag == "nominal":
+        pu.plot_histo2d(h2_torsion_map,
+            xlabel="x [mm]", ylabel="y [mm]",
+            zlabel=r"angle shift $\theta_0$ [$\mu$rad]",
+            title="Torsion Map",
+            save=f"{PLOT_DIR}/torsion_map_{tag}.pdf")
     
     current_x_min = (x_min + x_cut_margin) if restricted else x_min
     current_x_max = (x_max - x_cut_margin) if restricted else x_max
@@ -295,21 +302,24 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
 
     rdf_surface_expr = f"({theta_0_baseline} + {tau_y}*Tracks.d0_y)" if linear else surface_expr
 
-    # torsion_plot_2d = torsion_fit_2d.Clone(f"torsion_plot_2d_{tag}")
-    # torsion_plot_2d.SetRange(current_x_min, current_y_min, current_x_max, current_y_max)
-    # torsion_plot_2d.SetTitle("Continuous 2D Torsion Map; x at crystal surface [mm]; y at crystal surface [mm]; angle shift #theta_{0} [#murad]")
-    # c_torsion_smooth = ROOT.TCanvas(f"c_torsion_smooth_{tag}", "Continuous 2D Torsion Map", 900, 700)
-    # c_torsion_smooth.SetRightMargin(0.15)
-    # torsion_plot_2d.Draw("surf2") 
-    # c_torsion_smooth.Update()
+    if tag == "nominal":
+            # continuous surface (replaces the old TF2 "surf2" draw): evaluate
+            # the fitted torsion_fit_2d on a fine grid and show it as a heatmap
+            xs = np.linspace(current_x_min, current_x_max, 150)
+            ys = np.linspace(current_y_min, current_y_max, 150)
+            zz = np.array([[torsion_fit_2d.Eval(xv, yv) for xv in xs] for yv in ys])
+            fig, ax = plt.subplots(figsize=(7, 6))
+            mesh = ax.pcolormesh(xs, ys, zz, cmap='viridis', shading='auto')
+            ax.set_xlabel("x [mm]")
+            ax.set_ylabel("y [mm]")  
+            ax.set_title(f"Continuous Torsion Map ({chosen_model} fit)")
+            cb = plt.colorbar(mesh, ax=ax)
+            cb.set_label(r"angle shift $\theta_0$ [$\mu$rad]")
+            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth_{tag}.pdf", bbox_inches='tight')
+            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth_{tag}.png", bbox_inches='tight')
 
-    # ROOT.SetOwnership(h2_torsion_map, False)
-    # ROOT.SetOwnership(torsion_plot_2d, False)
-    # ROOT.SetOwnership(c_torsion_2d, False)
-    # ROOT.SetOwnership(c_torsion_smooth, False)
-
-    h2_residuals = ROOT.TH2D(f"h2_residuals_{tag}", f"Torsion Residuals (Data - {chosen_model}); x [mm]; y [mm]; #Delta#theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
-    h2_pulls = ROOT.TH2D(f"h2_pulls_{tag}", f"Torsion Pulls (Data - {chosen_model})/#sigma; x [mm]; y [mm]; Pull", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_residuals = ROOT.TH2D(f"h2_residuals_{tag}", f"Torsion Residuals (data - {chosen_model}); x [mm]; y [mm]; #Delta#theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_pulls = ROOT.TH2D(f"h2_pulls_{tag}", f"Torsion Pulls (data - {chosen_model})/#sigma; x [mm]; y [mm]; Pull", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     for ix in range(1, nx_slices + 1):
         for iy in range(1, ny_slices + 1):
             data_val = h2_torsion_map.GetBinContent(ix, iy)
@@ -323,30 +333,19 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
                 if data_err > 0:
                     h2_pulls.SetBinContent(ix, iy, residual / data_err)
 
-    # c_eff_map = ROOT.TCanvas(f"c_eff_map_{tag}", "2D Efficiency Map", 900, 700)
-    # c_eff_map.SetRightMargin(0.15)
-    # h2_eff_map.SetStats(0)
-    # h2_eff_map.Draw("COLZ")
-    # c_eff_map.Update()
-
-    # c_residuals = ROOT.TCanvas(f"c_residuals_{tag}", "2D Residuals Map", 900, 700)
-    # c_residuals.SetRightMargin(0.15)
-    # h2_residuals.SetStats(0)
-    # h2_residuals.Draw("COLZ")
-    # c_residuals.Update()
-
-    # c_pulls = ROOT.TCanvas(f"c_pulls_{tag}", "2D Pulls Map", 900, 700)
-    # c_pulls.SetRightMargin(0.15)
-    # h2_pulls.SetStats(0)
-    # h2_pulls.Draw("COLZ")
-    # c_pulls.Update()
-    
-    # ROOT.SetOwnership(h2_eff_map, False)
-    # ROOT.SetOwnership(c_eff_map, False)
-    # ROOT.SetOwnership(h2_residuals, False)
-    # ROOT.SetOwnership(c_residuals, False)
-    # ROOT.SetOwnership(h2_pulls, False)
-    # ROOT.SetOwnership(c_pulls, False)
+    if tag == "nominal":
+        pu.plot_histo2d(h2_eff_map, xlabel="x [mm]", ylabel="y [mm]",
+            zlabel="Local Efficiency [%]", title="Efficiency Map",
+            save=f"{PLOT_DIR}/eff_map_{tag}.pdf")
+ 
+        pu.plot_histo2d(h2_residuals, xlabel="x [mm]", ylabel="y [mm]",
+            zlabel=r"$\Delta\theta_0$ [$\mu$rad]",
+            title=f"Torsion Residuals (data - {chosen_model})",
+            save=f"{PLOT_DIR}/torsion_residuals_{tag}.pdf")
+ 
+        pu.plot_histo2d(h2_pulls, xlabel="x [mm]", ylabel="y [mm]",
+            zlabel="Pulls", title=rf"Torsion Pulls (data - {chosen_model}) / $\sigma$",
+            save=f"{PLOT_DIR}/torsion_pulls_{tag}.pdf")
 
     return fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr
 
@@ -360,7 +359,7 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         print("WARNING: channeling_efficiency called on an empty dataframe, returning zeros.")
         return 0.0, 0.0, fit_parameters, None
 
-    h_defl_cut = df.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
+    h_defl_cut = df.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; Events", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
     h_cut_value = h_defl_cut.GetValue().Clone(f"h_cut_value_cloned_{tag}")
 
     eff_ch = 0.0
@@ -391,37 +390,22 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         eff_ch = (N_ch / N_tot) * 100.0
         eff_err = math.sqrt(eff_ch/100.0 * (1.0 - eff_ch/100.0) / N_tot) * 100.0
 
-    # c5 = ROOT.TCanvas(f"c5_{tag}", "Channeling Efficiency Fit", 1400, 900)
-    # h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
-    # h_cut_value.SetLineColor(ROOT.kOrange)
-    # h_cut_value.Draw("HIST")
-    # c5.SetLogy()
-    # c5.Update()
-
-    # ROOT.SetOwnership(c5, False)
-    # ROOT.SetOwnership(h_cut_value, False)
-
-    # c6 = ROOT.TCanvas(f"c6_{tag}", "Channeling Efficiency Fit", 1400, 900)
-    # h_cut_value.SetFillColorAlpha(ROOT.kOrange, 0.6)
-    # h_cut_value.SetLineColor(ROOT.kOrange)
-    # h_cut_value.GetXaxis().SetRangeUser(5900, 6150)
-    # h_cut_value.Draw("HIST")
-    # if N_tot > 0:
-    #     gaus_fit.Draw("SAME")
-    # legend = ROOT.TPaveText(0.70, 0.75, 0.85, 0.85, "NDC")
-    # legend.SetBorderSize(1)
-    # legend.SetFillColor(ROOT.kWhite)
-    # legend.SetTextAlign(12)
-    # legend.AddText(f"#epsilon_{{ch}} = {eff_ch:.1f} #pm {eff_err:.1f} %")
-    # legend.AddText(f"Fit mean: {fit_mean:.1f} #murad")
-    # legend.Draw()
-    # c6.Update()
-
-    # ROOT.SetOwnership(c6, False)
-    # ROOT.SetOwnership(h_cut_value, False)
-    # if gaus_fit is not None:
-    #     ROOT.SetOwnership(gaus_fit, False)
-    # ROOT.SetOwnership(legend, False)
+    if tag == "nominal":
+        pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+            ylabel="Events", logy=True, style="fill", color='orange',
+            title="Angular Deflection",
+            save=f"{PLOT_DIR}/defl_logy_{tag}.pdf")
+    
+        ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
+            fit_range=(fit_min, fit_max) if N_tot > 0 else None,
+            xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ylabel="Events", style="fill", color='orange',
+            title="Angular Deflection (zoom)",
+            info_text=[f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
+                        f"Fit mean: {fit_mean:.1f} $\\mu$rad"],
+            info_loc="upper right")
+        ax.set_xlim(5900, 6150)
+        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom_{tag}.pdf", bbox_inches='tight')
+        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom_{tag}.png", bbox_inches='tight')
 
     return eff_ch, eff_err, fit_parameters, h_cut_value
 
@@ -480,17 +464,16 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
     sigma = gaus_eff.GetParameter(2)
     compatibility = abs(mean)/mean_err
     
-    leg = ROOT.TPaveText(0.53, 0.78, 0.88, 0.88, "NDC")
-    leg.SetFillColor(ROOT.kWhite); leg.SetBorderSize(1)
-    leg.AddText(f"Max Global Efficiency = ({max_eff:.1f} +/- {max_eff_err:.1f}) %")
-    leg.AddText(f"Mean = {mean:.3f} +/- {mean_err:.3f} (comp = {compatibility:.2f})")
-    leg.Draw("SAME")
-
-    c_eff_curve.Update()
-
-    ROOT.SetOwnership(gr_eff, False)
-    ROOT.SetOwnership(c_eff_curve, False)
-    ROOT.SetOwnership(leg, False)
+    ax = pu.plot_graph_with_fit(gr_eff, gaus_eff, fit_range=(-20, 20),
+        xlabel="Torsion-Corrected Incoming Angle [$\\mu$rad]",
+        ylabel="Channeling Efficiency [%]",
+        title="Global Angular Acceptance (Torsion Corrected)",
+        # info_text=[f"Max Global Efficiency = ({max_eff:.1f} $\\pm$ {max_eff_err:.1f}) %",
+        #            f"Mean = {mean:.3f} $\\pm$ {mean_err:.3f}"],
+        info_loc="upper right")
+    ax.set_xlim(-80, 80)
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.pdf", bbox_inches='tight')
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.png", bbox_inches='tight')
 
     return max_eff, max_eff_err
 
@@ -693,7 +676,7 @@ def compute_fit_uncertainty_systematic(df_phys, parameters, fit_efficiency, tag=
     if N_tot == 0:
         return 0.0
 
-    h_defl_cut = df_phys.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection; #Delta#theta_{x} [#murad]; No. particles", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
+    h_defl_cut = df_phys.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection; #Delta#theta_{x} [#murad]; Events", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
     h_cut_value = h_defl_cut.GetValue().Clone(f"h_cut_value_cloned_{tag}")
 
     def eff_from_bounds(mean, sigma, n_sigma_low=3.0):
