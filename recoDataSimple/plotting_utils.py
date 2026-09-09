@@ -214,7 +214,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
                  xlabel="", ylabel="Events", title="",
                  data_label="data", fit_label="fit",
                  info_text=None, info_loc="upper right",
-                 style="errorbar", color="tab:blue", logy=False, save=None):
+                 style="errorbar", color="tab:blue", alpha=None, logy=False, save=None):
     """
     Plot a TH1 with an optional TF1 fit.
     style: "errorbar" (points+errors), "step" (outline), or "fill" (filled steps).
@@ -230,12 +230,15 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
 
     if style == "errorbar":
         xerr = (edges[1:] - edges[:-1]) / 2.0
+        a = alpha if alpha is not None else 1.0
         ax.errorbar(centers, contents, yerr=yerr, xerr=xerr, fmt='.', color=color,
-                    ecolor=color, markersize=4, label=data_label)
+                    ecolor=color, markersize=4, label=data_label, alpha=a)
     elif style == "step":
-        ax.stairs(contents, edges, fill=False, color=color, lw=1.5, label=data_label)
+        a = alpha if alpha is not None else 1.0
+        ax.stairs(contents, edges, fill=False, color=color, lw=1.5, label=data_label, alpha=a)
     elif style == "fill":
-        ax.stairs(contents, edges, fill=True, color=color, alpha=0.55, label=data_label)
+        a = alpha if alpha is not None else 0.55
+        ax.stairs(contents, edges, fill=True, color=color, alpha=a, label=data_label)
     else:
         raise ValueError("style must be 'errorbar', 'step', or 'fill'")
 

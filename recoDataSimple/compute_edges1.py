@@ -4,14 +4,26 @@ import sys
 import os
 import numpy as np
 from array import array
+import plotting_utils as pu
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.patches import Rectangle
-import plotting_utils as pu
+from matplotlib.colors import ListedColormap
+import seaborn as sns
+
+
+
 
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
+# creiamo una colormap che mappa il livello 0 (bin vuoti) al bianco
+base_cmap = plt.colormaps['viridis'].resampled(256)
+newcolors = base_cmap(np.linspace(0, 1, 256))
+newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
+cmap_white_bg = ListedColormap(newcolors)
+# altra mappa 
+cmap_flare = sns.color_palette("flare", as_cmap=True)
 
 file = 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -210,44 +222,60 @@ print(f"y = [{y_min:.4f} ± {y_min_err:.4f}, {y_max:.4f} ± {y_max_err:.4f}] mm"
 # box5 = ROOT.TBox(x_min, y_min, x_max, y_max); box5.SetLineColor(ROOT.kRed); box5.SetLineWidth(1); box5.SetLineStyle(2); box5.SetFillStyle(0); box5.Draw("SAME")
 
 # Creazione di copie a bassa risoluzione ESCLUSIVAMENTE per Matplotlib
-# Riduciamo i bin di un fattore 5x5 e 10x10 per non bloccare il rendering
+# Riduciamo i bin di un fattore 10x10 per non bloccare il rendering
 plot_h_d0_xy = h_d0_xy.GetValue().Clone("plot_h_d0_xy")
-plot_h_d0_xy.Rebin2D(5, 5)
+plot_h_d0_xy.Rebin2D(10, 10)
 
 plot_h_d0_Out_xy = h_d0_Out_xy.GetValue().Clone("plot_h_d0_Out_xy")
-plot_h_d0_Out_xy.Rebin2D(5, 5)
+plot_h_d0_Out_xy.Rebin2D(10, 10)
 
 plot_h_d0_xy_ch = h_d0_xy_ch.GetValue().Clone("plot_h_d0_xy_ch")
-plot_h_d0_xy_ch.Rebin2D(10, 10)
+plot_h_d0_xy_ch.Rebin2D(20, 20)
 
 plot_h_d0_Out_xy_ch = h_d0_Out_xy_ch.GetValue().Clone("plot_h_d0_Out_xy_ch")
-plot_h_d0_Out_xy_ch.Rebin2D(10, 10)
+plot_h_d0_Out_xy_ch.Rebin2D(20, 20)
 
-fig0, axs0 = plt.subplots(2, 2, figsize=(14, 10))
+fig0a, axs0a = plt.subplots(2, 2, figsize=(14, 10))
 # 1) Incoming all
-pu.plot_histo2d(plot_h_d0_xy, ax=axs0[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Incoming d0_x vs d0_y (All)")
-axs0[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+pu.plot_histo2d(plot_h_d0_xy, ax=axs0a[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (All)", cmap=cmap_white_bg)
+axs0a[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 2) Outgoing all
-pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Outgoing d0_x vs d0_y (All)")
-axs0[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0a[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (All)", cmap=cmap_white_bg)
+axs0a[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 3) Incoming channeled
-pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Incoming d0_x vs d0_y (Channeled)")
-axs0[1,0].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0a[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (Channeled)", cmap=cmap_white_bg)
+axs0a[1,0].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # 4) Outgoing channeled
-pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=axs0[1,1], xlabel="x [mm]", ylabel="y [mm]", title="Outgoing d0_x vs d0_y (Channeled)")
-axs0[1,1].add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
-axs0[1,1].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=1, ls='--'))
-fig0.tight_layout()
-fig0.savefig(f"plots_{file}_edges1/spatial_cut_box.pdf")
-fig0.savefig(f"plots_{file}_edges1/spatial_cut_box.png")
-plt.close(fig0)
+pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=axs0a[1,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (Channeled)", cmap=cmap_white_bg)
+axs0a[1,1].add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+axs0a[1,1].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=1, ls='--'))
+fig0a.tight_layout()
+fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.pdf")
+fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.png")
+plt.close(fig0a)
 
-fig0b, ax0b = plt.subplots(figsize=(8, 7))
-pu.plot_histo2d(plot_h_d0_xy, ax=ax0b, xlabel="x [mm]", ylabel="y [mm]", title="Incoming beam of all particles")
-ax0b.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
-fig0b.savefig(f"plots_{file}_edges1/spatial_cut2_box.pdf")
-fig0b.savefig(f"plots_{file}_edges1/spatial_cut2_box.png")
-plt.close(fig0b)
+fig0b, axs0b = plt.subplots(2, 2, figsize=(14, 10))
+# 1) Incoming all
+pu.plot_histo2d(plot_h_d0_xy, ax=axs0b[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (All)", cmap=cmap_white_bg)
+axs0b[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# 2) Outgoing all
+pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0b[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (All)", cmap=cmap_white_bg)
+axs0b[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# 3) Incoming channeled
+pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0b[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (Channeled)", cmap=cmap_white_bg)
+# 4) Outgoing channeled
+pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=axs0b[1,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (Channeled)", cmap=cmap_white_bg)
+fig0b.tight_layout()
+fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.pdf")
+fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.png")
+
+
+fig0c, ax0c = plt.subplots(figsize=(8, 7))
+pu.plot_histo2d(plot_h_d0_xy, ax=ax0c, xlabel="x [mm]", ylabel="y [mm]", title="Incoming beam of all particles")
+ax0c.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.pdf")
+fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.png")
+plt.close(fig0c)
 
 # c1 = ROOT.TCanvas("c1", "d0_x and d0_y of channeled particles", 1000, 900)
 # pad_center = ROOT.TPad("pad_center", "pad_center", 0, 0, 0.65, 0.65)
@@ -279,22 +307,26 @@ ax_top1 = fig1.add_subplot(gs1[0, 0], sharex=ax_main1)
 ax_right1 = fig1.add_subplot(gs1[1, 1], sharey=ax_main1)
 
 # Mappa 2D principale
-pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=ax_main1, xlabel="x [mm]", ylabel="y [mm]")
+pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=ax_main1, xlabel="x [mm]", ylabel="y [mm]", cmap=cmap_white_bg, colorbar=False)
 ax_main1.add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
-pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color="darkblue", ylabel="Counts")
+pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color="royalblue", ylabel="Counts", alpha=1.0)
 ax_top1.axvline(x_min+delta_x, color='red', ls='--', lw=2)
 ax_top1.axvline(x_max+delta_x, color='red', ls='--', lw=2)
 ax_top1.tick_params(labelbottom=False); ax_top1.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per usare l'orientamento orizzontale
 centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h_d0_Out_y_ch)
-ax_right1.stairs(contents_y1, edges_y1, fill=True, color="darkblue", orientation='horizontal')
+ax_right1.stairs(contents_y1, edges_y1, fill=True, color="royalblue", orientation='horizontal', alpha=1.0)
 ax_right1.axhline(y_min, color='red', ls='--', lw=2)
 ax_right1.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro invertendo X e Y per adattarsi all'orientamento orizzontale
 fy_x, fy_y = pu.tf1_to_curve(f_gaus_out, y_min, y_max)
 ax_right1.plot(fy_y, fy_x, color='darkblue', lw=2) 
 ax_right1.tick_params(labelleft=False); ax_right1.set_xlabel("Counts")
+pu._style_axes(ax_top1)
+pu._style_axes(ax_right1)
+
+fig1.suptitle("Downstream (Channeled)", fontsize=16)
 
 fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.pdf")
 fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.png")
@@ -329,23 +361,26 @@ ax_top2 = fig2.add_subplot(gs2[0, 0], sharex=ax_main2)
 ax_right2 = fig2.add_subplot(gs2[1, 1], sharey=ax_main2)
 
 # Mappa 2D principale
-pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]")
+pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]", cmap="summer", colorbar=False)
 ax_main2.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
-pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color="darkblue", ylabel="Counts")
+pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color="royalblue", ylabel="Counts", alpha=1.0)
 ax_top2.axvline(x_min, color='red', ls='--', lw=2)
 ax_top2.axvline(x_max, color='red', ls='--', lw=2)
 ax_top2.tick_params(labelbottom=False); ax_top2.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per l'orientamento orizzontale
 centers_y2, contents_y2, yerr_y2, edges_y2 = pu.th1_to_arrays(h_d0_y_ch)
-ax_right2.stairs(contents_y2, edges_y2, fill=True, color="darkblue", orientation='horizontal')
+ax_right2.stairs(contents_y2, edges_y2, fill=True, color="royalblue", orientation='horizontal', alpha=1.0)
 ax_right2.axhline(y_min, color='red', ls='--', lw=2)
 ax_right2.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro 
 fy_x2, fy_y2 = pu.tf1_to_curve(f_gaus_in, y_min, y_max)
 ax_right2.plot(fy_y2, fy_x2, color='darkblue', lw=2)
 ax_right2.tick_params(labelleft=False); ax_right2.set_xlabel("Counts")
+pu._style_axes(ax_top2)
+pu._style_axes(ax_right2)
 
+fig2.suptitle("Upstream (Channeled)", fontsize=16)
 fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.pdf")
 fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.png")
 plt.close(fig2)
