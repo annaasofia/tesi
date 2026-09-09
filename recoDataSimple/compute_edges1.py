@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.patches import Rectangle
 from matplotlib.colors import ListedColormap
-import seaborn as sns
+# import seaborn as sns
 
 
 
@@ -23,7 +23,10 @@ newcolors = base_cmap(np.linspace(0, 1, 256))
 newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
 cmap_white_bg = ListedColormap(newcolors)
 # altra mappa 
-cmap_flare = sns.color_palette("flare", as_cmap=True)
+# cmap_flare = sns.color_palette("flare", as_cmap=True)
+# altro colore
+viridis_teal = "#21918c"
+viridis_purple = "#440154"
 
 file = 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -70,8 +73,10 @@ df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltathe
 print("="*50)
 
 # HISTOGRAMS PRE SPATIAL CUT
-h_d0_xy = df_phys.Histo2D(("h_d0_xy", "Incoming x vs y of all particles; x [mm]; y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0_x", "Tracks.d0_y")
-h_d0_Out_xy = df_phys.Histo2D(("h_d0_Out_xy", "Outgoing x vs y of all particles; x [mm]; y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0Out_x", "Tracks.d0Out_y")
+# h_d0_xy = df_phys.Histo2D(("h_d0_xy", "Incoming x vs y of all particles; x [mm]; y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0_x", "Tracks.d0_y")
+# h_d0_Out_xy = df_phys.Histo2D(("h_d0_Out_xy", "Outgoing x vs y of all particles; x [mm]; y [mm]", 1700, -10, 20, 1700, -20, 20), "Tracks.d0Out_x", "Tracks.d0Out_y")
+h_d0_xy = df_phys.Histo2D(("h_d0_xy", "Incoming x vs y of all particles; x [mm]; y [mm]", 600, -3, 3, 1700, -8, 9), "Tracks.d0_x", "Tracks.d0_y")
+h_d0_Out_xy = df_phys.Histo2D(("h_d0_Out_xy", "Outgoing x vs y of all particles; x [mm]; y [mm]", 600, -3, 3, 1700, -8, 9), "Tracks.d0Out_x", "Tracks.d0Out_y")
 
 # FILTER: spatial cut (d0_x and d0_y within the crystal area)
 # as first thing i choose a cut on Deltatheta_x to select only channeled particles
@@ -87,12 +92,12 @@ preliminary_cut = pre_mean - 3.0 * pre_sigma
 df_cut = df_phys.Filter(f"Deltatheta_x > {preliminary_cut}", "Preliminary cut on Deltatheta_x to select channeled particles")
 
 # i look at the beam profile of d0 of those who channeled, and find the region (width x length)
-h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; x [mm]; y [mm]", 5000, -2, 3, 1700, -8, 9), "Tracks.d0_x", "Tracks.d0_y")
-h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; x [mm]; y [mm]", 5000, -2, 3, 1700, -8, 9), "Tracks.d0Out_x", "Tracks.d0Out_y")
+h_d0_xy_ch = df_cut.Histo2D(("h_d0_xy_ch", "Incoming beam - channeled particles; x [mm]; y [mm]", 600, -3, 3, 1700, -8, 9), "Tracks.d0_x", "Tracks.d0_y")
+h_d0_Out_xy_ch = df_cut.Histo2D(("h_d0_Out_xy_ch", "Outgoing beam - channeled particles; x [mm]; y [mm]", 600, -3, 3, 1700, -8, 9), "Tracks.d0Out_x", "Tracks.d0Out_y")
 
-h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "x of channeled particles; x [mm]; Counts", 5000, -2, 3), "Tracks.d0_x")
+h_d0_x_ch = df_cut.Histo1D(("h_d0_x_ch", "x of channeled particles; x [mm]; Counts", 6000, -3, 3), "Tracks.d0_x")
 h_d0_y_ch = df_cut.Histo1D(("h_d0_y_ch", "y of channeled particles; y [mm]; Counts", 1700, -8, 9), "Tracks.d0_y")
-h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "x of channeled particles; x [mm]; Counts", 5000, -2, 3), "Tracks.d0Out_x")
+h_d0_Out_x_ch = df_cut.Histo1D(("h_d0_Out_x_ch", "x of channeled particles; x [mm]; Counts", 6000, -3, 3), "Tracks.d0Out_x")
 h_d0_Out_y_ch = df_cut.Histo1D(("h_d0_Out_y_ch", "y of channeled particles; y [mm]; Counts", 1700, -8, 9), "Tracks.d0Out_y")
 
 
@@ -230,18 +235,18 @@ plot_h_d0_Out_xy = h_d0_Out_xy.GetValue().Clone("plot_h_d0_Out_xy")
 plot_h_d0_Out_xy.Rebin2D(10, 10)
 
 plot_h_d0_xy_ch = h_d0_xy_ch.GetValue().Clone("plot_h_d0_xy_ch")
-plot_h_d0_xy_ch.Rebin2D(20, 20)
+plot_h_d0_xy_ch.Rebin2D(10, 10)
 
 plot_h_d0_Out_xy_ch = h_d0_Out_xy_ch.GetValue().Clone("plot_h_d0_Out_xy_ch")
-plot_h_d0_Out_xy_ch.Rebin2D(20, 20)
+plot_h_d0_Out_xy_ch.Rebin2D(10, 10)
 
 fig0a, axs0a = plt.subplots(2, 2, figsize=(14, 10))
 # 1) Incoming all
 pu.plot_histo2d(plot_h_d0_xy, ax=axs0a[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (All)", cmap=cmap_white_bg)
-axs0a[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# axs0a[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 2) Outgoing all
 pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0a[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (All)", cmap=cmap_white_bg)
-axs0a[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# axs0a[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 3) Incoming channeled
 pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0a[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (Channeled)", cmap=cmap_white_bg)
 axs0a[1,0].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
@@ -257,10 +262,10 @@ plt.close(fig0a)
 fig0b, axs0b = plt.subplots(2, 2, figsize=(14, 10))
 # 1) Incoming all
 pu.plot_histo2d(plot_h_d0_xy, ax=axs0b[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (All)", cmap=cmap_white_bg)
-axs0b[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# axs0b[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 2) Outgoing all
 pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0b[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (All)", cmap=cmap_white_bg)
-axs0b[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+# axs0b[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
 # 3) Incoming channeled
 pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0b[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (Channeled)", cmap=cmap_white_bg)
 # 4) Outgoing channeled
@@ -310,18 +315,18 @@ ax_right1 = fig1.add_subplot(gs1[1, 1], sharey=ax_main1)
 pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=ax_main1, xlabel="x [mm]", ylabel="y [mm]", cmap=cmap_white_bg, colorbar=False)
 ax_main1.add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
-pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color="royalblue", ylabel="Counts", alpha=1.0)
+pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color=viridis_teal, ylabel="Counts", alpha=1.0)
 ax_top1.axvline(x_min+delta_x, color='red', ls='--', lw=2)
 ax_top1.axvline(x_max+delta_x, color='red', ls='--', lw=2)
 ax_top1.tick_params(labelbottom=False); ax_top1.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per usare l'orientamento orizzontale
 centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h_d0_Out_y_ch)
-ax_right1.stairs(contents_y1, edges_y1, fill=True, color="royalblue", orientation='horizontal', alpha=1.0)
+ax_right1.stairs(contents_y1, edges_y1, fill=True, color=viridis_teal, orientation='horizontal', alpha=1.0)
 ax_right1.axhline(y_min, color='red', ls='--', lw=2)
 ax_right1.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro invertendo X e Y per adattarsi all'orientamento orizzontale
 fy_x, fy_y = pu.tf1_to_curve(f_gaus_out, y_min, y_max)
-ax_right1.plot(fy_y, fy_x, color='darkblue', lw=2) 
+ax_right1.plot(fy_y, fy_x, color=viridis_purple, lw=2) 
 ax_right1.tick_params(labelleft=False); ax_right1.set_xlabel("Counts")
 pu._style_axes(ax_top1)
 pu._style_axes(ax_right1)
@@ -361,21 +366,21 @@ ax_top2 = fig2.add_subplot(gs2[0, 0], sharex=ax_main2)
 ax_right2 = fig2.add_subplot(gs2[1, 1], sharey=ax_main2)
 
 # Mappa 2D principale
-pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]", cmap="summer", colorbar=False)
+pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]", cmap=cmap_white_bg, colorbar=False)
 ax_main2.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
-pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color="royalblue", ylabel="Counts", alpha=1.0)
+pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color=viridis_teal, ylabel="Counts", alpha=1.0)
 ax_top2.axvline(x_min, color='red', ls='--', lw=2)
 ax_top2.axvline(x_max, color='red', ls='--', lw=2)
 ax_top2.tick_params(labelbottom=False); ax_top2.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per l'orientamento orizzontale
 centers_y2, contents_y2, yerr_y2, edges_y2 = pu.th1_to_arrays(h_d0_y_ch)
-ax_right2.stairs(contents_y2, edges_y2, fill=True, color="royalblue", orientation='horizontal', alpha=1.0)
+ax_right2.stairs(contents_y2, edges_y2, fill=True, color=viridis_teal, orientation='horizontal', alpha=1.0)
 ax_right2.axhline(y_min, color='red', ls='--', lw=2)
 ax_right2.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro 
 fy_x2, fy_y2 = pu.tf1_to_curve(f_gaus_in, y_min, y_max)
-ax_right2.plot(fy_y2, fy_x2, color='darkblue', lw=2)
+ax_right2.plot(fy_y2, fy_x2, color=viridis_purple, lw=2)
 ax_right2.tick_params(labelleft=False); ax_right2.set_xlabel("Counts")
 pu._style_axes(ax_top2)
 pu._style_axes(ax_right2)
