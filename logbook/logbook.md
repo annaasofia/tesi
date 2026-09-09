@@ -601,6 +601,11 @@ to do:
 
 ## WEEK 10
 
+what i did:
+- redid edges-method#1 and edges-method#2 plots in python
+- redid channeling plots in python
+
+
 ([UP](#traineeship-al-cern))
 
 ## WEEK 11

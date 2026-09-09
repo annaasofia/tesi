@@ -178,7 +178,7 @@ def tf2_to_grid(f, x_range, y_range, nx=120, ny=120):
 
 _LOC_ANCHORS = {
     "upper right":  (0.85, 0.94, "right", "top"),
-    "upper left":   (0.03, 0.94, "left",  "top"),
+    "upper left":   (0.25, 0.94, "left",  "top"),
     "upper center": (0.50, 0.94, "center", "top"),
     "lower right":  (0.97, 0.06, "right", "bottom"),
     "lower left":   (0.03, 0.06, "left",  "bottom"),
@@ -255,7 +255,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     if title:
         ax.set_title(title)
     if fit_func is not None and not info_text:
-        ax.legend(frameon=False, loc='upper right')
+        ax.legend(frameon=False, loc='lower right')
     if info_text is not None:
         add_info_box(ax, info_text, loc=info_loc)
 

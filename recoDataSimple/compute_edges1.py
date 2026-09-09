@@ -17,17 +17,33 @@ from matplotlib.colors import ListedColormap
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
-# creiamo una colormap che mappa il livello 0 (bin vuoti) al bianco
-base_cmap = plt.colormaps['viridis'].resampled(256)
-newcolors = base_cmap(np.linspace(0, 1, 256))
+
+# VIRIDIS
+base_viridis = plt.colormaps['viridis'].resampled(256)
+newcolors = base_viridis(np.linspace(0, 1, 256))
 newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
 cmap_white_bg = ListedColormap(newcolors)
-# altra mappa 
-# cmap_flare = sns.color_palette("flare", as_cmap=True)
 # altro colore
+viridis_yellow = "#fde725"
+viridis_green = "#5ec962"
 viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
+
+# PLASMA COLOR MAP
+base_plasma = plt.colormaps['plasma'].resampled(256)
+newcolors = base_plasma(np.linspace(0, 1, 256))
+newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
+cmap_white_bg = ListedColormap(newcolors)
+plasma_yellow = "#f0f921"
+plasma_orange = "#f89540"
+plasma_fucsia = "#cc4678"
+plasma_dark_fucsia = "#b52f8c"
+plasma_purple = "#7e03a8"
+plasma_blue = "#0d0887"
+
+# altra mappa 
+# cmap_flare = sns.color_palette("flare", as_cmap=True)
 
 file = 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -277,7 +293,7 @@ fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.png")
 
 
 fig0c, ax0c = plt.subplots(figsize=(8, 7))
-pu.plot_histo2d(plot_h_d0_xy, ax=ax0c, xlabel="x [mm]", ylabel="y [mm]", title="Incoming beam of all particles")
+pu.plot_histo2d(plot_h_d0_xy, ax=ax0c, xlabel="x [mm]", ylabel="y [mm]", title="Incoming beam of all particles", cmap=cmap_white_bg)
 ax0c.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.pdf")
 fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.png")
@@ -317,24 +333,24 @@ pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=ax_main1, xlabel="x [mm]", ylabel="y [mm
 ax_main1.add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
 #h_d0_Out_x_ch.Rebin(10)
-pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color=viridis_purple, ylabel="Counts", alpha=1.0)
+pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color=plasma_fucsia, ylabel="Counts", alpha=1.0)
 ax_top1.axvline(x_min+delta_x, color='red', ls='--', lw=2)
 ax_top1.axvline(x_max+delta_x, color='red', ls='--', lw=2)
 ax_top1.tick_params(labelbottom=False); ax_top1.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per usare l'orientamento orizzontale
 #h_d0_Out_y_ch.Rebin(10)
 centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h_d0_Out_y_ch)
-ax_right1.stairs(contents_y1, edges_y1, fill=True, color=viridis_purple, orientation='horizontal', alpha=1.0)
+ax_right1.stairs(contents_y1, edges_y1, fill=True, color=plasma_fucsia, orientation='horizontal', alpha=1.0)
 ax_right1.axhline(y_min, color='red', ls='--', lw=2)
 ax_right1.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro invertendo X e Y per adattarsi all'orientamento orizzontale
 fy_x, fy_y = pu.tf1_to_curve(f_gaus_out, y_min, y_max)
-ax_right1.plot(fy_y, fy_x, color="red", lw=2) 
+ax_right1.plot(fy_y, fy_x, color=plasma_blue, lw=1, ls='--') 
 ax_right1.tick_params(labelleft=False); ax_right1.set_xlabel("Counts")
 pu._style_axes(ax_top1)
 pu._style_axes(ax_right1)
 
-fig1.suptitle("Downstream (Channeled)", fontsize=16)
+fig1.suptitle("Downstream (Channeled)", fontsize=16, y=0.95)
 
 fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.pdf")
 fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.png")
@@ -373,24 +389,24 @@ pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]", 
 ax_main2.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
 #h_d0_x_ch.Rebin(10)
-pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color=viridis_purple, ylabel="Counts", alpha=1.0)
+pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color=plasma_fucsia, ylabel="Counts", alpha=1.0)
 ax_top2.axvline(x_min, color='red', ls='--', lw=2)
 ax_top2.axvline(x_max, color='red', ls='--', lw=2)
 ax_top2.tick_params(labelbottom=False); ax_top2.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per l'orientamento orizzontale
 #h_d0_y_ch.Rebin(10)
 centers_y2, contents_y2, yerr_y2, edges_y2 = pu.th1_to_arrays(h_d0_y_ch)
-ax_right2.stairs(contents_y2, edges_y2, fill=True, color=viridis_purple, orientation='horizontal', alpha=1.0)
+ax_right2.stairs(contents_y2, edges_y2, fill=True, color=plasma_fucsia, orientation='horizontal', alpha=1.0)
 ax_right2.axhline(y_min, color='red', ls='--', lw=2)
 ax_right2.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro 
 fy_x2, fy_y2 = pu.tf1_to_curve(f_gaus_in, y_min, y_max)
-ax_right2.plot(fy_y2, fy_x2, color="red", lw=2)
+ax_right2.plot(fy_y2, fy_x2, color=plasma_blue, lw=1, ls='--')
 ax_right2.tick_params(labelleft=False); ax_right2.set_xlabel("Counts")
 pu._style_axes(ax_top2)
 pu._style_axes(ax_right2)
 
-fig2.suptitle("Upstream (Channeled)", fontsize=16)
+fig2.suptitle("Upstream (Channeled)", fontsize=16, y=0.95)
 fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.pdf")
 fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.png")
 plt.close(fig2)
