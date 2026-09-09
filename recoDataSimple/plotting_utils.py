@@ -275,7 +275,8 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
 
 
 def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
-                 title="", cmap='viridis', save=None, colorbar=True):
+                 title="", cmap='viridis', save=None, colorbar=True,
+                 vmin=None, vmax=None):
     """Plot a TH2 (e.g. torsion map, efficiency map) as a pcolormesh."""
     xedges, yedges, z = th2_to_arrays(h2)
 
@@ -286,7 +287,7 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     else:
         fig = ax.figure
 
-    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat')
+    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', vmin=vmin, vmax=vmax)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if title:

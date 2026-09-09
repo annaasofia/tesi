@@ -19,7 +19,7 @@ def main():
     filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
 
     # global PLOT_DIR
-    PLOT_DIR = f"plots_{file}_py"
+    PLOT_DIR = f"./plots/plots_{file}_py"
     os.makedirs(PLOT_DIR, exist_ok=True)
     chfun.PLOT_DIR = PLOT_DIR
 
@@ -52,7 +52,10 @@ def main():
         x_cut_margin, y_cut_margin, nx_slices=nx_slices, ny_slices=ny_slices,
         restricted=True, linear=False, chosen_model="parabolic_y", tag="nominal")
 
-    max_eff_global, max_eff_global_err = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
+    _, _ = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
+    chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal")
+    chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal")
+    chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()

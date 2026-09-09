@@ -6,8 +6,14 @@ import numpy as np
 from array import array
 import matplotlib.pyplot as plt
 import plotting_utils as pu
+from matplotlib.colors import ListedColormap
 
 PLOT_DIR = "plots"
+
+base_viridis = plt.colormaps['viridis'].resampled(256)
+newcolors = base_viridis(np.linspace(0, 1, 256))
+newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
+cmap_white_bg = ListedColormap(newcolors)
 
 def get_run_parameters(file_id):
     if file_id in [8430, 8431]:
@@ -392,14 +398,14 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
 
     if tag == "nominal":
         pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-            ylabel="Events", logy=True, style="fill", color='orange',
+            ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
             title="Angular Deflection",
             save=f"{PLOT_DIR}/defl_logy_{tag}.pdf")
     
         ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
             fit_range=(fit_min, fit_max) if N_tot > 0 else None,
-            xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ylabel="Events", style="fill", color='orange',
-            title="Angular Deflection (zoom)",
+            xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ylabel="Events", style="fill", color="#5ec962",
+            title="Angular Deflection (zoom)", alpha=1.0,
             info_text=[f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
                         f"Fit mean: {fit_mean:.1f} $\\mu$rad"],
             info_loc="upper right")
@@ -476,6 +482,71 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
     plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.png", bbox_inches='tight')
 
     return max_eff, max_eff_err
+
+def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal"):
+    # axis può essere "x" (d0_x) oppure "y" (d0_y)
+    col_name = "Tracks.d0_x" if axis == "x" else "Tracks.d0_y"
+    x_min, x_max = (-2, 3) if axis == "x" else (-8, 9)
+    
+    h2 = df.Histo2D((
+        f"h2_d0{axis}_deltatheta_{tag}", 
+        f"d0_{axis} vs #Delta#theta_x; d0_{axis} [mm]; #Delta#theta_x [#murad]", 
+        200, x_min, x_max, 
+        500, -500, parameters["deflection_peak"] + 500
+    ), col_name, "Deltatheta_x").GetValue()
+            
+    pu.plot_histo2d(h2, 
+        xlabel=f"{axis} [mm]", 
+        ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        zlabel="Events", cmap=cmap_white_bg, 
+        title=f"Deflection vs Impact {axis.upper()}", 
+        save=f"{PLOT_DIR}/d0{axis}_vs_deltatheta_{tag}.pdf")
+    
+    return h2
+
+def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal"):
+    # 1. Istogramma 3D base per isolare le distribuzioni spaziali
+    h3_defl = df.Histo3D((
+        f"h3_xy_deltatheta_{tag}", "", 
+        nx_slices, x_min, x_max, 
+        ny_slices, y_min, y_max, 
+        500, parameters["deflection_peak"] - 300, parameters["deflection_peak"] + 300
+    ), "Tracks.d0_x", "Tracks.d0_y", "Deltatheta_x").GetValue()
+    
+    # 2. Mappa 2D vuota per ospitare il centro del fit (theta_b)
+    h2_deflection_map = ROOT.TH2D(
+        f"h2_deflection_map_{tag}", 
+        "Deflection Map; x [mm]; y [mm]; #theta_{b} [#murad]", 
+        nx_slices, x_min, x_max, ny_slices, y_min, y_max
+    )
+    
+    # 3. Fit slice-by-slice
+    for ix in range(1, nx_slices + 1):
+        for iy in range(1, ny_slices + 1):
+            h1_slice = h3_defl.ProjectionZ(f"proj_defl_z_{tag}_{ix}_{iy}", ix, ix, iy, iy)
+            
+            if h1_slice.GetEntries() > 20:  # Soglia minima di statistica
+                gaus_fit = ROOT.TF1(f"gaus_fit_defl_{ix}_{iy}", "gaus", 
+                                    parameters["deflection_peak"] - 150, 
+                                    parameters["deflection_peak"] + 150)
+                h1_slice.Fit(gaus_fit, "RQ0")
+                
+                theta_b = gaus_fit.GetParameter(1)
+                theta_b_err = gaus_fit.GetParError(1)
+                
+                h2_deflection_map.SetBinContent(ix, iy, theta_b)
+                h2_deflection_map.SetBinError(ix, iy, theta_b_err)
+                
+    # 4. Tracciato usando la funzione della tua libreria
+    pu.plot_histo2d(h2_deflection_map, 
+        xlabel="x [mm]", 
+        ylabel="y [mm]", 
+        zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
+        title="Deflection Angle Map", cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/deflection_map_{tag}.pdf",
+        vmin=5800,vmax=6300)
+    
+    return h2_deflection_map
 
 def filter1_initial(df):
     df_filtered = df.Filter("SingleTrack == 1")
