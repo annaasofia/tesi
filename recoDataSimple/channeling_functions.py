@@ -237,7 +237,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             xlabel="x [mm]", ylabel="y [mm]",
             zlabel=r"angle shift $\theta_0$ [$\mu$rad]",
             title="Torsion Map",
-            save=f"{PLOT_DIR}/torsion_map_{tag}.pdf")
+            save=f"{PLOT_DIR}/torsion_map.pdf")
     
     current_x_min = (x_min + x_cut_margin) if restricted else x_min
     current_x_max = (x_max - x_cut_margin) if restricted else x_max
@@ -328,8 +328,8 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             ax.set_title(f"Continuous Torsion Map ({chosen_model} fit)")
             cb = plt.colorbar(mesh, ax=ax)
             cb.set_label(r"angle shift $\theta_0$ [$\mu$rad]")
-            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth_{tag}.pdf", bbox_inches='tight')
-            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth_{tag}.png", bbox_inches='tight')
+            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth.pdf", bbox_inches='tight')
+            plt.savefig(f"{PLOT_DIR}/torsion_map_smooth.png", bbox_inches='tight')
 
     h2_residuals = ROOT.TH2D(f"h2_residuals_{tag}", f"Torsion Residuals (data - {chosen_model}); x [mm]; y [mm]; #Delta#theta_{0} [#murad]", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
     h2_pulls = ROOT.TH2D(f"h2_pulls_{tag}", f"Torsion Pulls (data - {chosen_model})/#sigma; x [mm]; y [mm]; Pull", nx_slices, x_min, x_max, ny_slices, y_min, y_max)
@@ -349,16 +349,16 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     if tag == "nominal":
         pu.plot_histo2d(h2_eff_map, xlabel="x [mm]", ylabel="y [mm]",
             zlabel="Local Efficiency [%]", title="Efficiency Map",
-            save=f"{PLOT_DIR}/eff_map_{tag}.pdf")
+            save=f"{PLOT_DIR}/eff_map.pdf")
  
         pu.plot_histo2d(h2_residuals, xlabel="x [mm]", ylabel="y [mm]",
             zlabel=r"$\Delta\theta_0$ [$\mu$rad]",
             title=f"Torsion Residuals (data - {chosen_model})",
-            save=f"{PLOT_DIR}/torsion_residuals_{tag}.pdf")
+            save=f"{PLOT_DIR}/torsion_residuals.pdf")
  
         pu.plot_histo2d(h2_pulls, xlabel="x [mm]", ylabel="y [mm]",
             zlabel="Pulls", title=rf"Torsion Pulls (data - {chosen_model}) / $\sigma$",
-            save=f"{PLOT_DIR}/torsion_pulls_{tag}.pdf")
+            save=f"{PLOT_DIR}/torsion_pulls.pdf")
 
     return fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr
 
@@ -407,7 +407,7 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
             ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
             title="Angular Deflection",
-            save=f"{PLOT_DIR}/defl_logy_{tag}.pdf")
+            save=f"{PLOT_DIR}/defl_logy.pdf")
     
         ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
             fit_range=(fit_min, fit_max) if N_tot > 0 else None,
@@ -417,8 +417,8 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
                         f"Fit mean: {fit_mean:.1f} $\\mu$rad"],
             info_loc="upper right")
         ax.set_xlim(5900, 6150)
-        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom_{tag}.pdf", bbox_inches='tight')
-        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom_{tag}.png", bbox_inches='tight')
+        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.pdf", bbox_inches='tight')
+        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.png", bbox_inches='tight')
 
     return eff_ch, eff_err, fit_parameters, h_cut_value
 
@@ -485,8 +485,8 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
         #            f"Mean = {mean:.3f} $\\pm$ {mean_err:.3f}"],
         info_loc="upper right")
     ax.set_xlim(-80, 80)
-    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.pdf", bbox_inches='tight')
-    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.png", bbox_inches='tight')
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve.pdf", bbox_inches='tight')
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve.png", bbox_inches='tight')
 
     return max_eff, max_eff_err
 
@@ -527,23 +527,53 @@ def plot_impact_vs_angle(df, parameters, axis="x", tag="nominal", xlim=None):
     ax_right.set_xlabel("Events")
     pu._style_axes(ax_right)
 
-    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn_{tag}.pdf", bbox_inches='tight')
-    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn_{tag}.png", bbox_inches='tight')
+    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn.pdf", bbox_inches='tight')
+    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn.png", bbox_inches='tight')
     plt.close(fig)
 
     return h2
 
-def plot_impact_angles(df, parameters, tag="nominal"):
+def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, ylim=None, tag2="entered"):
 
+    if variable == "angles":
+        x_min, x_max = -150, 150
+        y_min, y_max = -150, 150
+        x = "thetaIn_x"
+        y = "thetaIn_y"
+        xlabel = r"$\theta_{in, x}$ [$\mu$rad]"
+        ylabel = r"$\theta_{in, y}$ [$\mu$rad]"
+        title = "Incoming Angles Distribution"
+        label = "impact_angles"
+    elif variable == "positions":
+        x_min, x_max = xlim if xlim is not None else (-2, 3)
+        y_min, y_max = ylim if ylim is not None else (-8, 9)
+        x = "Tracks.d0_x"
+        y = "Tracks.d0_y"
+        xlabel = r"$x$ [mm]"
+        ylabel = r"$y$ [mm]"
+        title = "Impact Positions Distribution"
+        label = "impact_positions"
     h2 = df.Histo2D((
-        f"h2_thetaInx_thetaIny_{tag}", 
-        f"#theta_x vs #theta_y; #theta_x [#murad]; #theta_y [#murad]", 
-        200, -150, 150, 
-        500, -150, 150
-    ), "thetaIn_x", "thetaIn_y").GetValue()
+        f"h2_{x}_{y}_{tag}", 
+        f"{xlabel} vs {ylabel}; {xlabel}; {ylabel}", 
+        200, x_min, x_max, 
+        200, y_min, y_max
+    ), x, y).GetValue()
 
-    h1x = h2.ProjectionX(f"h1_thetaIn_x_{tag}")
-    h1y = h2.ProjectionY(f"h1_thetaIn_y_{tag}")
+    h1x = h2.ProjectionX(f"h1_{x}_{tag}")
+    h1y = h2.ProjectionY(f"h1_{y}_{tag}")
+
+    f_gaus_x = ROOT.TF1(f"f_gaus_x_{tag}", "gaus", -100, 100)
+    h1x.Fit(f_gaus_x, "RQ0")
+    mean_x, meanErr_x = f_gaus_x.GetParameter(1), f_gaus_x.GetParError(1)
+    sigma_x, sigmaErr_x = f_gaus_x.GetParameter(2), f_gaus_x.GetParError(2)
+    f_gaus_y = ROOT.TF1(f"f_gaus_y_{tag}", "gaus", -100, 100)
+    h1y.Fit(f_gaus_y, "RQ0")
+    mean_y, meanErr_y = f_gaus_y.GetParameter(1), f_gaus_y.GetParError(1)
+    sigma_y, sigmaErr_y = f_gaus_y.GetParameter(2), f_gaus_y.GetParError(2)
+
+    print(f"  {xlabel}: mean = {mean_x:.2f} ± {meanErr_x:.2f} mm, sigma = {sigma_x:.2f} ± {sigmaErr_x:.2f} mm")
+    print(f"  {ylabel}: mean = {mean_y:.2f} ± {meanErr_y:.2f} mm, sigma = {sigma_y:.2f} ± {sigmaErr_y:.2f} mm")
 
     fig = plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, width_ratios=(3, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
@@ -552,9 +582,9 @@ def plot_impact_angles(df, parameters, tag="nominal"):
     ax_right = fig.add_subplot(gs[1, 1], sharey=ax_main)
             
     pu.plot_histo2d(h2, ax=ax_main, 
-                    xlabel=r"$\theta_{in, x}$ [$\mu$rad]", 
-                    ylabel=r"$\theta_{in, y}$ [$\mu$rad]", cmap=cmap_white_bg, 
-                    title="Incoming Angles Distribution", colorbar=False, save=None)
+                    xlabel=xlabel, 
+                    ylabel=ylabel, cmap=cmap_white_bg, 
+                    title=title, colorbar=False, save=None)
 
     pu.plot_histo1d(h1x, ax=ax_top, style="fill", color=viridis_purple, ylabel="Events", alpha=0.9)
     ax_top.tick_params(labelbottom=False)  # Nascondi i numeri sull'asse X (condivisi col main)
@@ -567,9 +597,9 @@ def plot_impact_angles(df, parameters, tag="nominal"):
     ax_right.set_xlabel("Events")
     pu._style_axes(ax_right)
 
-    fig.suptitle(f"Impact Angles ({tag})", fontsize=16, y=0.92)
-    fig.savefig(f"{PLOT_DIR}/impact_angles_{tag}.pdf", bbox_inches='tight')
-    fig.savefig(f"{PLOT_DIR}/impact_angles_{tag}.png", bbox_inches='tight')
+    fig.suptitle(f"{title} ({tag2})", fontsize=16, y=0.92)
+    fig.savefig(f"{PLOT_DIR}/{label}_{tag2}.pdf", bbox_inches='tight')
+    fig.savefig(f"{PLOT_DIR}/{label}_{tag2}.png", bbox_inches='tight')
     plt.close(fig)
 
     return h2
@@ -595,7 +625,7 @@ def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal", xlim=None
         ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
         zlabel="Events", cmap=cmap_white_bg, 
         title=f"Deflection vs impact position {axis.lower()}", 
-        save=f"{PLOT_DIR}/d0{axis}_vs_deltatheta_{tag}.pdf")
+        save=f"{PLOT_DIR}/d0{axis}_vs_deltatheta.pdf")
     
     return h2
 
@@ -638,7 +668,7 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
         ylabel="y [mm]", 
         zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
         title="Deflection Angle Map", cmap=cmap_white_bg,
-        save=f"{PLOT_DIR}/deflection_map_{tag}.pdf",
+        save=f"{PLOT_DIR}/deflection_map.pdf",
         vmin=5900,vmax=6200)
     
     return h2_deflection_map
