@@ -58,10 +58,22 @@ def main():
     chfun.plot_impact(df_phys, parameters, variable="angles", tag="nominal")
     chfun.plot_impact(df_phys, parameters, variable="positions", tag="nominal", xlim=(x_min, x_max), ylim=(y_min, y_max))
     chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
-    chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", xlim=(x_min, x_max), ylim=(y_min, y_max), tag2="all")
+    chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", xlim=(-3, 3), ylim=(y_min, y_max), tag2="all")
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")
+
+    # check covariance
+    data_dict = df_phys.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
+
+    # print(type(data_dict["Tracks.d0_x"]), data_dict["Tracks.d0_x"].dtype)
+    # print(data_dict["Tracks.d0_x"][:5])
+    x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
+    thetax    = np.asarray(data_dict["thetaIn_x"]); thetay    = np.asarray(data_dict["thetaIn_y"])
+    data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
+    corr = np.corrcoef(data_matrix)
+    print("\nCovariance matrix:")
+    print(corr)
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()

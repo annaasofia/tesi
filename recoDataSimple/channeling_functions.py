@@ -544,6 +544,9 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
         ylabel = r"$\theta_{in, y}$ [$\mu$rad]"
         title = "Incoming Angles Distribution"
         label = "impact_angles"
+        units = "urad"
+        fitx_lim_min, fitx_lim_max = -100, 100
+        fity_lim_min, fity_lim_max = -100, 100
     elif variable == "positions":
         x_min, x_max = xlim if xlim is not None else (-2, 3)
         y_min, y_max = ylim if ylim is not None else (-8, 9)
@@ -553,6 +556,9 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
         ylabel = r"$y$ [mm]"
         title = "Impact Positions Distribution"
         label = "impact_positions"
+        units = "mm"
+        fitx_lim_min, fitx_lim_max = (x_min, x_max) if tag2=="entered" else (-3, 3)
+        fity_lim_min, fity_lim_max = y_min, y_max
     h2 = df.Histo2D((
         f"h2_{x}_{y}_{tag}", 
         f"{xlabel} vs {ylabel}; {xlabel}; {ylabel}", 
@@ -563,17 +569,18 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
     h1x = h2.ProjectionX(f"h1_{x}_{tag}")
     h1y = h2.ProjectionY(f"h1_{y}_{tag}")
 
-    f_gaus_x = ROOT.TF1(f"f_gaus_x_{tag}", "gaus", -100, 100)
+    f_gaus_x = ROOT.TF1(f"f_gaus_x_{tag}", "gaus", fitx_lim_min, fitx_lim_max)
     h1x.Fit(f_gaus_x, "RQ0")
     mean_x, meanErr_x = f_gaus_x.GetParameter(1), f_gaus_x.GetParError(1)
     sigma_x, sigmaErr_x = f_gaus_x.GetParameter(2), f_gaus_x.GetParError(2)
-    f_gaus_y = ROOT.TF1(f"f_gaus_y_{tag}", "gaus", -100, 100)
+    f_gaus_y = ROOT.TF1(f"f_gaus_y_{tag}", "gaus", fity_lim_min, fity_lim_max)
     h1y.Fit(f_gaus_y, "RQ0")
     mean_y, meanErr_y = f_gaus_y.GetParameter(1), f_gaus_y.GetParError(1)
     sigma_y, sigmaErr_y = f_gaus_y.GetParameter(2), f_gaus_y.GetParError(2)
 
-    print(f"  {xlabel}: mean = {mean_x:.2f} ± {meanErr_x:.2f} mm, sigma = {sigma_x:.2f} ± {sigmaErr_x:.2f} mm")
-    print(f"  {ylabel}: mean = {mean_y:.2f} ± {meanErr_y:.2f} mm, sigma = {sigma_y:.2f} ± {sigmaErr_y:.2f} mm")
+    print(f"\tFit results for {tag2} {variable}:")
+    print(f"\t\t{xlabel}: mean = {mean_x:.2f} ± {meanErr_x:.2f} {units}, sigma = {sigma_x:.2f} ± {sigmaErr_x:.2f} {units}")
+    print(f"\t\t{ylabel}: mean = {mean_y:.2f} ± {meanErr_y:.2f} {units}, sigma = {sigma_y:.2f} ± {sigmaErr_y:.2f} {units}")
 
     fig = plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, width_ratios=(3, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
@@ -645,7 +652,6 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
         nx_slices, x_min, x_max, ny_slices, y_min, y_max
     )
     
-    # 3. Fit slice-by-slice
     for ix in range(1, nx_slices + 1):
         for iy in range(1, ny_slices + 1):
             h1_slice = h3_defl.ProjectionZ(f"proj_defl_z_{tag}_{ix}_{iy}", ix, ix, iy, iy)
@@ -662,7 +668,6 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
                 h2_deflection_map.SetBinContent(ix, iy, theta_b)
                 h2_deflection_map.SetBinError(ix, iy, theta_b_err)
                 
-    # 4. Tracciato usando la funzione della tua libreria
     pu.plot_histo2d(h2_deflection_map, 
         xlabel="x [mm]", 
         ylabel="y [mm]", 

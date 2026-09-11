@@ -28,6 +28,7 @@
     - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
 9. [WEEK 9 (AUG 31)](#week-9)
 10. [WEEK 10 (SEP 07)](#week-10)
+    - [Study the beam distribution](#study-the-beam-distribution)
 11. [WEEK 11 (SEP 14)](#week-11)
 
 ## WEEK 1  
@@ -605,6 +606,37 @@ what i did:
 - redid edges-method#1 and edges-method#2 plots in python
 - redid alignment checks plots in python
 - redid channeling plots in python
+
+### Study the beam distribution
+
+what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems describable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  
+$\to$ in principel yes, but i need to be careful:  
+fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
+
+*Covariance matrix:*  
+[[ 1.          0.00712136  0.15318277  0.01146312]  
+ [ 0.00712136  1.         -0.08064218  0.08658571]  
+ [ 0.15318277 -0.08064218  1.          0.08633029]  
+ [ 0.01146312  0.08658571  0.08633029  1.        ]]  
+
+- $x-y$: correlation 0.007 $\to$ negligible
+- $x-\theta_x$: correlation 0.153 $\to$ NOT negligible
+- $y-\theta_y$: correlation 0.087 $\to$ small - can be statistic rumor
+- $\theta_x-\theta_y$: correlation 0.086 $\to$ small - can be statistic rumor
+
+how to consider the correlation?
+1. Paired resampling from real data (the simplest and most robust method; it does not require assuming a functional form for the correlation):  
+```python
+idx = np.random.choice(len(x_meas), npart, replace=True)
+x_impact  = x_meas[idx]
+thetax_impact = thetax[idx]
+# y e thetay possono restare fit+sampling indipendente, o anch'essi paired se preferisci uniformità di metodo
+y_impact  = y_meas[idx]
+thetay_impact = thetay[idx]
+```
+By using the same idx for all four, you automatically preserve all the actual correlations (even the small ones), without having to decide on a case-by-case basis which ones to model.
+
+
 
 
 ([UP](#traineeship-al-cern))
