@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-filename = 'cry1_20260827_18.npz'
+filename = 'cry1_20260908_13.npz'
 data = np.load(filename)
 
 # reconstruct the arrays from the saved data
@@ -49,34 +49,43 @@ def beam_distribution_plot(x_in, y_in, px_in, py_in, label=None, distance_unit='
     # px_lim = (px_in.min() * scale, px_in.max() * scale)
     # py_lim = (py_in.min() * scale, py_in.max() * scale)
 
-    fig, graph = plt.subplots(1, 3, figsize=(15, 5))
+    fig, graph = plt.subplots(2, 2, figsize=(10, 10))
     # 1. Grafico (x, y) - Beam impact position
-    h0 = graph[0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=200, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h0[3], ax=graph[0], label='Counts')
-    graph[0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[0].set_ylabel(f'impact y [{distance_unit}]')
-    graph[0].set_title(f'Beam Impact Position (x, y) {label}')
-    graph[0].set_xlim(x_lim)
-    graph[0].set_ylim(y_lim)
-    graph[0].grid(alpha=0.3)
-    # 2. Grafico (x, px) - Phase space orizzontale (scala px in urad per coerenza)
-    h1 = graph[1].hist2d(x_in * distance_scale, px_in * scale, bins=200, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h1[3], ax=graph[1], label='Counts')
-    graph[1].set_xlabel(f'impact x [{distance_unit}]')
-    graph[1].set_ylabel(rf'$px_{{in}}$ [${unit_str}$]')
-    graph[1].set_title(f'Horizontal Phase Space (x, px) {label}')
-    graph[1].set_xlim(x_lim)
-    graph[1].set_ylim(px_lim)
-    graph[1].grid(alpha=0.3)
-    # 3. Grafico (y, py) - Phase space verticale (scala py in urad)
-    h2 = graph[2].hist2d(y_in * distance_scale, py_in * scale, bins=200, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h2[3], ax=graph[2], label='Counts')
-    graph[2].set_xlabel(f'impact y [{distance_unit}]')
-    graph[2].set_ylabel(rf'$py_{{in}}$ [${unit_str}$]')
-    graph[2].set_title(f'Vertical Phase Space (y, py) {label}')
-    graph[2].set_xlim(y_lim)
-    graph[2].set_ylim(py_lim)
-    graph[2].grid(alpha=0.3)
+    h0 = graph[0, 0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=200, cmap='viridis', norm=LogNorm())
+    fig.colorbar(h0[3], ax=graph[0, 0], label='Counts')
+    graph[0, 0].set_xlabel(f'impact x [{distance_unit}]')
+    graph[0, 0].set_ylabel(f'impact y [{distance_unit}]')
+    graph[0, 0].set_title(f'Beam Impact Position (x, y) {label}')
+    graph[0, 0].set_xlim(x_lim)
+    graph[0, 0].set_ylim(y_lim)
+    graph[0, 0].grid(alpha=0.3)
+
+    h00 = graph[0, 1].hist2d(px_in * scale, py_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    fig.colorbar(h00[3], ax=graph[0, 1], label='Counts')
+    graph[0, 1].set_xlabel(rf'$px_{{in}}$ [${unit_str}$]')
+    graph[0, 1].set_ylabel(rf'$py_{{in}}$ [${unit_str}$]')
+    graph[0, 1].set_title(f'Angular Distribution {label}')
+    graph[0, 1].set_xlim(px_lim)
+    graph[0, 1].set_ylim(py_lim)
+    graph[0, 1].grid(alpha=0.3)
+
+    h1 = graph[1, 0].hist2d(x_in * distance_scale, px_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    fig.colorbar(h1[3], ax=graph[1, 0], label='Counts')
+    graph[1, 0].set_xlabel(f'impact x [{distance_unit}]')
+    graph[1, 0].set_ylabel(rf'$px_{{in}}$ [${unit_str}$]')
+    graph[1, 0].set_title(f'Horizontal Phase Space (x, px) {label}')
+    graph[1, 0].set_xlim(x_lim)
+    graph[1, 0].set_ylim(px_lim)
+    graph[1, 0].grid(alpha=0.3)
+
+    h2 = graph[1, 1].hist2d(y_in * distance_scale, py_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    fig.colorbar(h2[3], ax=graph[1, 1], label='Counts')
+    graph[1, 1].set_xlabel(f'impact y [{distance_unit}]')
+    graph[1, 1].set_ylabel(rf'$py_{{in}}$ [${unit_str}$]')
+    graph[1, 1].set_title(f'Vertical Phase Space (y, py) {label}')
+    graph[1, 1].set_xlim(y_lim)
+    graph[1, 1].set_ylim(py_lim)
+    graph[1, 1].grid(alpha=0.3)
 
     fig.tight_layout()
     plt.show(block=False)
@@ -152,7 +161,7 @@ beam_distribution_plot(x_in_survived, y_in_survived, px_in_survived, py_in_survi
 
 theta_in_1, theta_in_1_cut, dtheta_1, dtheta_1_cut = angular_scan_plot(px_in=data['px_in'], particle_id_in=data['particle_id_in'],
     px_out=data['px_out'], particle_id_out=data['particle_id_out'], state_out=data['state_out'], theta_L=theta_L1,
-    bending_angle=float(data['bending_angle']), label='($θ_b = 50 µrad)')
+    bending_angle=float(data['bending_angle']), label='($θ_b =$ 50 µrad)')
 # theta_in_2, theta_in_2_cut, dtheta_2, dtheta_2_cut = angular_scan_plot(
 #     px_in=data['px_in'], particle_id_in=data['particle_id_in'],
 #     px_out=data['px_out'], particle_id_out=data['particle_id_out'],

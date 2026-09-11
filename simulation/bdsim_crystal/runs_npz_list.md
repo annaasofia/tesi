@@ -103,7 +103,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 ![cry1_thetain150_xUnif.png](cry1_thetain150_xUnif.png)
 
 ## short crystal 2
-**=same as TCCS=**
+**= same dimensions as TCCS =**
 | parameter | value |
 | --- | --- |
 | material | "G4_Si" |
@@ -120,7 +120,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | zeta coordinate | `zeros(npart)` |
 | capacity | `int(npart * 2)` |
 
-### specifics for `cry1_20260901_17.npz`
+### specifics for `cry1_20260908_13.npz`
 | parameter | value |
 | --- | --- |
 | number of particles | 200k |

@@ -53,6 +53,9 @@ def main():
         restricted=True, linear=False, chosen_model="parabolic_y", tag="nominal")
 
     _, _ = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
+    chfun.plot_impact_vs_angle(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
+    chfun.plot_impact_vs_angle(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
+    chfun.plot_impact_angles(df_phys, parameters, tag="nominal")
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")

@@ -5,6 +5,7 @@ import os
 import numpy as np
 from array import array
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import plotting_utils as pu
 from matplotlib.colors import ListedColormap
 
@@ -14,6 +15,12 @@ base_viridis = plt.colormaps['viridis'].resampled(256)
 newcolors = base_viridis(np.linspace(0, 1, 256))
 newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
 cmap_white_bg = ListedColormap(newcolors)
+# altro colore
+viridis_yellow = "#fde725"
+viridis_green = "#5ec962"
+viridis_teal = "#21918c"
+viridis_blue = "#3b528b"
+viridis_purple = "#440154"
 
 def get_run_parameters(file_id):
     if file_id in [8430, 8431]:
@@ -49,7 +56,7 @@ def get_run_parameters(file_id):
     return parameters
 
 def df_convert_to_urad_define_deltatheta(df):
-    return df.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")
+    return df.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6").Define("thetaIn_y", "Tracks.thetaIn_y * 1e6").Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")
 
 def filter_message(number, count_before, count_after):
     return f"Filter {number}: {((count_before - count_after) / count_before * 100):.2f}% events out of {count_before} got discarded."
@@ -482,6 +489,90 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
     plt.savefig(f"{PLOT_DIR}/global_eff_curve_{tag}.png", bbox_inches='tight')
 
     return max_eff, max_eff_err
+
+def plot_impact_vs_angle(df, parameters, axis="x", tag="nominal", xlim=None):
+    # axis può essere "x" (d0_x) oppure "y" (d0_y)
+    col_name = "Tracks.d0_x" if axis == "x" else "Tracks.d0_y"
+    angle_col_name = "thetaIn_x"  if axis == "x" else "thetaIn_y"
+    if xlim is not None:
+        x_min, x_max = xlim
+    else:
+        x_min, x_max = (-2, 3) if axis == "x" else (-8, 9)
+
+    h2 = df.Histo2D((
+        f"h2_d0{axis}_thetaIn_{tag}", 
+        f"d0_{axis} vs #theta_i; d0_{axis} [mm]; #theta_i [#murad]", 
+        200, x_min, x_max, 
+        500, -150, 150
+    ), col_name, angle_col_name).GetValue()
+
+    h1 = h2.ProjectionY(f"h1_thetaIn_{axis}_{tag}")
+
+    fig = plt.figure(figsize=(10, 7))
+    gs = gridspec.GridSpec(1, 2, width_ratios=(3, 1), wspace=0.1)
+    ax_main = fig.add_subplot(gs[0])
+    ax_right = fig.add_subplot(gs[1], sharey=ax_main)
+            
+    pu.plot_histo2d(h2, ax=ax_main,
+        xlabel=f"{axis} [mm]", 
+        ylabel=rf"$\theta_{{in, {axis}}}$ [$\mu$rad]",
+        zlabel="Events", cmap=cmap_white_bg, 
+        title=f"Incoming angle vs impact position {axis.lower()}", 
+        save=None, colorbar=False)
+    
+    centers_y, contents_y, yerr_y, edges_y = pu.th1_to_arrays(h1)
+    ax_right.stairs(contents_y, edges_y, fill=True, color=viridis_purple, orientation='horizontal', alpha=0.9)
+
+    ax_right.tick_params(labelleft=False)
+    ax_right.set_xlabel("Events")
+    pu._style_axes(ax_right)
+
+    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn_{tag}.pdf", bbox_inches='tight')
+    fig.savefig(f"{PLOT_DIR}/d0{axis}_vs_thetaIn_{tag}.png", bbox_inches='tight')
+    plt.close(fig)
+
+    return h2
+
+def plot_impact_angles(df, parameters, tag="nominal"):
+
+    h2 = df.Histo2D((
+        f"h2_thetaInx_thetaIny_{tag}", 
+        f"#theta_x vs #theta_y; #theta_x [#murad]; #theta_y [#murad]", 
+        200, -150, 150, 
+        500, -150, 150
+    ), "thetaIn_x", "thetaIn_y").GetValue()
+
+    h1x = h2.ProjectionX(f"h1_thetaIn_x_{tag}")
+    h1y = h2.ProjectionY(f"h1_thetaIn_y_{tag}")
+
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 2, width_ratios=(3, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
+    ax_main = fig.add_subplot(gs[1, 0])
+    ax_top  = fig.add_subplot(gs[0, 0], sharex=ax_main)
+    ax_right = fig.add_subplot(gs[1, 1], sharey=ax_main)
+            
+    pu.plot_histo2d(h2, ax=ax_main, 
+                    xlabel=r"$\theta_{in, x}$ [$\mu$rad]", 
+                    ylabel=r"$\theta_{in, y}$ [$\mu$rad]", cmap=cmap_white_bg, 
+                    title="Incoming Angles Distribution", colorbar=False, save=None)
+
+    pu.plot_histo1d(h1x, ax=ax_top, style="fill", color=viridis_purple, ylabel="Events", alpha=0.9)
+    ax_top.tick_params(labelbottom=False)  # Nascondi i numeri sull'asse X (condivisi col main)
+    ax_top.set_xlabel("")
+    pu._style_axes(ax_top)
+
+    centers_y, contents_y, yerr_y, edges_y = pu.th1_to_arrays(h1y)
+    ax_right.stairs(contents_y, edges_y, fill=True, color=viridis_purple, orientation='horizontal', alpha=0.9)
+    ax_right.tick_params(labelleft=False)
+    ax_right.set_xlabel("Events")
+    pu._style_axes(ax_right)
+
+    fig.suptitle(f"Impact Angles ({tag})", fontsize=16, y=0.92)
+    fig.savefig(f"{PLOT_DIR}/impact_angles_{tag}.pdf", bbox_inches='tight')
+    fig.savefig(f"{PLOT_DIR}/impact_angles_{tag}.png", bbox_inches='tight')
+    plt.close(fig)
+
+    return h2
 
 def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal", xlim=None):
     # axis può essere "x" (d0_x) oppure "y" (d0_y)
