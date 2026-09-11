@@ -483,11 +483,15 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
 
     return max_eff, max_eff_err
 
-def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal"):
+def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal", xlim=None):
     # axis può essere "x" (d0_x) oppure "y" (d0_y)
     col_name = "Tracks.d0_x" if axis == "x" else "Tracks.d0_y"
-    x_min, x_max = (-2, 3) if axis == "x" else (-8, 9)
-    
+
+    if xlim is not None:
+        x_min, x_max = xlim
+    else:
+        x_min, x_max = (-2, 3) if axis == "x" else (-8, 9)
+
     h2 = df.Histo2D((
         f"h2_d0{axis}_deltatheta_{tag}", 
         f"d0_{axis} vs #Delta#theta_x; d0_{axis} [mm]; #Delta#theta_x [#murad]", 
@@ -499,7 +503,7 @@ def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal"):
         xlabel=f"{axis} [mm]", 
         ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
         zlabel="Events", cmap=cmap_white_bg, 
-        title=f"Deflection vs Impact {axis.upper()}", 
+        title=f"Deflection vs impact position {axis.lower()}", 
         save=f"{PLOT_DIR}/d0{axis}_vs_deltatheta_{tag}.pdf")
     
     return h2
@@ -544,7 +548,7 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
         zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
         title="Deflection Angle Map", cmap=cmap_white_bg,
         save=f"{PLOT_DIR}/deflection_map_{tag}.pdf",
-        vmin=5800,vmax=6300)
+        vmin=5900,vmax=6200)
     
     return h2_deflection_map
 
