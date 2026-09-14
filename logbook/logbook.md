@@ -621,7 +621,7 @@ fitting the 1d marginal distributions and then sampling them indipendently is co
 
 - $x-y$: correlation 0.007 $\to$ negligible
 - $x-\theta_x$: correlation 0.153 $\to$ NOT negligible
-- $y-\theta_y$: correlation 0.087 $\to$ small - can be statistic rumor
+- $y-\theta_y$: correlation 0.087 $\to$ small - but in other runs is ~0.19 $\to$ NOT negligible
 - $\theta_x-\theta_y$: correlation 0.086 $\to$ small - can be statistic rumor
 
 how to consider the correlation?

@@ -72,7 +72,7 @@ def main():
     thetax    = np.asarray(data_dict["thetaIn_x"]); thetay    = np.asarray(data_dict["thetaIn_y"])
     data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
     corr = np.corrcoef(data_matrix)
-    print("\nCovariance matrix:")
+    print("\nCorrelation matrix:")
     print(corr)
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)

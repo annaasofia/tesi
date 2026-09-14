@@ -3,6 +3,7 @@ import xtrack as xt
 import bdsim
 import xpart as xp
 from datetime import datetime
+from scipy.stats import norm
 
 drift = xt.Drift(length=1)
 line = xt.Line(elements=[drift])
@@ -35,10 +36,10 @@ l.AddLinkElement(cry1)
 npart = 200000
 x_half_range = cry1.xsize / 2
 y_half_range = cry1.ysize / 2
-x_impact = np.random.uniform(-x_half_range, x_half_range, npart)
-y_impact = np.random.uniform(-y_half_range, y_half_range, npart)
-px_impact = np.random.uniform(-150e-6, 150e-6, npart)
-py_impact = np.random.uniform(-150e-6, 150e-6, npart)
+x_impact = np.random.normal(-0.12e-3, 2.20e-3, npart)
+y_impact = np.random.normal(0.64e-3, 2.34e-3, npart)
+px_impact = np.random.normal(-0.93e-6, 26.92e-6, npart)
+py_impact = np.random.normal(6.79e-6, 40.22e-6, npart)
 
 particles1 = line.build_particles(
     nemitt_x=2.5e-6, nemitt_y=1e-6,

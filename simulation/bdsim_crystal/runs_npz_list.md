@@ -78,7 +78,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | theta_in x divergence | `linspace(-40e-6, 100e-6, npart)`|
 | theta_in y divergence | `zeros(npart)` |
 
-![cry1_thetain100_x0.png](cry1_thetain100_x0.png)
+![cry1_thetain100_x0.png](plots_cry1/thetain100_x0.png)
 
 ### specifics for `cry1_20260826_15.npz`
 | parameter | value |
@@ -89,7 +89,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | theta_in x divergence | `linspace(-150e-6, 150e-6, npart)`|
 | theta_in y divergence | `zeros(npart)` |
 
-![cry1_thetain150_x0.png](cry1_thetain150_x0.png)
+![cry1_thetain150_x0.png](plots_cry1/thetain150_x0.png)
 
 ### specifics for `cry1_20260826_16.npz` and `cry1_20260826_18.npz`
 | parameter | value |
@@ -100,7 +100,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | theta_in x divergence | `linspace(-150e-6, 150e-6, npart)`|
 | theta_in y divergence | `zeros(npart)` |
 
-![cry1_thetain150_xUnif.png](cry1_thetain150_xUnif.png)
+![cry1_thetain150_xUnif.png](plots_cry1/thetain150_xUnif.png)
 
 ## short crystal 2
 **= same dimensions as TCCS =**
@@ -128,3 +128,21 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | y position | `np.random.uniform(-y_half_range, y_half_range, npart)` |
 | theta_in x divergence | `np.random.uniform(-150e-6, 150e-6, npart)`|
 | theta_in y divergence | `np.random.uniform(-150e-6, 150e-6, npart)` |
+
+![uniform distribution](plots_cry1/random_impact_distribution.png)
+
+### specifics for `cry1_20260914_xx.npz`
+
+Now instead we are trying to reproduce the gaussian feature of the beam. From real data (8430 run) i fitted the impact positions $(x,y)$ and the entrance angles $(\theta_x,\theta_y)$.
+
+
+|*Results (8430 run):* ||$\mu$|$\sigma$|
+|--|--|--|--|
+|after spatial cut | $\theta_x$ | -2.21 $\pm$ 0.01 | 21.83 $\pm$ 0.01|
+|            | $\theta_y$ | 8.09 $\pm$ 0.02 | 37.87 $\pm$ 0.02|
+|all         | $\theta_x$ | -0.93 $\pm$ 0.01 | 26.92 $\pm$ 0.01|
+|            | $\theta_y$ | 6.79 $\pm$ 0.01 | 40.22 $\pm$ 0.02|
+|after spatial cut | $x$ | -0.26 $\pm$ 0.01 | 2.34 $\pm$ 0.01|
+|            | $y$ | 0.65 $\pm$ 0.00 | 2.33 $\pm$ 0.00|
+|all         | $x$ | -0.12 $\pm$ 0.00 | 2.20 $\pm$ 0.00|
+|            | $y$ | 0.64 $\pm$ 0.00 | 2.34 $\pm$ 0.00|

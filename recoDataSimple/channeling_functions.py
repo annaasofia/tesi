@@ -353,11 +353,11 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
  
         pu.plot_histo2d(h2_residuals, xlabel="x [mm]", ylabel="y [mm]",
             zlabel=r"$\Delta\theta_0$ [$\mu$rad]",
-            title=f"Torsion Residuals (data - {chosen_model})",
+            title=f"Torsion Residuals (data - fit)",
             save=f"{PLOT_DIR}/torsion_residuals.pdf")
  
         pu.plot_histo2d(h2_pulls, xlabel="x [mm]", ylabel="y [mm]",
-            zlabel="Pulls", title=rf"Torsion Pulls (data - {chosen_model}) / $\sigma$",
+            zlabel="Pulls", title=rf"Torsion Pulls (data - fit) / $\sigma$",
             save=f"{PLOT_DIR}/torsion_pulls.pdf")
 
     return fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr
