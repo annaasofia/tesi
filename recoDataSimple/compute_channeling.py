@@ -63,17 +63,21 @@ def main():
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")
 
-    # check covariance
     data_dict = df_phys.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
 
-    # print(type(data_dict["Tracks.d0_x"]), data_dict["Tracks.d0_x"].dtype)
-    # print(data_dict["Tracks.d0_x"][:5])
     x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
-    thetax    = np.asarray(data_dict["thetaIn_x"]); thetay    = np.asarray(data_dict["thetaIn_y"])
+    thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
     data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
-    corr = np.corrcoef(data_matrix)
-    print("\nCorrelation matrix:")
-    print(corr)
+
+    # check correlation
+    corr_i = np.corrcoef(data_matrix)
+    print("\nCorrelation matrix:\n", corr_i)
+    # check covariance
+    cov_i = np.cov(data_matrix)
+    n_i = data_matrix.shape[1]  # numero di eventi in questo run
+    np.set_printoptions(precision=8, suppress=True)
+    print("Covariance matrix:\n", cov_i)
+    print(f"Number of events in this run: {n_i}")
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()

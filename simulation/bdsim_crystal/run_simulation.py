@@ -4,6 +4,8 @@ import bdsim
 import xpart as xp
 from datetime import datetime
 from scipy.stats import norm
+import simulation_functions as simfun
+
 
 drift = xt.Drift(length=1)
 line = xt.Line(elements=[drift])
@@ -33,13 +35,26 @@ cry1.apertureType = "rectangular" # aperture of box around crystal
 cry1.aper1 = 10e1 # m
 l.AddLinkElement(cry1)
 
+# x_half_range = cry1.xsize / 2
+# y_half_range = cry1.ysize / 2
+
+#correlated gaussian beam
+cov_avg, eigvals, n_list = simfun.cov_matrix()
+assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {eigvals.min()}"
+
+mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
+rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
+
 npart = 200000
-x_half_range = cry1.xsize / 2
-y_half_range = cry1.ysize / 2
-x_impact = np.random.normal(-0.12e-3, 2.20e-3, npart)
-y_impact = np.random.normal(0.64e-3, 2.34e-3, npart)
-px_impact = np.random.normal(-0.93e-6, 26.92e-6, npart)
-py_impact = np.random.normal(6.79e-6, 40.22e-6, npart)
+samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
+x_impact  = samples[:, 0]
+y_impact  = samples[:, 1]
+px_impact = samples[:, 2]
+py_impact = samples[:, 3]
+# x_impact = np.random.normal(-0.12e-3, 2.20e-3, npart)
+# y_impact = np.random.normal(0.64e-3, 2.34e-3, npart)
+# px_impact = np.random.normal(-0.93e-6, 26.92e-6, npart)
+# py_impact = np.random.normal(6.79e-6, 40.22e-6, npart)
 
 particles1 = line.build_particles(
     nemitt_x=2.5e-6, nemitt_y=1e-6,
@@ -94,7 +109,9 @@ np.savez(outfile,
 
     bending_angle=50e-6,
     npart=npart,
-    label='cry1'
+    label='cry1',
+    cov_avg=cov_avg,
+    mu_avg=mu_avg,
 )
 
 print(f"Data saved in: {outfile}")

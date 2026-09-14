@@ -135,7 +135,6 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 
 Now instead we are trying to reproduce the gaussian feature of the beam. From real data (8430 run) i fitted the impact positions $(x,y)$ and the entrance angles $(\theta_x,\theta_y)$.
 
-
 |*Results (8430 run):* ||$\mu$|$\sigma$|
 |--|--|--|--|
 |after spatial cut | $\theta_x$ | -2.21 $\pm$ 0.01 | 21.83 $\pm$ 0.01|
@@ -146,3 +145,14 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 |            | $y$ | 0.65 $\pm$ 0.00 | 2.33 $\pm$ 0.00|
 |all         | $x$ | -0.12 $\pm$ 0.00 | 2.20 $\pm$ 0.00|
 |            | $y$ | 0.64 $\pm$ 0.00 | 2.34 $\pm$ 0.00|
+
+| parameter | value |
+| --- | --- |
+| number of particles | 200k |
+|samples | `rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)`|
+| x position | `x_impact = samples[:, 0]` |
+| y position | `y_impact = samples[:, 1]` |
+| theta_in x divergence | `py_impact = samples[:, 2]`|
+| theta_in y divergence | `py_impact = samples[:, 3]` |
+
+
