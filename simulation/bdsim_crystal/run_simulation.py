@@ -32,7 +32,8 @@ cry1.l = 4e-3 # meters
 cry1.horizontalWidth = 0.1 # meters
 cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:50e-6;"
 cry1.apertureType = "rectangular" # aperture of box around crystal
-cry1.aper1 = 10e1 # m
+cry1.aper1 = 0.05 # 50 mm
+cry1.aper2 = 0.05 # 50 mm
 l.AddLinkElement(cry1)
 
 # x_half_range = cry1.xsize / 2

@@ -30,6 +30,8 @@
 10. [WEEK 10 (SEP 07)](#week-10)
     - [Study the beam distribution](#study-the-beam-distribution)
 11. [WEEK 11 (SEP 14)](#week-11)
+    - [Study the beam distribution (part 2)](#study-the-beam-distribution-part-2)
+    - [Channeling Analysis on the simulated short crystal](#channeling-analysis-on-the-simulated-short-crystal)
 
 ## WEEK 1  
 
@@ -624,6 +626,12 @@ fitting the 1d marginal distributions and then sampling them indipendently is co
 - $y-\theta_y$: correlation 0.087 $\to$ small - but in other runs is ~0.19 $\to$ NOT negligible
 - $\theta_x-\theta_y$: correlation 0.086 $\to$ small - can be statistic rumor
 
+([UP](#traineeship-al-cern))
+
+## WEEK 11
+
+### Study the beam distribution (part 2)
+
 how to consider the correlation?
 1. Paired resampling from real data (the simplest and most robust method; it does not require assuming a functional form for the correlation):  
 ```python
@@ -634,11 +642,15 @@ thetax_impact = thetax[idx]
 y_impact  = y_meas[idx]
 thetay_impact = thetay[idx]
 ```
-By using the same idx for all four, you automatically preserve all the actual correlations (even the small ones), without having to decide on a case-by-case basis which ones to model.
+By using the same idx for all four, you automatically preserve all the actual correlations (even the small ones), without having to decide on a case-by-case basis which ones to model.  
 
+2. **actually used**: I combined all 5 covariance matrices (correlation and covariance matrix obtained from each run), into a single one by doing a weighted average - weighted by their number of entries $w=n/n_{tot}$ - and the same for the gaussian means and sigmas. then by doing a multivariate random distribution I get my distribution.  
+`rng = np.random.default_rng(seed=82)`  
+`samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)`  
 
+### Channeling Analysis on the simulated short crystal
 
+- no single track selection or detector alignment checks needed.
+- no *spatial cut* (selection of the ones that actually enter the crystal) needed: by putting the dimensions of the crystal and selecting the survived particles (`state_out == 1`) we are already doing it.
+- think about changing `cry1.aper1` which is 50 mm meters (was 100 meters before!!) so a lot of particles are not passing though the crystal (survived with a $\Delta\theta=0$) $\to$ so filtering `state_out == 1` alone is not enough?
 
-([UP](#traineeship-al-cern))
-
-## WEEK 11
