@@ -2,13 +2,13 @@
 
 1. [Available features](#available-features-of-the-particles)
 2. [SHORT CRYSTAL RUNS (50x200x2 mm3)](#short-crystal-1)
-    - [run 1 - 25 aug](#specifics-for-cry1_20260825_16npz)
-    - [run 2 - 26 aug](#specifics-for-cry1_20260826_15npz)
-    - [run 3 - 26 aug](#specifics-for-cry1_20260826_16npz-and-cry1_20260826_18npz)
+    - [run 25 aug](#specifics-for-cry1_20260825_16npz)
+    - [run 26 aug](#specifics-for-cry1_20260826_15npz)
+    - [run 26 aug](#specifics-for-cry1_20260826_16npz-and-cry1_20260826_18npz)
 2. [SHORT CRYSTAL RUNS (2x35x4 mm3)](#short-crystal-2)
     - [run 1 - 01 sep](#specifics-for-cry1_20260901_17npz)
 
-$\to\to$ [run_simulation.py](run_simulation.py)
+$\to$ [run_simulation.py](run_simulation.py)
 | parameter | value |
 | --- | --- |
 | pdg_id (particle type) | `2212` (proton) |
@@ -69,17 +69,6 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | zeta coordinate | `zeros(npart)` |
 | capacity | `int(npart * 2)` |
 
-### specifics for `cry1_20260825_16.npz`
-| parameter | value |
-| --- | --- |
-| number of particles | 200k |
-| x position | `np.zeros(npart)` |
-| y position | `np.zeros(npart)` |
-| theta_in x divergence | `linspace(-40e-6, 100e-6, npart)`|
-| theta_in y divergence | `zeros(npart)` |
-
-![cry1_thetain100_x0.png](plots_cry1/thetain100_x0.png)
-
 ### specifics for `cry1_20260826_15.npz`
 | parameter | value |
 | --- | --- |
@@ -102,6 +91,9 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 
 ![cry1_thetain150_xUnif.png](plots_cry1/thetain150_xUnif.png)
 
+The great peak in $\Delta\theta=0$ is probably given by all of that particles that survived the aperture but did not pass through the crystal (we were not selecting what entered in the crystal and what did not): the `aper` value was 100 meters $\to$ definitely too big!  
+Variables `aper1` and `aper2` were changed to 50 mm.
+
 ## short crystal 2
 **= same dimensions as TCCS =**
 | parameter | value |
@@ -114,7 +106,8 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 | horizontal width (box around crystal) - keep large  | 100 mm |
 | bending angle | 50 urad |
 | aperture of box around crystal  | rectangular |
-| aper1  | 10e1 m |
+| aper1  | 50 mm |
+| aper2  | 50 mm |
 | x emittance | 2.5e-6 |
 | y emittance | 1e-6 |
 | zeta coordinate | `zeros(npart)` |
@@ -131,7 +124,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 
 ![uniform distribution](plots_cry1/random_impact_distribution.png)
 
-### specifics for `cry1_20260914_xx.npz`
+### specifics for `cry1_20260914_18.npz`
 
 Now instead we are trying to reproduce the gaussian feature of the beam. From real data (8430 run) i fitted the impact positions $(x,y)$ and the entrance angles $(\theta_x,\theta_y)$.
 
@@ -154,5 +147,9 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 | y position | `y_impact = samples[:, 1]` |
 | theta_in x divergence | `py_impact = samples[:, 2]`|
 | theta_in y divergence | `py_impact = samples[:, 3]` |
+
+### specifics for `cry1_20260914_18.npz`
+
+
 
 

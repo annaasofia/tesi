@@ -2,41 +2,87 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-filename = 'cry1_20260908_13.npz'
+filename = 'cry1_20260915_16.npz'
 data = np.load(filename)
 
+    # cov_avg=cov_avg,
+    # mu_avg=mu_avg,
+
 # reconstruct the arrays from the saved data
-x_in = data['x_in']
-y_in = data['y_in']
-py_in = data['py_in']
-px_in = data['px_in']
-theta_out_all = data['px_out']
-particle_id_in = data['particle_id_in']
-particle_id_out = data['particle_id_out']
-state_out = data['state_out']
+x_in = data['x_in']; theta_x_in = data['px_in']
+y_in = data['y_in']; theta_y_in = data['py_in']
+zeta_in = data['zeta_in']; delta_in = data['delta_in']; ptau_in = data['ptau_in']
+
+x_out=data['x_out']; theta_x_out=data['px_out']
+y_out=data['y_out']; theta_y_out=data['py_out']
+zeta_out=data['zeta_out']; delta_out=data['delta_out']; ptau_out=data['ptau_out']
+
+particle_id_in = data['particle_id_in']; state_in = data['state_in']; pdg_id_in = data['pdg_id_in']
+particle_id_out = data['particle_id_out']; state_out = data['state_out']; pdg_id_out = data['pdg_id_out']; at_element_out = data['at_element_out']
+
+# single values
+npart = int(data['npart'])
+crystal_length = float(data['crystal_length'])
+crystal_x = float(data['crystal_x'])
+crystal_y = float(data['crystal_y'])
 bending_angle = float(data['bending_angle'])
+crystal_material = str(data['crystal_material'])
+p0c = float(data['p0c'])
+mass0 = float(data['mass0'])
 label = str(data['label'])
 
+
+# SURVIVED PARTICLES
+valid_in = state_in == 1
 survived = state_out == 1
-ids_out = particle_id_out[survived]
-theta_out_x = theta_out_all[survived]
+
+x_in, y_in, theta_x_in, theta_y_in = x_in[valid_in], y_in[valid_in], theta_x_in[valid_in], theta_y_in[valid_in]
+zeta_in, delta_in, ptau_in = zeta_in[valid_in], delta_in[valid_in], ptau_in[valid_in]
+particle_id_in, pdg_id_in = particle_id_in[valid_in], pdg_id_in[valid_in]
+
+# filtering survived particles  
+idx_out = particle_id_out[survived]
+theta_x_out_survived = theta_x_out[survived]
+pdg_id_out_survived = pdg_id_out[survived]
 
 order_in = np.argsort(particle_id_in)
-sorted_ids_in = particle_id_in[order_in]
-idx = np.searchsorted(sorted_ids_in, ids_out)
+sorted_idx_in = particle_id_in[order_in]
+idx = np.searchsorted(sorted_idx_in, idx_out)
 
-x_in_survived = data['x_in'][order_in][idx]
-y_in_survived = data['y_in'][order_in][idx]
-theta_in_x = px_in[order_in][idx]
-px_in_survived = theta_in_x
-py_in_survived = data['py_in'][order_in][idx]
+x_in_survived = x_in[order_in][idx]
+y_in_survived = y_in[order_in][idx]
+theta_x_in_survived = theta_x_in[order_in][idx]
+theta_y_in_survived = theta_y_in[order_in][idx]
+zeta_in_survived = zeta_in[order_in][idx]; delta_in_survived = delta_in[order_in][idx]; ptau_in_survived = ptau_in[order_in][idx]
 
-dtheta = theta_out_x - theta_in_x
+x_out_survived = x_out[survived]
+y_out_survived = y_out[survived]
+theta_y_out_survived = theta_y_out[survived]
+zeta_out_survived = zeta_out[survived]; delta_out_survived = delta_out[survived]; ptau_out_survived = ptau_out[survived]
+
+assert np.all(sorted_idx_in[idx] == idx_out), "Mismatch nel matching particle_id in/out!"
+
+dtheta_x = theta_x_out_survived - theta_x_in_survived
+
+survived_data = {
+    'x_in': x_in_survived,
+    'y_in': y_in_survived,
+    'x_out': x_out_survived,
+    'y_out': y_out_survived,
+    'theta_x_in': theta_x_in_survived,
+    'theta_y_in': theta_y_in_survived,
+    'theta_x_out': theta_x_out_survived,
+    'theta_y_out': theta_y_out_survived,
+    'dtheta_x': dtheta_x,
+}
+
+print(f"Total particles: {len(x_in)}")
+print(f"Survived particles: {np.sum(survived)}")
 
 theta_L1 = 13.228e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
 theta_L2 = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
 
-def beam_distribution_plot(x_in, y_in, px_in, py_in, label=None, distance_unit='mm', angle_unit='urad'):
+def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
 
@@ -44,10 +90,10 @@ def beam_distribution_plot(x_in, y_in, px_in, py_in, label=None, distance_unit='
 
     x_lim = (x_in.min() * distance_scale, x_in.max() * distance_scale)
     y_lim = (y_in.min() * distance_scale, y_in.max() * distance_scale)
-    px_lim = (-150, 150) if angle_unit == 'urad' else (px_in.min() * scale, px_in.max() * scale)
-    py_lim = (-150, 150) if angle_unit == 'urad' else (py_in.min() * scale, py_in.max() * scale)
-    # px_lim = (px_in.min() * scale, px_in.max() * scale)
-    # py_lim = (py_in.min() * scale, py_in.max() * scale)
+    theta_x_lim = (-150, 150) if angle_unit == 'urad' else (theta_x_in.min() * scale, theta_x_in.max() * scale)
+    theta_y_lim = (-150, 150) if angle_unit == 'urad' else (theta_y_in.min() * scale, theta_y_in.max() * scale)
+    # theta_x_lim = (theta_x_in.min() * scale, theta_x_in.max() * scale)
+    # theta_y_lim = (theta_y_in.min() * scale, theta_y_in.max() * scale)
 
     fig, graph = plt.subplots(2, 2, figsize=(10, 10))
     # 1. Grafico (x, y) - Beam impact position
@@ -60,61 +106,46 @@ def beam_distribution_plot(x_in, y_in, px_in, py_in, label=None, distance_unit='
     graph[0, 0].set_ylim(y_lim)
     graph[0, 0].grid(alpha=0.3)
 
-    h00 = graph[0, 1].hist2d(px_in * scale, py_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    h00 = graph[0, 1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=200, cmap='viridis', norm=LogNorm())
     fig.colorbar(h00[3], ax=graph[0, 1], label='Counts')
-    graph[0, 1].set_xlabel(rf'$px_{{in}}$ [${unit_str}$]')
-    graph[0, 1].set_ylabel(rf'$py_{{in}}$ [${unit_str}$]')
+    graph[0, 1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[0, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
     graph[0, 1].set_title(f'Angular Distribution {label}')
-    graph[0, 1].set_xlim(px_lim)
-    graph[0, 1].set_ylim(py_lim)
+    graph[0, 1].set_xlim(theta_x_lim)
+    graph[0, 1].set_ylim(theta_y_lim)
     graph[0, 1].grid(alpha=0.3)
 
-    h1 = graph[1, 0].hist2d(x_in * distance_scale, px_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    h1 = graph[1, 0].hist2d(x_in * distance_scale, theta_x_in * scale, bins=200, cmap='viridis', norm=LogNorm())
     fig.colorbar(h1[3], ax=graph[1, 0], label='Counts')
     graph[1, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[1, 0].set_ylabel(rf'$px_{{in}}$ [${unit_str}$]')
-    graph[1, 0].set_title(f'Horizontal Phase Space (x, px) {label}')
+    graph[1, 0].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[1, 0].set_title(f'Horizontal Phase Space (x, $\theta_x$) {label}')
     graph[1, 0].set_xlim(x_lim)
-    graph[1, 0].set_ylim(px_lim)
+    graph[1, 0].set_ylim(theta_x_lim)
     graph[1, 0].grid(alpha=0.3)
 
-    h2 = graph[1, 1].hist2d(y_in * distance_scale, py_in * scale, bins=200, cmap='viridis', norm=LogNorm())
+    h2 = graph[1, 1].hist2d(y_in * distance_scale, theta_y_in * scale, bins=200, cmap='viridis', norm=LogNorm())
     fig.colorbar(h2[3], ax=graph[1, 1], label='Counts')
     graph[1, 1].set_xlabel(f'impact y [{distance_unit}]')
-    graph[1, 1].set_ylabel(rf'$py_{{in}}$ [${unit_str}$]')
-    graph[1, 1].set_title(f'Vertical Phase Space (y, py) {label}')
+    graph[1, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
+    graph[1, 1].set_title(f'Vertical Phase Space (y, $\theta_y$) {label}')
     graph[1, 1].set_xlim(y_lim)
-    graph[1, 1].set_ylim(py_lim)
+    graph[1, 1].set_ylim(theta_y_lim)
     graph[1, 1].grid(alpha=0.3)
 
     fig.tight_layout()
     plt.show(block=False)
     plt.pause(0.1)
 
-def angular_scan_plot(px_in, particle_id_in, px_out, particle_id_out, state_out,
-                       theta_L, bending_angle, label, angle_unit='urad'):
+def angular_scan_plot(theta_x_in, theta_x_out, theta_L, label, angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
 
-    survived = state_out == 1
-    ids_out = particle_id_out[survived]
-    theta_out_x = px_out[survived]
-
-    # match via particle_id
-    order_in = np.argsort(particle_id_in)
-    sorted_ids_in = particle_id_in[order_in]
-    idx = np.searchsorted(sorted_ids_in, ids_out)
-    theta_in_x = px_in[order_in][idx]
-    dtheta = theta_out_x - theta_in_x
-
-    # cutting on the acceptance of the crystal
-    cut = np.abs(theta_in_x) < theta_L
-    theta_in_cut = theta_in_x[cut]
-    dtheta_cut = dtheta[cut]
+    dtheta_x = theta_x_out - theta_x_in
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    h = graph[0].hist2d(theta_in_x * scale, dtheta * scale, bins=200, cmap='viridis', norm=LogNorm())
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=200, cmap='viridis', norm=LogNorm())
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-150, 150)
@@ -127,7 +158,7 @@ def angular_scan_plot(px_in, particle_id_in, px_out, particle_id_out, state_out,
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(dtheta * scale, bins=500, color='#1f77b4', edgecolor='white', linewidth=0.3)
+    graph[1].hist(dtheta_x * scale, bins=500, color='#1f77b4', edgecolor='white', linewidth=0.3)
     graph[1].set_xlim(-75, 100)
     graph[1].set_xlabel(rf'$\Delta\theta$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
@@ -136,64 +167,43 @@ def angular_scan_plot(px_in, particle_id_in, px_out, particle_id_out, state_out,
 
     fig.tight_layout()
     plt.show(block=False)
-    plt.pause(0.1)
 
-    return theta_in_x, theta_in_cut, dtheta, dtheta_cut
+def apply_selection(data_dict, cut):
+    # apply same boolean mask to the arrrays of the dictionary
+    return {k: v[cut] for k, v in data_dict.items()}
 
-def channeling_efficiency(theta_in_x, dtheta, bending_angle, theta_L, tol_frac=0.2):
+def channeling_efficiency(theta_x_in, dtheta_x, bending_angle, tol_frac=0.2, angle_unit='urad'):
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
 
-    # cutting within the critical angle
-    in_acceptance = np.abs(theta_in_x) < theta_L
-    n_accepted = np.sum(in_acceptance)
+    n_tot = len(theta_x_in)
 
     tol = tol_frac * bending_angle
-    channeled = in_acceptance & (np.abs(dtheta - bending_angle) < tol)
+    channeled = (np.abs(dtheta_x - bending_angle) < tol)
     n_channeled = np.sum(channeled)
 
-    efficiency = n_channeled / n_accepted if n_accepted > 0 else np.nan
-    print(f"Particles within critical angle: {n_accepted}")
+    efficiency = n_channeled / n_tot if n_tot > 0 else np.nan
+    print(f"Particles within critical angle: {n_tot}")
     print(f"Channeling particles: {n_channeled}")
     print(f"Channeling efficiency: {efficiency*100:.1f}%")
     return efficiency
 
-beam_distribution_plot(x_in, y_in, px_in, py_in, label='- all particles')
-beam_distribution_plot(x_in_survived, y_in_survived, px_in_survived, py_in_survived, label='- survived particles')
+# ANALYSIS
 
-theta_in_1, theta_in_1_cut, dtheta_1, dtheta_1_cut = angular_scan_plot(px_in=data['px_in'], particle_id_in=data['particle_id_in'],
-    px_out=data['px_out'], particle_id_out=data['particle_id_out'], state_out=data['state_out'], theta_L=theta_L1,
-    bending_angle=float(data['bending_angle']), label='($θ_b =$ 50 µrad)')
-# theta_in_2, theta_in_2_cut, dtheta_2, dtheta_2_cut = angular_scan_plot(
-#     px_in=data['px_in'], particle_id_in=data['particle_id_in'],
-#     px_out=data['px_out'], particle_id_out=data['particle_id_out'],
-#     state_out=data['state_out'],
-#     theta_L=theta_L2, bending_angle=float(data['bending_angle']),
-#     label='cry2 (bending 6 mrad)')
+beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particles')
+beam_distribution_plot(x_in_survived, y_in_survived, theta_x_in_survived, theta_y_in_survived, label='- survived particles')
 
-eff1 = channeling_efficiency(theta_in_1, dtheta_1, bending_angle=50e-6, theta_L=theta_L1)
-# eff2 = channeling_efficiency(theta_in_2, dtheta_2, bending_angle=6e-3, theta_L=theta_L2)
+angular_scan_plot(theta_x_in_survived, theta_x_out_survived, theta_L1, label='($θ_b =$ 50 µrad)')
 
-# exact_zero = dtheta == 0.0
-# near_zero = np.abs(dtheta) < 1e-9  # soglia numerica minima
+# geometric cut
+geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
+geom_data = apply_selection(survived_data, geometric_hit)
+print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()}")
+print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()}")
 
-# print(f"Particles with dtheta exactly 0: {exact_zero.sum()}")
-# print(f"Particles with dtheta < 1e-9: {near_zero.sum()}")
+# lindhard selection
+lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L1)
+final_data = apply_selection(geom_data, lindhard_cut)
 
-# suspect = dtheta == 0.0   # o near_zero, a seconda di cosa trovi sopra
-
-# print("=== Particelle sospette (dtheta=0) ===")
-# print(f"N: {suspect.sum()} su {len(dtheta)} ({100*suspect.sum()/len(dtheta):.1f}%)")
-# print(f"x_in range: [{theta_in_x[suspect].min():.2e}, {theta_in_x[suspect].max():.2e}]")  # occhio: qui serve x, non theta_in_x
-# print(f"state_out valori unici: {np.unique(state_out[suspect])}")
-
-# # posizione d'impatto x,y per le sospette vs il resto
-# fig, graph = plt.subplots(1, 2, figsize=(12,5))
-# graph[0].hist(x_impact[suspect]*1e3, bins=50, alpha=0.6, label='dtheta=0', density=True)
-# graph[0].hist(x_impact[~suspect]*1e3, bins=50, alpha=0.6, label='resto', density=True)
-# graph[0].set_xlabel('x impact [mm]')
-# graph[0].legend()
-
-# graph[1].hist(y_impact[suspect]*1e3, bins=50, alpha=0.6, label='dtheta=0', density=True)
-# graph[1].hist(y_impact[~suspect]*1e3, bins=50, alpha=0.6, label='resto', density=True)
-# graph[1].set_xlabel('y impact [mm]')
-# graph[1].legend()
-# plt.show()
+# efficiency
+eff = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'], bending_angle=50e-6)

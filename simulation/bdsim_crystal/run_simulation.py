@@ -97,18 +97,34 @@ timestamp = datetime.now().strftime('%Y%m%d_%H')
 outfile = f'cry1_{timestamp}.npz'
 
 np.savez(outfile,
+    # input
     x_in=particles10.x, px_in=particles10.px,
     y_in=particles10.y, py_in=particles10.py,
-    particle_id_in=particles10.particle_id,
-    state_in=particles10.state,
+    zeta_in=particles10.zeta, delta_in=particles10.delta,
+    ptau_in=particles10.ptau,
 
+    # output
     x_out=particles1.x, px_out=particles1.px,
     y_out=particles1.y, py_out=particles1.py,
-    particle_id_out=particles1.particle_id,
-    state_out=particles1.state,
-    at_element_out=particles1.at_element,
+    zeta_out=particles1.zeta, delta_out=particles1.delta,
+    ptau_out=particles1.ptau,
 
+    # identifiers
+    particle_id_in=particles10.particle_id, particle_id_out=particles1.particle_id,
+    state_in=particles10.state, state_out=particles1.state,   
+    at_element_out=particles1.at_element, # should tell you where they were lost
+    pdg_id_in=particles10.pdg_id, pdg_id_out=particles1.pdg_id,
+
+    # metadata beam
     bending_angle=50e-6,
+    crystal_length=cry1.l,
+    crystal_x=cry1.xsize,
+    crystal_y=cry1.ysize,
+    crystal_material=cry1.material,
+    p0c=particles10.p0c[0], 
+    mass0=particles10.mass0,
+
+    # metadata simulation
     npart=npart,
     label='cry1',
     cov_avg=cov_avg,

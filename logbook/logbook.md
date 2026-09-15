@@ -32,6 +32,9 @@
 11. [WEEK 11 (SEP 14)](#week-11)
     - [Study the beam distribution (part 2)](#study-the-beam-distribution-part-2)
     - [Channeling Analysis on the simulated short crystal](#channeling-analysis-on-the-simulated-short-crystal)
+    - [Simulation results - short crystal](#simulation-results---short-crystal)
+12. [WEEK 12 (SEP 21)](#week-12)
+13. [WEEK 13 (SEP 28)](#week-13)
 
 ## WEEK 1  
 
@@ -650,7 +653,32 @@ By using the same idx for all four, you automatically preserve all the actual co
 
 ### Channeling Analysis on the simulated short crystal
 
+(i am currently not saving the variables `delta` - momentum divergence, `zeta` - longitudinal coordinate, `ptau` - energy divergence, `pdg_id` and `weight`)
+
 - no single track selection or detector alignment checks needed.
-- no *spatial cut* (selection of the ones that actually enter the crystal) needed: by putting the dimensions of the crystal and selecting the survived particles (`state_out == 1`) we are already doing it.
-- think about changing `cry1.aper1` which is 50 mm meters (was 100 meters before!!) so a lot of particles are not passing though the crystal (survived with a $\Delta\theta=0$) $\to$ so filtering `state_out == 1` alone is not enough?
+- selecting the survived particles (`state_out == 1`)(also `state_in == 1` needed? just confirms a slot is a real, active particle at the start) we are selecting the particles that survived without being absorbed (made it through).s
+- what is the aperture? it describes the surrounding vacuum-pipe/housing aperture - the mechanical structure around the crystal. think about changing `cry1.aper1` which is 50 mm meters (was 100 meters before!! so a lot of particles were not passing though the crystal (survived with a $\Delta\theta=0$)): keeping it greater than the crystal's dimension is also keeping the `state_out` filter physically meaningful (decoupling what survived the aperture and what hit the crystal)
+- *spatial cut* (selection of the ones that actually enter the crystal) on the impact position needed: $|x_{in}| < x_{size}/2$ and $|y_{in}| < y_{size}/2$ .
+- *Lindhard cut:* $|\theta_{in}| < \theta_L/2$ so selecting the particles with the potential to be channeled.
+- now we can compute the channeling efficiency on the "subset" (= went inside the crystal and entered within the angular acceptance)
+
+### Simulation results - short crystal
+
+Out of 200k simulated particles for the short crystal:
+- survived ~ 650
+    - needs to be invastigated
+- within critical angle ~ 120  
+    - 120/650 ~ 18% of survivors land within the lindhard window, and that is what i expect from my beam divergence: $\sigma(\theta_x)$ is around $30 \,\mu\text{rad}$ and $\theta_L/2\sim6.6\,\mu\text{rad}$, for a gaussian of that width, the fraction falling inside $\pm\theta_L/2$ works out about 18-19% $\to$ so this part of the pipeline is behaving exactly as physics predicts, my beam is simply more divergent than the crystal's angular acceptance.
+    - for a gaussian angular distribution with width $\sigma_\theta$, the fraction of particles falling inside a symmetric window $\pm a$ around the mean is $f=erf(\frac{a}{\sigma_\theta\sqrt{2}})$. in our case $\pm a=\pm\theta_L/2$ and using $\sigma_\theta\sim27\,\mu\text{rad}$ we get $f\sim19.4%$
+
+
+
+([UP](#traineeship-al-cern))
+
+## WEEK 12
+
+
+([UP](#traineeship-al-cern))
+
+## WEEK 13
 
