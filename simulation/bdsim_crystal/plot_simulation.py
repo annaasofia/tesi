@@ -5,6 +5,7 @@ from scipy.optimize import curve_fit
 
 filename = 'cry1_20260916_11.npz'
 data = np.load(filename)
+output_folder = 'plots_cry1'
 
     # cov_avg=cov_avg,
     # mu_avg=mu_avg,
@@ -144,8 +145,9 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     graph[1, 1].grid(alpha=0.3)
 
     fig.tight_layout()
+    plt.savefig(f'{output_folder}/gaus_impact_distribution.png')
+    plt.savefig(f'{output_folder}/gaus_impact_distribution.pdf')
     plt.show(block=False)
-    plt.pause(0.1)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
@@ -191,6 +193,8 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
         graph[1].plot(x_curve, y_curve, color='red', lw=2)
 
     fig.tight_layout()
+    plt.savefig(f'{output_folder}/angular_scan.png')
+    plt.savefig(f'{output_folder}/angular_scan.pdf')
     plt.show(block=False)
 
 def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
@@ -237,6 +241,8 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     graph[1, 1].legend()
     
     fig.tight_layout()
+    plt.savefig(f'{output_folder}/ch_footprint.png')
+    plt.savefig(f'{output_folder}/ch_footprint.pdf')
     plt.show(block=False)
 
 
@@ -316,5 +322,6 @@ final_data = apply_selection(geom_data, lindhard_cut)
 # efficiency
 eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
 
-angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
+# angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
 
