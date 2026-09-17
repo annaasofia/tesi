@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20260916_11.npz'
+filename = 'cry1_20260917_15.npz'
 data = np.load(filename)
 output_folder = 'plots_cry1'
 
@@ -33,6 +33,8 @@ p0c = float(data['p0c'])
 mass0 = float(data['mass0'])
 label = str(data['label'])
 
+
+# LOST PARTICLES
 # where lost particles got lost?
 print('='*50)
 unique_states, counts = np.unique(state_out, return_counts=True)
@@ -42,6 +44,24 @@ lost_333 = state_out == -333
 elements, counts = np.unique(at_element_out[lost_333], return_counts=True)
 for e, c in zip(elements, counts):
     print(f"at_element={e}: {c} lost particles at -333")
+
+# where they would have been?
+particle_id_in_valid = data['particle_id_in'][data['state_in'] == 1]
+x_in_valid = data['x_in'][data['state_in'] == 1]
+y_in_valid = data['y_in'][data['state_in'] == 1]
+
+lost_mask = data['state_out'] == -333
+idx_lost = data['particle_id_out'][lost_mask]
+
+order = np.argsort(particle_id_in_valid)
+sorted_ids = particle_id_in_valid[order]
+pos = np.searchsorted(sorted_ids, idx_lost)
+x_in_lost = x_in_valid[order][pos]
+y_in_lost = y_in_valid[order][pos]
+
+geometric_hit_lost = (np.abs(x_in_lost) < crystal_x/2) & (np.abs(y_in_lost) < crystal_y/2)
+print(f"Frazione delle perse che avrebbe comunque colpito il cristallo: {geometric_hit_lost.mean()*100:.1f}%")
+print(f"Numero di particelle perse che avrebbero dovuto MANCARE il cristallo: {(~geometric_hit_lost).sum()}")
 
 # SURVIVED PARTICLES
 valid_in = state_in == 1

@@ -34,6 +34,8 @@ cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystal
 cry1.apertureType = "rectangular" # aperture of box around crystal
 cry1.aper1 = 0.05 # 50 mm
 cry1.aper2 = 0.05 # 50 mm
+# cry1.aper1 = 100 # 50 mm
+# cry1.aper2 = 100 # 50 mm
 l.AddLinkElement(cry1)
 
 # x_half_range = cry1.xsize / 2
@@ -46,7 +48,7 @@ assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
 rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
 
-npart = 200000
+npart = 2000
 samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
 x_impact  = samples[:, 0]
 y_impact  = samples[:, 1]
