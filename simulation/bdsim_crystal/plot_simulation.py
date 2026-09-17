@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20260917_15.npz'
+# filename = 'cry1_20260916_11.npz'
+filename = 'cry1_20260917_16.npz'
 data = np.load(filename)
 output_folder = 'plots_cry1'
 
@@ -94,6 +95,7 @@ zeta_out_survived = zeta_out[survived]; delta_out_survived = delta_out[survived]
 assert np.all(sorted_idx_in[idx] == idx_out), "Mismatch nel matching particle_id in/out!"
 
 dtheta_x = theta_x_out_survived - theta_x_in_survived
+dtheta_y = theta_y_out_survived - theta_y_in_survived
 
 survived_data = {
     'x_in': x_in_survived,
@@ -105,6 +107,7 @@ survived_data = {
     'theta_x_out': theta_x_out_survived,
     'theta_y_out': theta_y_out_survived,
     'dtheta_x': dtheta_x,
+    'dtheta_y': dtheta_y,
 }
 
 print(f"Total particles: {len(x_in)}")
@@ -165,8 +168,9 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     graph[1, 1].grid(alpha=0.3)
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/gaus_impact_distribution.png')
-    plt.savefig(f'{output_folder}/gaus_impact_distribution.pdf')
+    label = label[2:]
+    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.png')
+    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.pdf')
     plt.show(block=False)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
@@ -213,8 +217,10 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
         graph[1].plot(x_curve, y_curve, color='red', lw=2)
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/angular_scan.png')
-    plt.savefig(f'{output_folder}/angular_scan.pdf')
+    if label == '(survived particles)': label = 'survived'
+    if label == '($θ_b =$ 50 µrad)': label = None
+    plt.savefig(f'{output_folder}/angular_scan_{label}.png')
+    plt.savefig(f'{output_folder}/angular_scan_{label}.pdf')
     plt.show(block=False)
 
 def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
@@ -265,6 +271,83 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     plt.savefig(f'{output_folder}/ch_footprint.pdf')
     plt.show(block=False)
 
+def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x', bins=100, 
+                  distance_unit='mm', angle_unit='urad', fit_window=None, label=''):
+
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+    distance_scale = 1e3 if distance_unit == 'mm' else 1.0
+    
+    pos_in_scaled = pos_in * distance_scale
+    dtheta_scaled = dtheta * scale
+    
+    bin_edges = np.linspace(pos_in_scaled.min(), pos_in_scaled.max(), bins + 1)
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    
+    sigmas = []
+    sigma_errs = []
+    valid_pos = []
+    
+    for i in range(bins):
+        mask = (pos_in_scaled >= bin_edges[i]) & (pos_in_scaled < bin_edges[i+1])
+        dtheta_slice = dtheta_scaled[mask]
+        
+        if fit_window is not None:
+            dtheta_slice = dtheta_slice[np.abs(dtheta_slice) < fit_window]
+            
+        if len(dtheta_slice) < 20:
+            continue
+            
+        counts, edges = np.histogram(dtheta_slice, bins=50)
+        centers = 0.5 * (edges[:-1] + edges[1:])
+        
+        A0 = counts.max()
+        mu0 = np.mean(dtheta_slice)
+        sigma0 = np.std(dtheta_slice)
+        
+        try:
+            popt, pcov = curve_fit(gaussian, centers, counts, p0=[A0, mu0, sigma0], maxfev=2000)
+            sig = abs(popt[2])
+            err = np.sqrt(pcov[2, 2])
+            
+            # Filter out wildly failed fits
+            if sig < 1000 and err < sig: 
+                sigmas.append(sig)
+                sigma_errs.append(err)
+                valid_pos.append(bin_centers[i])
+        except RuntimeError:
+            # Fallback to standard deviation if fit fails
+            sigmas.append(sigma0)
+            sigma_errs.append(0.0)
+            valid_pos.append(bin_centers[i])
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    
+    ax.errorbar(valid_pos, sigmas, yerr=sigma_errs, fmt='o', color='royalblue', 
+                markersize=4, capsize=3, label=rf'$\sigma$ of $\Delta\theta_{dtheta_label}$')
+    
+    edge_scaled = crystal_edge / 2 * distance_scale
+    ax.axvline(-edge_scaled, color='red', ls='--', label='Geometrical Crystal Edges')
+    ax.axvline(edge_scaled, color='red', ls='--')
+    
+    ax.set_xlabel(f'Impact {plane_label} [{distance_unit}]')
+    ax.set_ylabel(rf'MCS width $\sigma(\Delta\theta_{dtheta_label})$ [${unit_str}$]')
+    
+    title = f'Material Edge Transition {label}'
+    if fit_window is not None:
+        title += f' (Fit Window $\pm${fit_window} {unit_str})'
+    ax.set_title(title)
+    
+    ax.grid(alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    
+    label_str = f"_{label}" if label else ""
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}{label_str}.png')
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}{label_str}.pdf')
+    plt.show(block=False)
+    
+    return np.array(valid_pos), np.array(sigmas), np.array(sigma_errs)
 
 def apply_selection(data_dict, cut):
     # apply same boolean mask to the arrrays of the dictionary
@@ -329,11 +412,33 @@ beam_distribution_plot(x_in_survived, y_in_survived, theta_x_in_survived, theta_
 
 ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle)
 
+pos_x, sigmas_x, errs_x = mcs_edge_scan(
+    pos_in=survived_data['x_in'], 
+    dtheta=survived_data['dtheta_x'], 
+    crystal_edge=crystal_x, 
+    plane_label='x', 
+    dtheta_label='x',
+    bins=120, 
+    fit_window=20, # urad window around 0
+    label='- X Plane'
+)
+pos_y, sigmas_y, errs_y = mcs_edge_scan(
+    pos_in=survived_data['y_in'], 
+    dtheta=dtheta_y, 
+    crystal_edge=crystal_y, 
+    plane_label='y', 
+    dtheta_label='y',
+    bins=120, 
+    fit_window=None, 
+    label='- Y Plane'
+)
+
 # geometric cut
 geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
 geom_data = apply_selection(survived_data, geometric_hit)
 print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()}")
 print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()}")
+beam_distribution_plot(geom_data['x_in'], geom_data['y_in'], geom_data['theta_x_in'], geom_data['theta_y_in'], label='- entered particles')
 
 # lindhard selection
 lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L1)
@@ -342,6 +447,6 @@ final_data = apply_selection(geom_data, lindhard_cut)
 # efficiency
 eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
 
-# angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
 

@@ -80,7 +80,7 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 
 ![cry1_thetain150_x0.png](plots_cry1/thetain150_x0.png)
 
-### specifics for `cry1_20260826_16.npz` and `cry1_20260826_18.npz`
+### specifics for `cry1_20260826_18.npz`
 | parameter | value |
 | --- | --- |
 | number of particles | 200k |
@@ -92,7 +92,8 @@ instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_en
 ![cry1_thetain150_xUnif.png](plots_cry1/thetain150_xUnif.png)
 
 The great peak in $\Delta\theta=0$ is probably given by all of that particles that survived the aperture but did not pass through the crystal (we were not selecting what entered in the crystal and what did not): the `aper` value was 100 meters $\to$ definitely too big!  
-Variables `aper1` and `aper2` were changed to 50 mm.
+Variables `aper1` and `aper2` were changed to 50 mm.  
+!!! $\to$ actually 50 mm were giving me problems: too little particles surviving, so it was changed back to 100
 
 ## short crystal 2
 **= same dimensions as TCCS =**
@@ -124,7 +125,7 @@ Variables `aper1` and `aper2` were changed to 50 mm.
 
 ![uniform distribution](plots_cry1/random_impact_distribution.png)
 
-### specifics for `cry1_20260914_18.npz`
+### specifics for `cry1_20260914_18.npz` and `cry1_20260916_11.npz`
 
 Now instead we are trying to reproduce the gaussian feature of the beam. From real data (8430 run) i fitted the impact positions $(x,y)$ and the entrance angles $(\theta_x,\theta_y)$.
 
@@ -148,7 +149,7 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 | theta_in x divergence | `py_impact = samples[:, 2]`|
 | theta_in y divergence | `py_impact = samples[:, 3]` |
 
-### specifics for `cry1_20260915_16.npz` and `cry1_20260916_11.npz`
+### back to `aper1=100`: `cry1_20260917_16.npz` 
 
 
 

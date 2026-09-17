@@ -32,10 +32,10 @@ cry1.l = 4e-3 # meters
 cry1.horizontalWidth = 0.1 # meters
 cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:50e-6;"
 cry1.apertureType = "rectangular" # aperture of box around crystal
-cry1.aper1 = 0.05 # 50 mm
-cry1.aper2 = 0.05 # 50 mm
-# cry1.aper1 = 100 # 50 mm
-# cry1.aper2 = 100 # 50 mm
+# cry1.aper1 = 0.05 # 50 mm
+# cry1.aper2 = 0.05 # 50 mm
+cry1.aper1 = 100
+cry1.aper2 = 100
 l.AddLinkElement(cry1)
 
 # x_half_range = cry1.xsize / 2
@@ -48,7 +48,7 @@ assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
 rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
 
-npart = 2000
+npart = 20000
 samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
 x_impact  = samples[:, 0]
 y_impact  = samples[:, 1]
@@ -68,6 +68,16 @@ particles1 = line.build_particles(
 particles1.pdg_id[:npart] = np.ones(npart)*2212
 particles10 = particles1.copy()
 bds_link.TrackXSuite(0,'crystaldeflector',particles1,180e3)
+
+# particles1 = line.build_particles(
+#     nemitt_x=2.5e-6, nemitt_y=1e-6,
+#     # x=np.zeros(npart), y=np.zeros(npart),
+#     x=np.linspace(-0.06,0.06,npart), y=0,
+#     px=0, py=0,
+#     zeta=np.zeros(npart), delta=np.zeros(npart), _capacity = int(npart*2))
+# particles1.pdg_id[:npart] = np.ones(npart)*2212
+# particles10 = particles1.copy()
+# bds_link.TrackXSuite(0,'crystaldeflector',particles1,180e3)
 
 # long crystal 74 mm
 # cry2 = bdsim.Element()

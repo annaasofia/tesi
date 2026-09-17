@@ -266,8 +266,8 @@ y_hi, y_hi_err = y_edges["e3"]
 mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
 mean_res_y = df_phys.Mean("DeltathetaErr_y").GetValue()
 print("="*50)
-print(f"Mean resolution (x): {mean_res_x:.2f} urad")
-print(f"Mean resolution (y): {mean_res_y:.2f} urad")
+print(f"Mean resolution (x): {mean_res_x:.2f} urad - (y): {mean_res_y:.2f} urad")
+print(f"Mean resolution combined: {np.sqrt(mean_res_y**2 + mean_res_x**2):.2f} urad")
 
 sigma_bsl_x, sigma_jump_x = f_x.GetParameter(0), f_x.GetParameter(1)
 sigma_bsl_y, sigma_clamp_y, sigma_crystal_y = f_y.GetParameter(0), f_y.GetParameter(1), f_y.GetParameter(2)
@@ -375,21 +375,21 @@ f_out = ROOT.TF1("f_out", "gaus", -fit_range, fit_range)
 h1_fuori.Fit(f_out, "RQ0")
 
 fig_in = plot_histo1d(
-    h1_dentro, f_in, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    h1_dentro, f_in, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
     title=(f"Crystal slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_dentro):.2f} mm)  "
            f"$\\sigma$ = {f_in.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_inside_y.pdf", color='tab:blue', style='fill'
 )
 
 fig_clamp = plot_histo1d(
-    h1_clamp, f_clamp, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    h1_clamp, f_clamp, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
     title=(f"Crystal slice - clamp (y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)  "
            f"$\\sigma$ = {f_clamp.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_clamp_y.pdf", color='tab:green', style='fill'
 )
 
 fig_out = plot_histo1d(
-    h1_fuori, f_out, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    h1_fuori, f_out, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
     title=(f"Outside slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_fuori):.2f} mm)  "
            f"$\\sigma$ = {f_out.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_outside_y.pdf", color='tab:pink', style='fill'
