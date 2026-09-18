@@ -149,8 +149,9 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 | theta_in x divergence | `py_impact = samples[:, 2]`|
 | theta_in y divergence | `py_impact = samples[:, 3]` |
 
-### back to `aper1=100`: `cry1_20260917_16.npz` 
-
+### back to `aper1=100`: `cry1_20260917_16.npz` and `cry1_20260918_10.npz`
+respectively: 20k and 200k particles  
+parameters as before 
 
 
 

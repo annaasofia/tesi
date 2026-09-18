@@ -48,7 +48,7 @@ assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
 rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
 
-npart = 20000
+npart = 200000
 samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
 x_impact  = samples[:, 0]
 y_impact  = samples[:, 1]
