@@ -34,6 +34,8 @@
     - [Channeling Analysis on the simulated short crystal](#channeling-analysis-on-the-simulated-short-crystal)
     - [Simulation results - short crystal](#simulation-results---short-crystal)
 12. [WEEK 12 (SEP 21)](#week-12)
+    - [Completing the MCS analysis](#to-do-about-mcs)
+    - [Simulating the long crystal](#simulation-for-the-long-crystal)
 13. [WEEK 13 (SEP 28)](#week-13)
 
 ## WEEK 1  
@@ -629,6 +631,8 @@ fitting the 1d marginal distributions and then sampling them indipendently is co
 - $y-\theta_y$: correlation 0.087 $\to$ small - but in other runs is ~0.19 $\to$ NOT negligible
 - $\theta_x-\theta_y$: correlation 0.086 $\to$ small - can be statistic rumor
 
+It is correct to have positive correlation between the two, a greater angle corresponds to a greater incoming position.
+
 ([UP](#traineeship-al-cern))
 
 ## WEEK 11
@@ -662,6 +666,12 @@ By using the same idx for all four, you automatically preserve all the actual co
 - *Lindhard cut:* $|\theta_{in}| < \theta_L/2$ so selecting the particles with the potential to be channeled.
 - now we can compute the channeling efficiency on the "subset" (= went inside the crystal and entered within the angular acceptance)
 
+**Results:**  
+with [18 sep run](../simulation/bdsim_crystal/cry1_20260918_10.npz) of 200.000 particles and through [plot_simulation.py](../simulation/bdsim_crystal/plot_simulation.py) we obtain:  
+- channeling efficiency: $\epsilon_{ch}=26190/32201=81.3\%$ if area below, or $82.4\%$ if within $\pm 3 \sigma$
+- channeling peak: $\theta_b=(50.04\pm0.09)\,\mu\text{rad}$ and $\sigma=(7.12\pm0.09)\,\mu\text{rad}$
+
+
 ### Simulation results - short crystal
 
 Out of 200k simulated particles for the short crystal:
@@ -671,14 +681,37 @@ Out of 200k simulated particles for the short crystal:
     - 120/650 ~ 18% of survivors land within the lindhard window, and that is what i expect from my beam divergence: $\sigma(\theta_x)$ is around $30 \,\mu\text{rad}$ and $\theta_L/2\sim6.6\,\mu\text{rad}$, for a gaussian of that width, the fraction falling inside $\pm\theta_L/2$ works out about 18-19% $\to$ so this part of the pipeline is behaving exactly as physics predicts, my beam is simply more divergent than the crystal's angular acceptance.
     - for a gaussian angular distribution with width $\sigma_\theta$, the fraction of particles falling inside a symmetric window $\pm a$ around the mean is $f=erf(\frac{a}{\sigma_\theta\sqrt{2}})$. in our case $\pm a=\pm\theta_L/2$ and using $\sigma_\theta\sim27\,\mu\text{rad}$ we get $f\sim19.4%$
 
-### To do:
+([UP](#traineeship-al-cern))
 
-**Multiple coulomb scattering:**
+## WEEK 12
+
+### To do about MCS:
+
+**Amorphous scattering**
 - the slices distribution should always be centered at zero - so now i'm seeing different effects summed up
 - only take amorpheous scattering to make sure i'm only selecting particles that never came close to alignment with any plane at any depth so they genuinely never channel, volume-reflect or dechannel - so we are sure they undergo pure random multiple coulomb scattering the whole way through
 - are we sure we have to add in quadrature?
 - check rms in air - not exactly zero
 - along $y$ do fewer slices
+
+$$\theta_{MCS,air}=\frac{13.6\,\text{MeV}}{180\,\text{GeV}} \sqrt{\frac{x}{X_0}} \bigg[1+0.038\ln\Big(\frac{x}{X_0}\Big)\bigg]$$
+and choosing $X_0\sim300\,\text{m}$ and $x=74\,\text{mm}$ (does not change much even if it is more) we get $\theta_{MCS,air}=0.812\,\mu\text{rad}$ so the term from the tracker angular resolution is still the dominant one.
+
+$$\sigma_{bsl}=\sqrt{\sigma^2_{tracker,res} + \sigma^2_{MCS, air}}$$
+and using the known $\sigma_{tracker}=12.57-13.68\,\mu\text{rad}$ we obtain:  
+$\sigma_{bsl}=12.6-13.7\,\mu\text{rad}$ to be compared with the one coming from the fit.   
+
+NB: $\sigma_{div,x}=25.4\,\mu\text{rad}$ and $\sigma_{div,y}=39.2\,\mu\text{rad}$ (which come from $\sigma_{\theta}=\sqrt{\sigma_{divergence}^2+\sigma_{tracker,res}^2}$, where $\sigma_{\theta}$ is from the data - width of the gaussian fit) do not enter the calculations because the angular divergence of the beam is common for $\theta_{in}$ and $\theta_{out}$ for a linear track and so in the difference $\Delta\theta$ it gets cancelled out.
+
+
+And for the crystal material:
+$$\theta_{crystal, Si}=\sqrt{\sigma^2_{high,fit} - \sigma^2_{bsl,fit} + \sigma^2_{74mm, air}}$$
+even though the $\sigma^2_{74mm, air}$ contribution is really small (well below angular resolution):
+$$\Delta\theta=\frac{\sigma^2_{74mm, air}}{2\theta_{cryst}}=\frac{0.812^2}{2\cdot70}\sim0.005\,\mu\text{rad}$$
+
+To have the same kind of comparison inside/outside, compute:  
+- $\theta_{MCS,air}=\sqrt{\sigma^2_{fit,bsl} - \sigma^2_{tracker}}$ to be compared with $\theta_{MCS,air}^{th}=0.8\,\mu\text{rad}$
+- $\theta_{MCS,cryst}=\sqrt{\sigma^2_{fit,high} - \sigma^2_{fit,bsl} + \sigma^2_{74mm,air}}$ to be compared with $\theta_{MCS,cryst}^{th}=66.5\,\mu\text{rad}$
 
 **Beam distribution:**
 - it is correct to have correlation actually:  
@@ -689,14 +722,22 @@ If you know $\alpha$ at the crystal from the lattice design, you can compute the
 
 - about the spikes check if rebinning it changes, if it shows also on the "all" particles and if the remaining particles - the "not entered" - are compatible as the others
 
-**Digits:**
-- check the detector precision and change the uncertainty di conseguenza, not possible to have so many significance digits 0.1 um
+**Digits:**  
+Check the detector precision and change the uncertainty di conseguenza, not possible to have so many significance digits 0.1 um:
+- trackers have resolution of $7\,\mu\text{m}=0.007\,\text{mm}$
+- writing $0.0001\,\text{mm}$ is like claiming we have a sensibility 70 times smaller than it really is
+- it is better to round up to $0.01\,\text{mm}=10\,\mu\text{m}$ so compared to the $7\,\mu\text{m}$ resolution, we are safe  
+
+**$\to$ approximate everything to 2 decimal digits if in mm**
+
+Also about the angular uncertainty, that actually came from the position uncertainty: the angular resolution $\Delta\theta$ is determined by the spatial resolution of the detector (those $7\,\mu\text{m}$) divided by the distance between the tracker planes:
+$$\theta=\frac{x_2-x_1}{L}\iff\sigma_\theta=\frac{\sqrt{2}\,\sigma_x}{L}\sim5-10\,\mu\text{rad}$$
+$\to$ so in this case: **approximate everything to none decimal digits if in urad**
+
+*(In experimental physics and engineering, significant figures are not just a mathematical formality: they represent the physical limit of what your instrument is capable of measure. Writing more significant figures than necessary is equivalent to claiming to have information on a scale that your detector is physically incapable of measuring.)*
 
 
-
-([UP](#traineeship-al-cern))
-
-## WEEK 12
+### Simulation for the long crystal
 
 
 ([UP](#traineeship-al-cern))

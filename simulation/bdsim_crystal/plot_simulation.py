@@ -440,12 +440,14 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     efficiency = n_channeled / n_tot if n_tot > 0 else np.nan
 
     n_3sigma = np.sum(np.abs(dtheta_x - mu) < 3 * sigma)
+    n_2sigma = np.sum(np.abs(dtheta_x - mu) < 2 * sigma)
     n_above  = np.sum(dtheta_x > (mu - 2 * sigma))
 
     print('-'*50)
     print(f"Channeling efficiency: {n_channeled:.0f}/{n_tot} = {efficiency*100:.1f}%")
     print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
-    # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
+    print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
+    print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
     print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad - sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
     return efficiency, popt, pcov, bin_width
@@ -460,7 +462,7 @@ ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, 
 pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
     pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_x'], crystal_edge=crystal_x,
     other_pos_in=survived_data['y_in'], other_edge=crystal_y,
-    plane_label='x', dtheta_label='x', n_slices=50, fit_window=80, label='- x plane')
+    plane_label='x', dtheta_label='x', n_slices=50, fit_window=30, label='- x plane')
 
 pos_y, sigmas_y, errs_y, n_y = mcs_edge_scan(
     pos_in=survived_data['y_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_y,

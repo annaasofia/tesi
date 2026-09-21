@@ -201,7 +201,7 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
             scan_min_y, scan_max_y = -15, 9
         elif file in [8655, 8656]:
             scan_min_y, scan_max_y = -15, 15
-        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y, n_bins=150,
+        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y, n_bins=100,
                                     slice_var="Tracks.d0_x", slice_min=x_lo_new, slice_max=x_hi_new)
         yc, ys, yerr, _ = extract_widths_from_h2(h2_y)
         if len(yc) == 0:
