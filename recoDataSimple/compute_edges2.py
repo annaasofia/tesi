@@ -22,6 +22,7 @@ width = 12.8 # width of the crystal in mm (for spatial cut)
 height = 2 # height of the crystal in mm (for spatial cut)
 max_value = 8000 # histograms range
 deflection_peak = 6010 # urad
+theta_L = 13  # urad
 fit_range = 150 # urad
 minimum_entries = 500
 
@@ -33,8 +34,9 @@ print(f"Analyzing {filename} ...")
 
 # FILTERING the data: single tracks and conversion from rad to urad
 df_phys = df.Filter("SingleTrack == 1")
-df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6")\
-    .Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")\
+df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6")
+df_phys = df_phys.Filter(f"abs(thetaIn_x) < {theta_L}") 
+df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")\
     .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")\
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6")\
     .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
@@ -358,11 +360,11 @@ bin_fuori = h2_y_val.GetXaxis().FindBin(y_edges["e1"][0] - 1.0)
 # bin_fuori = h2_y_val.GetXaxis().FindBin(-12.0)
 
 # Estraiamo gli istogrammi 1D
-h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro)
+h1_dentro = h2_y_val.ProjectionY("h1_dentro", bin_dentro, bin_dentro); h1_dentro.Rebin(3)
 h1_clamp = h2_y_val.ProjectionY("h1_clamp", bin_clamp, bin_clamp)
 clamp_rebin_factor = 10  # 300 bins (1 urad/bin) -> 30 bins (10 urad/bin); must divide n_dtheta_bins evenly
 h1_clamp.Rebin(clamp_rebin_factor)
-h1_fuori = h2_y_val.ProjectionY("h1_fuori", bin_fuori, bin_fuori)
+h1_fuori = h2_y_val.ProjectionY("h1_fuori", bin_fuori, bin_fuori); h1_fuori.Rebin(3)
 
 # Fit gaussiano sulle 3 fette (dentro/clamp/fuori) -- fit resta in ROOT come sempre
 f_in = ROOT.TF1("f_in", "gaus", -fit_range, fit_range)
@@ -400,8 +402,8 @@ bin_dentro_x = h2_x_val.GetXaxis().FindBin((x_lo + x_hi) / 2.0)
 bin_fuori_x  = h2_x_val.GetXaxis().FindBin(x_hi + 1.5)           
 
 # Estraiamo gli istogrammi 1D
-h1_dentro_x = h2_x_val.ProjectionY("h1_dentro_x", bin_dentro_x, bin_dentro_x)
-h1_fuori_x  = h2_x_val.ProjectionY("h1_fuori_x", bin_fuori_x, bin_fuori_x)
+h1_dentro_x = h2_x_val.ProjectionY("h1_dentro_x", bin_dentro_x, bin_dentro_x); h1_dentro_x.Rebin(3)
+h1_fuori_x  = h2_x_val.ProjectionY("h1_fuori_x", bin_fuori_x, bin_fuori_x); h1_fuori_x.Rebin(3)
 
 # Fit gaussiano sulle 2 fette lungo x (dentro/fuori)
 f_in_x = ROOT.TF1("f_in_x", "gaus", -fit_range, fit_range)

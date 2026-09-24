@@ -107,6 +107,7 @@ survived_data = {
     'theta_y_out': theta_y_out_survived,
     'dtheta_x': dtheta_x,
     'dtheta_y': dtheta_y,
+    'particle_id': idx_out,
 }
 
 print(f"Total particles: {len(x_in)}")
@@ -444,13 +445,13 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     n_above  = np.sum(dtheta_x > (mu - 2 * sigma))
 
     print('-'*50)
-    print(f"Channeling efficiency: {n_channeled:.0f}/{n_tot} = {efficiency*100:.1f}%")
-    print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
-    print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
-    print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
+    # print(f"Channeling efficiency: {n_channeled:.0f}/{n_tot} = {efficiency*100:.1f}%")
+    # print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
+    # print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
+    # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
     print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad - sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
-    return efficiency, popt, pcov, bin_width
+    return n_channeled, efficiency, popt, pcov, bin_width
 
 # ANALYSIS
 
@@ -471,6 +472,7 @@ pos_y, sigmas_y, errs_y, n_y = mcs_edge_scan(
 
 # geometric cut
 geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
+geometric_hit_all = (np.abs(x_in) < crystal_x/2) & (np.abs(y_in) < crystal_y/2)
 geom_data = apply_selection(survived_data, geometric_hit)
 print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()}")
 print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()}")
@@ -478,10 +480,25 @@ print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()}")
 
 # lindhard selection
 lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L1)
+lindhard_all = np.abs(theta_x_in) < (0.5 * theta_L1)
 final_data = apply_selection(geom_data, lindhard_cut)
 
+# also keep the particles with the potential to be channeled (N_tot)
+attempted_mask = geometric_hit_all & lindhard_all
+attempted_ids = particle_id_in[attempted_mask]
+n_tot_correct = attempted_mask.sum()
+
+# recap
+lost_mask = ~np.isin(attempted_ids, idx_out)
+n_lost_attempted = lost_mask.sum()
+print(f"Persi tra i tentativi geometrici+Lindhard: {n_lost_attempted}/{n_tot_correct} "
+      f"({n_lost_attempted/n_tot_correct*100:.1f}%)")
+
 # efficiency
-eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
+n_channeled, eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
+efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
+
+print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
 
 angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
 angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)

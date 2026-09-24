@@ -599,10 +599,10 @@ run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sig
 
 to do:
 - better explain systematics
-- adjust my analysis with Melanie work
+- ✅ adjust my analysis with Melanie work
 - check not angle deflection but only distribution of $\theta_{out}$
-- for the simulation put the original beam distrib of real data
-- for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
+- ✅ for the simulation put the original beam distrib of real data
+- ✅ for bin at zero problem, check the behaviour of the other features of the particles that get a zero change in angle, to find a common pattern
 - run pions 
 
 ([UP](#traineeship-al-cern))
@@ -675,11 +675,16 @@ with [18 sep run](../simulation/bdsim_crystal/cry1_20260918_10.npz) of 200.000 p
 ### Simulation results - short crystal
 
 Out of 200k simulated particles for the short crystal:
-- survived ~ 650
-    - needs to be invastigated
+- survived = all
+    - what gets the particles absorbed, is the inelastic nuclear interaction, that goes like $1-e^{-L/\lambda}$, where $\lambda$ is the length for the nuclear interaction in silicon ($\sim 46.2\,\text{cm}$):
+    - short crystal ($L=4\,\text{mm}$): $(1-e^{-4/462})=0.9\%$
+    - long crystal ($L=74\,\text{mm}$): $(1-e^{-74/462})=15\%$
 - within critical angle ~ 120  
     - 120/650 ~ 18% of survivors land within the lindhard window, and that is what i expect from my beam divergence: $\sigma(\theta_x)$ is around $30 \,\mu\text{rad}$ and $\theta_L/2\sim6.6\,\mu\text{rad}$, for a gaussian of that width, the fraction falling inside $\pm\theta_L/2$ works out about 18-19% $\to$ so this part of the pipeline is behaving exactly as physics predicts, my beam is simply more divergent than the crystal's angular acceptance.
     - for a gaussian angular distribution with width $\sigma_\theta$, the fraction of particles falling inside a symmetric window $\pm a$ around the mean is $f=erf(\frac{a}{\sigma_\theta\sqrt{2}})$. in our case $\pm a=\pm\theta_L/2$ and using $\sigma_\theta\sim27\,\mu\text{rad}$ we get $f\sim19.4%$
+
+
+$\to$ [slides week 11](./slides/week11.pdf)
 
 ([UP](#traineeship-al-cern))
 
@@ -715,9 +720,9 @@ To have the same kind of comparison inside/outside, compute:
 
 **Beam distribution:**
 - it is correct to have correlation actually:  
-In beam optics, position and angle at a given location are correlated whenever the beam isn't exactly at a **waist** (a point where the beta function is at a local minimum and the Twiss `alpha` parameter is zero). The phase-space ellipse (x vs. px) has a tilt described by `alpha`: $<x·px> = -alpha * emittance$.  
+In beam optics, position and angle at a given location are correlated whenever the beam isn't exactly at a **waist** (a point where the beta function is at a local minimum and the Twiss `alpha` parameter is zero). The phase-space ellipse (x vs. px) has a tilt described by `alpha`: $<x·p_x> = -\alpha * emittance$.  
 If $\alpha ≠ 0$ at the crystal location (which is the general case — you'd need to specifically design the optics to have a waist exactly there), then x and px are correlated by construction. This isn't an artifact or noise — it's a direct consequence of how the beam was transported (focusing, drifts) upstream of the measurement point. A correlation of ~0.15 is modest but completely plausible for a real beamline where the crystal isn't sitting exactly at a waist.  
-Since alpha ≠ 0 is now expected, you could cross-check your measured correlation against the beamline's actual Twiss parameters at the crystal location, if you have access to the optics model (MAD-X/xsuite lattice for that beamline). The theoretical relationship is: $correlation(x, px) = -alpha / sqrt(1 + alpha²)$.  
+Since $\alpha ≠ 0$ is now expected, you could cross-check your measured correlation against the beamline's actual Twiss parameters at the crystal location, if you have access to the optics model (MAD-X/xsuite lattice for that beamline). The theoretical relationship is: $corr(x, p_x) = -\alpha / \sqrt{1 + \alpha²}$.  
 If you know $\alpha$ at the crystal from the lattice design, you can compute the expected correlation and compare it to your measured ~0.15 as a sanity check — if they roughly agree, that's strong confirmation the correlation is real beam optics and not, say, a reconstruction/tracking artifact in your telescope analysis.
 
 - about the spikes check if rebinning it changes, if it shows also on the "all" particles and if the remaining particles - the "not entered" - are compatible as the others
@@ -738,6 +743,7 @@ $\to$ so in this case: **approximate everything to none decimal digits if in ura
 
 
 ### Simulation for the long crystal
+
 
 
 ([UP](#traineeship-al-cern))
