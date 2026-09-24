@@ -20,40 +20,24 @@ bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("../bdsim_crystal/trackerIn
 l = bds_link.GetBDSIMLink()
 
 # short crystal 2 mm
-# cry1 = bdsim.Element()
-# cry1.type = bdsim.elementtype.ElementType.USERCOMPONENT
-# cry1.userTypeName = "crystaldeflector"
-# cry1.name = "crystaldeflector"
-# cry1.material="G4_Si"
-# cry1.xsize = 2e-3 # meters
-# cry1.ysize = 35e-3 # meters
-# cry1.materialThickness = 4e-3 # meters
-# cry1.l = 4e-3 # meters
-# cry1.horizontalWidth = 0.1 # meters
-# cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:50e-6;"
-# cry1.apertureType = "rectangular" # aperture of box around crystal
-# # cry1.aper1 = 0.05 # 50 mm
-# # cry1.aper2 = 0.05 # 50 mm
-# cry1.aper1 = 100
-# cry1.aper2 = 100
-# l.AddLinkElement(cry1)
+cry1 = bdsim.Element()
+cry1.type = bdsim.elementtype.ElementType.USERCOMPONENT
+cry1.userTypeName = "crystaldeflector"
+cry1.name = "crystaldeflector"
+cry1.material="G4_Si"
+cry1.xsize = 2e-3 # meters
+cry1.ysize = 35e-3 # meters
+cry1.materialThickness = 4e-3 # meters
+cry1.l = 4e-3 # meters
+cry1.horizontalWidth = 0.1 # meters
+cry1.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:50e-6;"
+cry1.apertureType = "rectangular" # aperture of box around crystal
+# cry1.aper1 = 0.05 # 50 mm
+# cry1.aper2 = 0.05 # 50 mm
+cry1.aper1 = 100
+cry1.aper2 = 100
+l.AddLinkElement(cry1)
 
-# long crystal 74 mm
-cry2 = bdsim.Element()
-cry2.type = bdsim.elementtype.ElementType.USERCOMPONENT
-cry2.userTypeName = "crystaldeflector"
-cry2.name = "crystaldeflector2"
-cry2.material="G4_Si"
-cry2.xsize = 5e-3 # m
-cry2.ysize = 12.8e-3 # m
-cry2.materialThickness = 74e-3 # m
-cry2.l = 74e-3
-cry2.horizontalWidth = 0.1
-cry2.userParameters="crystalRegion:crystaldeflector crystalLattice:(110) crystalBendingAngle:6e-3;"
-cry2.apertureType = "rectangular" # aperture of box around crystal
-cry2.aper1 = 10e1 # m
-cry2.aper2 = 10e1 # m
-l.AddLinkElement(cry2)
 
 #correlated gaussian beam
 cov_avg, eigvals, n_list = simfun.cov_matrix()
@@ -121,10 +105,10 @@ np.savez(outfile,
     # crystal_y=cry1.ysize,
     # crystal_material=cry1.material,
     bending_angle=6e-3,
-    crystal_length=cry2.l,
-    crystal_x=cry2.xsize,
-    crystal_y=cry2.ysize,
-    crystal_material=cry2.material,
+    crystal_length=cry1.l,
+    crystal_x=cry1.xsize,
+    crystal_y=cry1.ysize,
+    crystal_material=cry1.material,
     p0c=particles10.p0c[0], 
     mass0=particles10.mass0,
 

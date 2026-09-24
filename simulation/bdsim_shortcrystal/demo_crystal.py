@@ -1,6 +1,6 @@
+import bdsim
 import numpy as np
 import xtrack as xt
-import bdsim
 import xpart as xp
 
 drift = xt.Drift(length=1)
@@ -8,8 +8,8 @@ drift = xt.Drift(length=1)
 line = xt.Line(elements=[drift])
 line.particle_ref = xt.Particles(mass0=xt.PROTON_MASS_EV, q0=1, energy0=180e9)
 
-bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("../bdsim_crystal/trackerInterface.gmad",
-                                                     referenceParticlePDG=2212,
+bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("./trackerInterface.gmad",
+                                                     referenceParticlePDG=2212, #211 for positive pions
                                                      referenceKineticEnergy=180e3, # MeV!!!! !!!
                                                     relativeEnergyCut=0.1,
                                                     batchMode = True,

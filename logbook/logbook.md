@@ -36,7 +36,9 @@
 12. [WEEK 12 (SEP 21)](#week-12)
     - [Completing the MCS analysis](#to-do-about-mcs)
     - [Simulating the long crystal](#simulation-for-the-long-crystal)
+    - [Submit the jobs on the cluster](#submit-the-jobs-on-the-cluster)
 13. [WEEK 13 (SEP 28)](#week-13)
+14. [WEEK 14 (OCT 05)](#week-14)
 
 ## WEEK 1  
 
@@ -744,9 +746,124 @@ $\to$ so in this case: **approximate everything to none decimal digits if in ura
 
 ### Simulation for the long crystal
 
+```bash
+ssh lxplus.cern.ch
+cd /afs/cern.ch/work/a/amoro/public
+```
+```bash
+### set up BDSIM environment
+mamba create --name bdsim python=3.12
+mamba activate bdsim
+mamba install -c conda-forge bdsim-g4
+mamba install cmake
+mamba install bison
+mamba remove bdsim-g4 --force
+pip install pybind11 rpyc xsuite ipython matplotlib xplot pint
+git clone https://github.com/bjlindst/bdsim.git
+cd bdsim
+git checkout sboogert-pybind11
+mkdir .install
+mkdir .build
+cd .build
+
+rm -rf CMakeCache.txt CMakeFiles
+cmake .. \
+  -DCMAKE_C_COMPILER="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gcc" \
+  -DCMAKE_CXX_COMPILER="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++" \
+  -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
+  -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
+  -DGeant4_PREFIX="$CONDA_PREFIX" \
+  -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_INSTALL_PREFIX="$(cd .. && pwd)/.install" \
+  -Dpybind11_DIR="$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')" \
+  -DUSE_PYTHON_BINDINGS=ON -DUSE_GDML=ON -DUSE_GZSTREAM=ON -DBUILD_TESTING=ON \
+  -DBDSIM_BUILD_STATIC_LIBS=OFF -DBDSIM_BUILD_TEST_PROGRAMS=OFF \
+  -DUSE_AWAKE=OFF -DUSE_BOOST=OFF -DUSE_CUSTOM_CHANNELLING=OFF -DUSE_DICOM=OFF \
+  -DUSE_EVENT_DISPLAY=OFF -DUSE_GEANT4_EMD_ID=OFF -DUSE_HEPMC3=OFF \
+  -DUSE_HEPMC3_ROOTIO=OFF -DUSE_ROOT_DOUBLE_OUTPUT=OFF -DUSE_SIXTRACKLINK=OFF
+
+make -j3
+make install
+cd ../.install/lib/python
+export PYTHONPATH="$PWD:$PYTHONPATH"
+```
+### Submit the jobs on the cluster
+
+``` bash
+cd /afs/cern.ch/work/a/amoro/public/simulations/condor/
+condor_submit htcondor.sub 
+```
+```bash
+condor_q # to check the status
+watch condor_q # to have the status automatically updated
+```
+
+Because in the `htcondor.sub` file we have the specifics (what to run and how many times/how many jobs, and where to save):
+``` python
+Executable = run.sh
+Arguments = $(ProcId) #job number
+
+Output = logs/job_$(ProcId).out
+Error = logs/job_$(ProcId).err
+Log = logs/job_$(ProcId).log
+
+ShouldTransferFiles = YES
+WhenToTransferOutput = ON_EXIT
+
+transfer_output_files = cry2_$(ProcId).npz # how to save the file
+transfer_output_remaps = "cry2_$(ProcId).npz=output/cry2_$(ProcId).npz"
+
+# Request job resources
+RequestMemory = 2 GB
+RequestCpus = 1
+
++JobFlavour = "tomorrow" # limit time 24 hours
+
+accounting_group = group_u_ATS.all
+
+Queue 4000 # how many jobs!!
+```
+Beacuse in the called `run.sh` we call the actual simulation:
+``` python                                                  run.sh                                                                
+#!/bin/bash
+echo "Starting job with ID: $1"
+
+cp /afs/cern.ch/work/a/amoro/public/simulations/condor/job.py . # where to take the sim
+cp /afs/cern.ch/work/a/amoro/public/simulations/condor/simulation_functions.py .
+cp /afs/cern.ch/work/a/amoro/public/simulations/condor/trackerInterface.gmad .
+
+export MAMBA_ROOT_PREFIX="/eos/home-a/amoro/miniforge3"
+source "/eos/home-a/amoro/miniforge3/etc/profile.d/conda.sh"
+source "/eos/home-a/amoro/miniforge3/etc/profile.d/mamba.sh"
+
+mamba activate bdsim
+export PYTHONPATH="/afs/cern.ch/work/a/amoro/public/bdsim/.install/lib/python:$PYTHONPATH"
+
+python job.py $1 # actual running the simulation
+```
+
+Then to access the cluster:
+```bash
+condor_ssh_to_job <CLUSTERID>.<jobnum>
+```
+
+To remove *all* the jobs:
+```bash
+condor_rm amoro
+```
+
+I will have a folder `logs` where there are stored the .logs, .err, .out files (for each job), and an `output` folder with my .npz data files.
+
 
 
 ([UP](#traineeship-al-cern))
 
 ## WEEK 13
 
+([UP](#traineeship-al-cern))
+
+## WEEK 14
+
+([UP](#traineeship-al-cern))
