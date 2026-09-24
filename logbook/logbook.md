@@ -823,10 +823,12 @@ RequestCpus = 1
 
 accounting_group = group_u_ATS.all
 
-Queue 4000 # how many jobs!!
+max_materialize = 250
+max_idle = 250
+Queue 2000 # how many jobs!!
 ```
 Beacuse in the called `run.sh` we call the actual simulation:
-``` python                                                  run.sh                                                                
+``` sh                                                      
 #!/bin/bash
 echo "Starting job with ID: $1"
 
