@@ -858,7 +858,24 @@ condor_rm amoro
 
 I will have a folder `logs` where there are stored the .logs, .err, .out files (for each job), and an `output` folder with my .npz data files.
 
+**$\to$ To plot**
+``` bash
+startmamba
+mamba activate bdsim
+cd /afs/cern.ch/work/a/amoro/public/simulations/plot
+python plot_simulation.py
+```
+**$\to$ To save**  
+From local computer/terminal:
+``` bash
+scp -r amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder> ./ #folder
+scp amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/<file.png> ./ #file
+```
 
+to instead **syncronize** (if you redo only certain plots, will copy only the changed ones):
+``` bash
+rsync -avz amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/ ./<folder>/ #folder
+```
 
 ([UP](#traineeship-al-cern))
 
