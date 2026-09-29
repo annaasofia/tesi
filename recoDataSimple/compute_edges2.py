@@ -4,6 +4,7 @@ import sys
 import os
 import numpy as np
 from array import array
+import matplotlib.pyplot as plt
 from plotting_utils import plot_graph_with_fit, plot_histo1d
 
 
@@ -17,6 +18,9 @@ files = ["data/recoDataSimple_8430_xtalMerging.root", "data/recoDataSimple_8431_
 
 ROOT.gStyle.SetPalette(ROOT.kBird)
 
+PLOT_DIR = f"plots_{file}_edges2"
+os.makedirs(PLOT_DIR, exist_ok=True)
+
 # VARIABLES
 width = 12.8 # width of the crystal in mm (for spatial cut)
 height = 2 # height of the crystal in mm (for spatial cut)
@@ -24,7 +28,7 @@ max_value = 8000 # histograms range
 deflection_peak = 6010 # urad
 theta_L = 13  # urad
 fit_range = 150 # urad
-minimum_entries = 500
+minimum_entries = 250
 
 # ROOT DATA FRAME
 df = ROOT.RDataFrame("simpleEvent", filename)
@@ -40,6 +44,13 @@ df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x)
     .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")\
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6")\
     .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
+df_filtered = df_phys.Filter(f"abs(thetaIn_x) < {theta_L/2}")
+
+datasets_debug = {
+    "filtered": df_filtered,
+    "unfiltered": df_phys
+}
+
 print("="*50)
 
 def book_scan_histogram(df_in, scan_var, delta_var, scan_min, scan_max, n_bins, slice_var=None, slice_min=None, slice_max=None, n_dtheta_bins=300):
@@ -62,9 +73,29 @@ def extract_widths_from_h2(h2_lazy, range_fit_gaus=fit_range, min_entries=minimu
         e = h1.GetEntries()
         if e < min_entries:
             continue
-        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -range_fit_gaus, range_fit_gaus)
-        f.SetParameters(h1.GetMaximum(), h1.GetMean(), max(h1.GetRMS(), 5.0))
+
+        rough_sigma = max(h1.GetRMS(), 5.0)
+        fit_min = h1.GetMean() - 2.5 * rough_sigma
+        fit_max = h1.GetMean() + 2.5 * rough_sigma
+        
+        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", fit_min, fit_max)
+        f.SetParameters(h1.GetMaximum(), h1.GetMean(), rough_sigma)
+        
+        # iterative fit
         h1.Fit(f, "RQ0")
+        better_sigma = f.GetParameter(2)
+        better_mean = f.GetParameter(1)
+
+        if better_sigma < 1.0 or better_sigma > h1.GetRMS() * 3:
+            better_sigma = rough_sigma
+            better_mean = h1.GetMean()
+
+        f.SetRange(better_mean - 2.5 * better_sigma, better_mean + 2.5 * better_sigma)
+        h1.Fit(f, "RQ0")
+
+        # f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -range_fit_gaus, range_fit_gaus)
+        # f.SetParameters(h1.GetMaximum(), h1.GetMean(), max(h1.GetRMS(), 5.0))
+        # h1.Fit(f, "RQ0")
  
         centers.append(h2v.GetXaxis().GetBinCenter(ix))
         sigmas.append(f.GetParameter(2))
@@ -72,6 +103,68 @@ def extract_widths_from_h2(h2_lazy, range_fit_gaus=fit_range, min_entries=minimu
         entries.append(e)
 
     return centers, sigmas, sigma_errs, entries
+
+def extract_and_plot_slices(h2_lazy, axis_label, save, rebin=1,
+                             fit_range_local=fit_range, min_entries=minimum_entries,
+                             xlabel_hist=""):
+    h2v = h2_lazy.GetValue() if hasattr(h2_lazy, "GetValue") else h2_lazy
+    n_bins = h2v.GetNbinsX()
+    slice_data = []
+
+    for ix in range(1, n_bins + 1):
+        h1 = h2v.ProjectionY(f"py_{h2v.GetName()}_{ix}", ix, ix)
+        if rebin > 1:
+            h1.Rebin(rebin)
+
+        e = h1.GetEntries()
+        if e < min_entries:
+            continue
+
+        rough_sigma = max(h1.GetRMS(), 5.0)
+        f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus",
+                      h1.GetMean() - 2.5 * rough_sigma, h1.GetMean() + 2.5 * rough_sigma)
+        f.SetParameters(h1.GetMaximum(), h1.GetMean(), rough_sigma)
+        h1.Fit(f, "RQ0")
+
+        better_sigma, better_mean = f.GetParameter(2), f.GetParameter(1)
+        if better_sigma < 1.0 or better_sigma > h1.GetRMS() * 3:
+            better_sigma, better_mean = rough_sigma, h1.GetMean()
+        f.SetRange(better_mean - 2.5 * better_sigma, better_mean + 2.5 * better_sigma)
+        h1.Fit(f, "RQ0")
+
+        center = h2v.GetXaxis().GetBinCenter(ix)
+        slice_data.append((center, h1, f))
+
+    if save is not None:
+        _plot_slice_grid(slice_data, axis_label, save, xlabel_hist=xlabel_hist)
+
+    return slice_data
+
+
+def _plot_slice_grid(slice_data, axis_label, save, xlabel_hist=""):
+    n = len(slice_data)
+    if n == 0:
+        print(f"WARNING: no slices to plot for '{save}' (all below min_entries).")
+        return
+
+    ncols = math.ceil(math.sqrt(n))
+    nrows = math.ceil(n / ncols)
+    fig, axs = plt.subplots(nrows, ncols, figsize=(3.2 * ncols, 2.6 * nrows), squeeze=False)
+    axs_flat = axs.flatten()
+
+    for ax, (center, h1, f) in zip(axs_flat, slice_data):
+        plot_histo1d(h1, fit_func=f, ax=ax, style="fill", color="tab:blue",
+                     xlabel=xlabel_hist, ylabel="")
+        ax.set_title(f"{axis_label} = {center:.2f}   $\\sigma$ = {f.GetParameter(2):.1f}", fontsize=9)
+
+    for ax in axs_flat[n:]:
+        ax.axis("off")
+
+    fig.tight_layout()
+    fig.savefig(save, dpi=150)
+    fig.savefig(save.replace(".pdf", ".png"), dpi=150)
+    plt.close(fig)
+    print(f"Saved slice grid ({n} panels, {nrows}x{ncols}) -> {save}")
  
 def fit_step_edges(centers, sigmas, sigma_errs, edge_lo_guess, edge_hi_guess, baseline_guess=None, amplitude_guess=None, transition_guess=0.05):
 
@@ -134,6 +227,12 @@ def fit_four_step_edges(centers, sigmas, sigma_errs,
                " + ([1]-[2])*0.5*(1+TMath::Erf((x-[5])/[7]))"   # e3: crystal->clamp
                " + ([0]-[1])*0.5*(1+TMath::Erf((x-[6])/[7]))")  # e4: clamp->vuoto
 
+    lo, hi = min(centers), max(centers)
+    e1_guess = min(max(e1_guess, lo), hi)
+    e2_guess = min(max(e2_guess, lo), hi)
+    e3_guess = min(max(e3_guess, lo), hi)
+    e4_guess = min(max(e4_guess, lo), hi)
+
     f = ROOT.TF1("f_four_step", formula, min(centers), max(centers))
     f.SetParameters(baseline_guess, clamp_level_guess, crystal_level_guess,
                      e1_guess, e2_guess, e3_guess, e4_guess, transition_guess)
@@ -176,6 +275,27 @@ def fit_four_step_edges(centers, sigmas, sigma_errs,
 
 x_guess = (-1.0, 1.0)
 y_guess = (-11.5, -6.0, 7.0, 8.5)
+
+# ===================== DIAGNOSTIC: filtered vs unfiltered slice grids =====================
+for label, current_df in datasets_debug.items():
+    print(f"\nProcessing debug dataset: {label.upper()}")
+
+    h2_x_dbg = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,
+                                    slice_var="Tracks.d0_y", slice_min=-6.0, slice_max=7.0)
+    extract_and_plot_slices(h2_x_dbg, axis_label="x",
+                             save=f"plots_{file}_edges2/slices_grid_x_{label}.pdf", rebin=3,
+                             xlabel_hist=r"$\Delta\theta_x$ [$\mu$rad]")
+
+    if file in [8430, 8431, 8650]:
+        scan_min_y, scan_max_y = -15, 9
+    elif file in [8655, 8656]:
+        scan_min_y, scan_max_y = -15, 15
+
+    h2_y_dbg = book_scan_histogram(current_df, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y,
+                                    n_bins=100, slice_var="Tracks.d0_x", slice_min=-1.0, slice_max=1.0)
+    extract_and_plot_slices(h2_y_dbg, axis_label="y",
+                             save=f"plots_{file}_edges2/slices_grid_y_{label}.pdf", rebin=3,
+                             xlabel_hist=r"$\Delta\theta_y$ [$\mu$rad]")
 
 def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
     x_lo, x_hi = x_guess
@@ -260,13 +380,13 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
 
     return best_state
 
-x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y = iterate_until_converged(df_phys, x_guess, y_guess)
+x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y = iterate_until_converged(df_filtered, x_guess, y_guess)
 
 y_lo, y_lo_err = y_edges["e2"]
 y_hi, y_hi_err = y_edges["e3"]
 
-mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
-mean_res_y = df_phys.Mean("DeltathetaErr_y").GetValue()
+mean_res_x = df_filtered.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
+mean_res_y = df_filtered.Mean("DeltathetaErr_y").GetValue()
 print("="*50)
 print(f"Mean resolution (x): {mean_res_x:.2f} urad - (y): {mean_res_y:.2f} urad")
 print(f"Mean resolution combined: {np.sqrt(mean_res_y**2 + mean_res_x**2):.2f} urad")
@@ -298,8 +418,8 @@ if theta_clamp_y > 0:
     err_theta_clamp_y = math.sqrt((deriv_clamp_y * err_clamp_y)**2 + (deriv_bsl_y_clamp * err_bsl_y)**2)
 
 # we are comapring the fitted erf transition point with the mean of the d0Err_x/y distributions, which is a good sanity check
-mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
-mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
+mean_d0err_x = df_filtered.Mean("Tracks.d0Err_x").GetValue()
+mean_d0err_y = df_filtered.Mean("Tracks.d0Err_y").GetValue()
 
 print(f"fitted transition x = {f_x.GetParameter(4):.4f} ± {f_x.GetParError(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
 print(f"fitted transition y = {f_y.GetParameter(7):.4f} ± {f_y.GetParError(7):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")

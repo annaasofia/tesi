@@ -3,11 +3,17 @@ import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from plotting_utils import plot_histo1d
+from plotting_utils import plot_histo1d, plot_histo2d
+from matplotlib.colors import ListedColormap
 
 ROOT.ROOT.EnableImplicitMT()
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPalette(ROOT.kBird)
+
+base_viridis = plt.colormaps['viridis'].resampled(256)
+newcolors = base_viridis(np.linspace(0, 1, 256))
+newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
+cmap_white_bg = ListedColormap(newcolors)
 
 file = 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
@@ -32,7 +38,7 @@ df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x)
     .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6") \
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6") \
     .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
-df_filtered = df_phys.Filter(f"abs(thetaIn_x) < {theta_L}")
+df_filtered = df_phys.Filter(f"(thetaIn_x) < 0")
 
 print("=" * 50)
 
@@ -122,7 +128,7 @@ def _plot_slice_grid(slice_data, axis_label, save, xlabel_hist=""):
     for ax, (center, h1, f) in zip(axs_flat, slice_data):
         plot_histo1d(h1, fit_func=f, ax=ax, style="fill", color="tab:blue",
                      xlabel=xlabel_hist, ylabel="")
-        if f is not None:
+        if f is not None: 
             title = f"{axis_label} = {center:.2f}   $\\sigma$ = {f.GetParameter(2):.1f}"
         else:
             title = f"{axis_label} = {center:.2f}   N = {h1.GetEntries():.0f}"
@@ -180,6 +186,21 @@ datasets = {
 
 for label, current_df in datasets.items():
     print(f"\nProcessing dataset: {label.upper()}")
+
+    # thetaIn_x vs Deltatheta_x
+# thetaIn_x vs Deltatheta_x
+    h2_simple = current_df.Histo2D(
+        (f"h2_thetaIn_vs_Deltatheta_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_x")
+
+    plot_histo2d(
+        h2_simple,
+        xlabel=r"$\theta_{\mathrm{in},x}$ [$\mu$rad]",
+        ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        zlabel="Entries",
+        title=rf"$\theta_{{\mathrm{{in}},x}}$ vs $\Delta\theta_x$ ({label})",
+        cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/thetaIn_vs_Deltatheta_{label}.png"
+    )
     
     # x-scan: Deltatheta_x vs Tracks.d0Out_x, restricted to a rough y window around the crystal
     h2_x = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,

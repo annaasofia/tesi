@@ -38,6 +38,8 @@
     - [Simulating the long crystal](#simulation-for-the-long-crystal)
     - [Submit the jobs on the cluster](#submit-the-jobs-on-the-cluster)
 13. [WEEK 13 (SEP 28)](#week-13)
+    - [About MCS - adding different contributions](#about-mcs-adding-different-contributions)
+    - [MCS final results](#mcs-final-results)
 14. [WEEK 14 (OCT 05)](#week-14)
 
 ## WEEK 1  
@@ -568,33 +570,6 @@ $\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​} = \sqrt{(\sigma_{b
     - aluminum $X_0\sim 8.9\,\text{cm}$ $\to$ $\theta_{MCS} = 80.44$ (for $l=100\,\text{mm}$)
     - tungsten $X_0\sim 0.35\,\text{cm}$ $\to$ $\theta_{MCS} = 455.32$ (for $l=100\,\text{mm}$)
 
-run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
--------- | --------------------- | --------------------- | -------------------------
-8430     |  0.0901 ± 0.0003      |  0.2167 ± 0.0094      | 0.1055 
-8431     |  0.0901 ± 0.0003      |  0.2069 ± 0.0095      | 0.1055
-8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055
-8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
-8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
-8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155 
-
-run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
---         | --         | --                    | -               |  --             | --                    | --             | --             
-8430       | 8.89       | 12.75 ± 0.00          | 66.58 ± 0.06    | 78.30 ± 0.06    | 11.59 ± 0.09          | 62.99 ± 0.04   | 97.16 ± 0.68 
-8431       | 8.89       |  12.72 ± 0.01         | 66.63 ± 0.07    | 78.33 ± 0.07    | 11.76 ± 0.10          | 62.95 ± 0.04   | 97.44 ± 0.74 
-8430/8431  | 8.89       | 12.75 ± 0.00          |  66.72 ± 0.05   | 78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49 
-8650       | 9.67       | 14.73 ± 0.01          |  81.43 ± 0.14   | 95.02 ± 0.14    | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
-8655       | 9.67       | 14.74 ± 0.01          | 73.32 ± 0.12    | 86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
-8656       | 9.67       | 14.76 ± 0.01          | 73.15 ± 0.11    | 86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ?
-
-| **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
-|-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
-| **8430**        | 2.0911 ± 0.0004 | -1.0601 ± 0.0003 | 1.0310 ± 0.0002 | 13.8905 ± 0.0333 | -11.1363 ± 0.0095 | -5.4226 ± 0.0124 | 8.4680 ± 0.0309 |
-| **8431**        | 2.0901 ± 0.0004 | -1.0598 ± 0.0003 | 1.0303 ± 0.0003 | 13.7961 ± 0.0330 | -11.1507 ± 0.0095 | -5.3864 ± 0.0140 | 8.4097 ± 0.0299 |
-| **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
-| **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
-| **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
-| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 |
-
 ([UP](#traineeship-al-cern))
 
 ## WEEK 9
@@ -697,9 +672,13 @@ $\to$ [slides week 11](./slides/week11.pdf)
 **Amorphous scattering**
 - the slices distribution should always be centered at zero - so now i'm seeing different effects summed up
 - only take amorpheous scattering to make sure i'm only selecting particles that never came close to alignment with any plane at any depth so they genuinely never channel, volume-reflect or dechannel - so we are sure they undergo pure random multiple coulomb scattering the whole way through
-- are we sure we have to add in quadrature?
+- are we sure we have to add in quadrature?  
+check [week 13: about MCS (subsection)](#about-mcs-adding-different-contributions)
 - check rms in air - not exactly zero
 - along $y$ do fewer slices
+
+$$\theta_{RMS} = \frac{13.6 \text{ MeV}}{180000 \text{ MeV/c}} \sqrt{T_{tot}} [1 + 0.038 \ln(T_{tot})]$$
+and we can use $T_{tot}\approx T_{cryst}$ obtaining $\theta_{RMS} \approx 66 \,\mu\text{rad}$.
 
 $$\theta_{MCS,air}=\frac{13.6\,\text{MeV}}{180\,\text{GeV}} \sqrt{\frac{x}{X_0}} \bigg[1+0.038\ln\Big(\frac{x}{X_0}\Big)\bigg]$$
 and choosing $X_0\sim300\,\text{m}$ and $x=74\,\text{mm}$ (does not change much even if it is more) we get $\theta_{MCS,air}=0.812\,\mu\text{rad}$ so the term from the tracker angular resolution is still the dominant one.
@@ -712,13 +691,13 @@ NB: $\sigma_{div,x}=25.4\,\mu\text{rad}$ and $\sigma_{div,y}=39.2\,\mu\text{rad}
 
 
 And for the crystal material:
-$$\theta_{crystal, Si}=\sqrt{\sigma^2_{high,fit} - \sigma^2_{bsl,fit} + \sigma^2_{74mm, air}}$$
+$$\sigma_{crystal}=\sqrt{\sigma^2_{MCS} + \sigma^2_{bsl} +(- \sigma^2_{74mm, air})}$$
 even though the $\sigma^2_{74mm, air}$ contribution is really small (well below angular resolution):
 $$\Delta\theta=\frac{\sigma^2_{74mm, air}}{2\theta_{cryst}}=\frac{0.812^2}{2\cdot70}\sim0.005\,\mu\text{rad}$$
 
-To have the same kind of comparison inside/outside, compute:  
+To have the same kind of comparison inside/outside (since the processes are independent, we can extract the pure scattering from the crystal by inverting the sum of the squares), compute:  
 - $\theta_{MCS,air}=\sqrt{\sigma^2_{fit,bsl} - \sigma^2_{tracker}}$ to be compared with $\theta_{MCS,air}^{th}=0.8\,\mu\text{rad}$
-- $\theta_{MCS,cryst}=\sqrt{\sigma^2_{fit,high} - \sigma^2_{fit,bsl} + \sigma^2_{74mm,air}}$ to be compared with $\theta_{MCS,cryst}^{th}=66.5\,\mu\text{rad}$
+- $\theta_{MCS,cryst}=\sqrt{\sigma^2_{fit,high} - \sigma^2_{fit,bsl}}$ to be compared with $\theta_{MCS,cryst}^{th}=66.5\,\mu\text{rad}$
 
 **Beam distribution:**
 - it is correct to have correlation actually:  
@@ -880,6 +859,68 @@ rsync -avz amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/pl
 ([UP](#traineeship-al-cern))
 
 ## WEEK 13
+
+(from [week 12: to do about mcs (subsection)](#to-do-about-mcs))
+### About MCS: adding different contributions
+
+We are looking at the distribution of the angular deflection, with mean always zero, and we are measuring its spread (of the distribution), which is the variance. In statistic, when you combine indipendent random variables, it is their variances that add together in quadrature.  
+Since the RMS angle ($\theta$) represents the standard deviation (the square root of the variance), the basic probability math dictates that the contributions combine via the square root of the sum of their squares. This is the definition of adding in quadrature. If you were to sum the RMS contributions linearly ($\theta_{total} = \theta_1 + \theta_2$), you would mathematically be assuming perfect positive correlation. Physically, this implies that if a particle scatters $1^\circ$ to the left in the first material, it "remembers" this and preferentially scatters to the left again in the next material, actively steering the particle in a continuous curve.  
+$$\sigma_{total}^2 = \sigma_1^2 + \sigma_2^2 + 2 \rho \sigma_1 \sigma_2$$
+$$\rho=0\,\,\text{(indipendent)}: \sigma_{total}^2 = \sigma_1^2 + \sigma_2^2$$
+$$\rho=1\,\,\text{(correlated)}: \sigma_{total}^2 = (\sigma_1 + \sigma_2)^2$$
+While adding in quadrature is technically an approximation due to the Highland logarithmic correction, summing the RMS angles linearly is physically and statistically incorrect.  
+
+Adding in quadrature assumes that the angular deflections perfectly follow a Gaussian (normal) distribution. If multiple Coulomb scattering were purely Gaussian, adding the variances in quadrature would be 100% mathematically exact. However, the scattering distribution is not purely Gaussian.  
+
+While the vast majority of scatters are tiny "glancing" interactions that build up into a Gaussian core, particles occasionally undergo a single, hard collision with a nucleus. This is governed by Rutherford scattering, which creates heavy tails in the distribution.
+
+Because of these large-angle Rutherford scatters, the overall shape of the distribution (described by Molière theory) changes depending on how thick the material is. To define a useful "width" (RMS) for the central 98% of this non-Gaussian distribution, physicists use the Highland formula, which introduces a logarithmic correction factor to account for the thickness:
+$$\theta_0 = \frac{13.6 \text{ MeV}}{\beta c p} z \sqrt{\frac{x}{X_0}} \left[ 1 + 0.038 \ln\left(\frac{x}{X_0}\right) \right]$$
+Because of that $\ln(x/X_0)$ term, the mathematical rule of quadrature breaks. If you take two layers, calculate their Highland $\theta_0$ separately, and add them in quadrature, the logarithmic terms interact incorrectly. Adding Highland angles in quadrature systematically overestimates the true scattering angle, because you end up artificially inflating the impact of the Rutherford tails.  
+
+Adding in quadrature is still widely used in physics as a practical approximation. It holds (or is "good enough") in the following cases: first-order estimates, highly uniform materials, macroscopic vacuum gaps.
+
+**Correct formula:** If you have a particle passing through multiple layers of different materials and you want the exact RMS scattering angle according to the Particle Data Group (PDG), you do not calculate individual angles at all.Instead, you sum the fractional radiation lengths of the materials first, and then apply the Highland formula exactly once.  
+1) Calculate the total material thickness in terms of radiation lengths ($T$):$$T = \sum_{i} \frac{x_i}{X_{0,i}}$$
+2) Plug the total $T$ into the Highland formula:$$\theta_{total} = \frac{13.6 \text{ MeV}}{\beta c p} z \sqrt{T} \left[ 1 + 0.038 \ln(T) \right]$$By summing the radiation lengths before doing the math, you ensure the logarithmic correction scales correctly for the total amount of material traversed, accurately reflecting how the Gaussian core and Rutherford tails behave in reality.
+
+*For the crystal:*
+$$T_{tot} = \frac{x_{aria1}}{X_{0,aria}} + \frac{x_{cristallo}}{X_{0,cristallo}} + \frac{x_{aria2}}{X_{0,aria}}$$
+con $X_0^{air} \approx 30420 \text{ cm}$ and $X_0^{Si} \approx 9.36 \text{ cm}$.  
+different contributions: with $74 \text{ mm}$ of crystal: $T_{cryst} = \frac{7.4}{9.36} \approx 0.79$ and assumin even ($100 \text{ cm}$) of air: $T_{air} = \frac{100}{30420} \approx 0.003$.
+
+We expect that along $y$ we will have a cleaner measure, because channeling, volume reflection and dechanneling are all phenomenons happening along the bending direction, $x$, while along $y$ we will have pure mcs
+
+(calculations in [week 12: to do about mcs (subsection)](#to-do-about-mcs))
+
+### MCS final results
+
+run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
+-------- | --------------------- | --------------------- | -------------------------
+8430     |  0.0901 ± 0.0003      |  0.2167 ± 0.0094      | 0.1055 
+8431     |  0.0901 ± 0.0003      |  0.2069 ± 0.0095      | 0.1055
+8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055
+8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
+8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
+8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155 
+
+run [urad] | resolution | **x:** $\sigma_{bsl}$ | $\sigma_{jump}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
+--         | --         | --                    | -               |  --             | --                    | --             | --             
+8430       | 8.89       | 12.75 ± 0.00          | 66.58 ± 0.06    | 78.30 ± 0.06    | 11.59 ± 0.09          | 62.99 ± 0.04   | 97.16 ± 0.68 
+8431       | 8.89       |  12.72 ± 0.01         | 66.63 ± 0.07    | 78.33 ± 0.07    | 11.76 ± 0.10          | 62.95 ± 0.04   | 97.44 ± 0.74 
+8430/8431  | 8.89       | 12.75 ± 0.00          |  66.72 ± 0.05   | 78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49 
+8650       | 9.67       | 14.73 ± 0.01          |  81.43 ± 0.14   | 95.02 ± 0.14    | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
+8655       | 9.67       | 14.74 ± 0.01          | 73.32 ± 0.12    | 86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
+8656       | 9.67       | 14.76 ± 0.01          | 73.15 ± 0.11    | 86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ?
+
+| **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
+|-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
+| **8430**        | 2.0911 ± 0.0004 | -1.0601 ± 0.0003 | 1.0310 ± 0.0002 | 13.8905 ± 0.0333 | -11.1363 ± 0.0095 | -5.4226 ± 0.0124 | 8.4680 ± 0.0309 |
+| **8431**        | 2.0901 ± 0.0004 | -1.0598 ± 0.0003 | 1.0303 ± 0.0003 | 13.7961 ± 0.0330 | -11.1507 ± 0.0095 | -5.3864 ± 0.0140 | 8.4097 ± 0.0299 |
+| **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
+| **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
+| **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
+| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 |
 
 ([UP](#traineeship-al-cern))
 
