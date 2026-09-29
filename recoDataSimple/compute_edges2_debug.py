@@ -38,7 +38,7 @@ df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x)
     .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6") \
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6") \
     .Define("DeltathetaErr_y", "sqrt(Tracks.thetaInErr_y * Tracks.thetaInErr_y + Tracks.thetaOutErr_y * Tracks.thetaOutErr_y) * 1e6")
-df_filtered = df_phys.Filter(f"(thetaIn_x) < 0")
+df_filtered = df_phys.Filter(f"abs((thetaIn_x)) > 0")
 
 print("=" * 50)
 
@@ -180,30 +180,34 @@ def _plot_slice_grid(slice_data, axis_label, save, xlabel_hist=""):
 
 # Definisci i due dataset da processare
 datasets = {
-    "filtered": df_filtered,
+    # "filtered": df_filtered,
     "unfiltered": df_phys
 }
 
 for label, current_df in datasets.items():
     print(f"\nProcessing dataset: {label.upper()}")
 
-    # thetaIn_x vs Deltatheta_x
-# thetaIn_x vs Deltatheta_x
-    h2_simple = current_df.Histo2D(
-        (f"h2_thetaIn_vs_Deltatheta_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_x")
-
+    h2_simpleY = current_df.Histo2D((f"h2_thetaIn_vs_Deltathetay_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_y")
+    h2_simpleX = current_df.Histo2D((f"h2_thetaIn_vs_Deltathetax_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_x")
     plot_histo2d(
-        h2_simple,
+        h2_simpleY,
+        xlabel=r"$\theta_{\mathrm{in},x}$ [$\mu$rad]",
+        ylabel=r"$\Delta\theta_y$ [$\mu$rad]",
+        zlabel="Entries",
+        title=rf"$\theta_{{\mathrm{{in}},x}}$ vs $\Delta\theta_y$ ({label})",
+        cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/thetaInx_vs_Deltathetay_{label}.pdf")
+    plot_histo2d(
+        h2_simpleX,
         xlabel=r"$\theta_{\mathrm{in},x}$ [$\mu$rad]",
         ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
         zlabel="Entries",
         title=rf"$\theta_{{\mathrm{{in}},x}}$ vs $\Delta\theta_x$ ({label})",
         cmap=cmap_white_bg,
-        save=f"{PLOT_DIR}/thetaIn_vs_Deltatheta_{label}.png"
-    )
+        save=f"{PLOT_DIR}/thetaInx_vs_Deltathetax_{label}.pdf")
     
     # x-scan: Deltatheta_x vs Tracks.d0Out_x, restricted to a rough y window around the crystal
-    h2_x = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,
+    h2_x = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_y", scan_min=-3, scan_max=4, n_bins=140,
                                 slice_var="Tracks.d0_y", slice_min=-6.0, slice_max=7.0)
     x_centers, x_means, x_sigmas, _, x_sigma_errs, _, x_slices = extract_and_plot_slices(
         h2_x, axis_label="x", save=f"{PLOT_DIR}/slices_grid_x_{label}.pdf", rebin=3,
@@ -228,11 +232,11 @@ for label, current_df in datasets.items():
     ax_x.errorbar(x_centers, x_sigmas, yerr=x_sigma_errs, fmt='o', color='black', ecolor='gray', markersize=3)
     ax_x.set_xlabel("x [mm]"); ax_x.set_ylabel(r"$\sigma(\Delta\theta_x)$ [$\mu$rad]")
     ax_x.set_title(f"Local scattering width vs x ({label})")
-    fig_x.tight_layout(); fig_x.savefig(f"{PLOT_DIR}/scattering_width_vs_x_{label}.png"); plt.close(fig_x)
+    fig_x.tight_layout(); fig_x.savefig(f"{PLOT_DIR}/scattering_width_vs_x_{label}.pdf"); plt.close(fig_x)
 
     fig_y, ax_y = plt.subplots(figsize=(8, 6))
     ax_y.errorbar(y_centers, y_sigmas, yerr=y_sigma_errs, fmt='o', color='black', ecolor='gray', markersize=3)
     ax_y.set_xlabel("y [mm]"); ax_y.set_ylabel(r"$\sigma(\Delta\theta_y)$ [$\mu$rad]")
     ax_y.set_title(f"Local scattering width vs y ({label})")
-    fig_y.tight_layout(); fig_y.savefig(f"{PLOT_DIR}/scattering_width_vs_y_{label}.png"); plt.close(fig_y)
+    fig_y.tight_layout(); fig_y.savefig(f"{PLOT_DIR}/scattering_width_vs_y_{label}.pdf"); plt.close(fig_y)
 

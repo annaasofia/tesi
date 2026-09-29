@@ -889,9 +889,30 @@ $$T_{tot} = \frac{x_{aria1}}{X_{0,aria}} + \frac{x_{cristallo}}{X_{0,cristallo}}
 con $X_0^{air} \approx 30420 \text{ cm}$ and $X_0^{Si} \approx 9.36 \text{ cm}$.  
 different contributions: with $74 \text{ mm}$ of crystal: $T_{cryst} = \frac{7.4}{9.36} \approx 0.79$ and assumin even ($100 \text{ cm}$) of air: $T_{air} = \frac{100}{30420} \approx 0.003$.
 
-We expect that along $y$ we will have a cleaner measure, because channeling, volume reflection and dechanneling are all phenomenons happening along the bending direction, $x$, while along $y$ we will have pure mcs
+We expect that along $y$ we will have a cleaner measure, because channeling, volume reflection and dechanneling are all phenomenons happening along the bending direction, $x$, while along $y$ we will have pure mcs.
 
 (calculations in [week 12: to do about mcs (subsection)](#to-do-about-mcs))
+
+#### My analysis:
+
+Analyze the tracking deflections across transverse coordinated to measure MCS.  
+By mapping the local angular spread $\sigma(\Delta\theta)$ as a function of the transverse track position ($x$, $y$), material transitions appear as sharp steps convoluted with the telescope's spatial resolution, modeled as error functions.
+
+Channeling, volume reflection, and dechanneling are phenomena related to the orientation of the crystal planes, which in our crystal are cut or bent to deflect in the $x$-direction (this is why the channeling peak appears in $Δθ_x$, not $Δθ_y$). The $y$-direction is transverse to the bending plane, so it is not affected by these effects: it is sensitive only to isotropic MCS (projection of the same multiple Coulomb scattering) and to instrumental resolution.
+
+1. generate 2d distributions of track position versus delection angle distribution, to check if some cut/filter on the incoming angle is needed (we dont want VR or channeled particles).
+2. to filter out channeled particles we simply select $\Delta\theta << \theta_b$, but unlike the short crystals there is no way to select single regions (VR, channeled, dechanneled, amorph) along $\Delta\theta_x$ and indeed the analysis using $\Delta\theta_x$ produces unreliable results (distributions not gaussian and not centered at zero and too large with respect to the theoretical expectations) - consistent with the expectation that no filtering of $θ_{in}$ can remove the VR.
+3. using $\Delta\theta_y$ because is not the axis along which channeling happens so the interactions should be pure MCS (isotropic) + detector resolution. 
+4. iterative gaussian slices: project each spatial bin of the crystal along the deflection axis ($\Delta\theta_y$), execute an initial gaussian fit within $\pm 2.5\times RMS$ and automatically refines the fit range to $\mu\pm2.5\sigma$ using fitted parameters (an rejecting unstable fits). 
+5. finally it records the resulting profile: bin centers ($x$ or $y$) vs the fitted width $\sigma$. 
+6. erf fit along $x$ (air $\to$ crystal $\to$ air) and $y$ (air $\to$ clamp $\to$ crystal $\to$ clamp $\to$ air).
+7. because the spatial slice in $y$ depende on knowing the $x$-boundaries of the crystal and vice-versa, the function iterate until convergence (alternating convergence loop):
+$$\text{Slice } y \in [y_{e2}^{(k)}, y_{e3}^{(k)}] \longrightarrow \text{Fit } x\text{-edges} \longrightarrow \text{Slice } x \in [x_{\text{lo}}^{(k+1)}, x_{\text{hi}}^{(k+1)}] \longrightarrow \text{Fit } y\text{-edges}$$
+(checking physical consistency at every step and monitoring the maximum edge coordinate shift)  
+8. from the converged fits, we can extract $\theta_{MCS, crystal}$, $\theta_{MCS, air}$, and $\theta_{MCS, clamp}$.  
+9. check on telescope tracking performance: the fitted transition parameter with the track impact parameter uncertainty
+
+$\to$ *“I identified that $x$ is structurally unsuitable for this purpose, I predicted that $y$ would be clean, and the agreement with the theory confirms this.”*
 
 ### MCS final results
 
