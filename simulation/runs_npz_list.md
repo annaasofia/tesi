@@ -7,6 +7,7 @@
     - [run 26 aug](#specifics-for-cry1_20260826_16npz-and-cry1_20260826_18npz)
 2. [SHORT CRYSTAL RUNS (2x35x4 mm3)](#short-crystal-2)
     - [run 1 - 01 sep](#specifics-for-cry1_20260901_17npz)
+3. [LONG CRYSTAL](#long-crystal---lxplus)
 
 $\to$ [run_simulation.py](run_simulation.py)
 | parameter | value |
@@ -51,7 +52,7 @@ attribute|what is it?|useful?
 
 instead data like `beta0`, `gamma0`, `energy0`, `maa0`, `q0`, `p0c`. `kinetic_energy0`, `rigidity0` are properties of the reference particle and so always the same 
 
-## short crystal 1
+## SHORT CRYSTAL 1
 
 | parameter | value |
 | --- | --- |
@@ -95,7 +96,7 @@ The great peak in $\Delta\theta=0$ is probably given by all of that particles th
 Variables `aper1` and `aper2` were changed to 50 mm.  
 !!! $\to$ actually 50 mm were giving me problems: too little particles surviving, so it was changed back to 100
 
-## short crystal 2
+## SHORT CRYSTAL 2
 **= same dimensions as TCCS =**
 | parameter | value |
 | --- | --- |
@@ -153,5 +154,70 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 respectively: 20k and 200k particles  
 parameters as before 
 
+## LONG CRYSTAL - LXPLUS
 
+To count how many files in a folder:
+``` bash
+ls -1q <folder>/cry2_* | wc -l
+```
+To see the structure of the files:
+``` bash
+tree -a -I '.git|node_modules'
+```
 
+```text
+.
+├── condor
+│   ├── backup
+|   |   ├── logs
+│   │   |   └── ...
+|   |   ├── output
+│   │   |   └── ...
+│   │   └── plots_cry2
+│   ├── logs
+|   |   ├── job_*.log
+|   |   ├── job_*.out
+│   │   └── job_*.err
+│   ├── output
+│   │   └── cry2_*.npz
+│   ├── htcondor.sub
+│   ├── job.py
+│   ├── run.sh
+│   ├── simulation_functions.py
+│   └── trackerInterface.gmad
+├── condor2
+│   ├── logs
+│   │   └── ...
+│   ├── output
+│   │   └── cry2_*.npz
+│   ├── htcondor.sub
+│   └── run.sh
+├── condor3
+│   ├── logs
+│   │   └── ...
+│   ├── output
+│   │   └── cry2_*.npz
+│   ├── htcondor.sub
+│   └── run.sh
+├── plot
+│   ├── merge_npz.py
+│   ├── plots_cry2
+│   │   └── *.png
+│   └── plot_simulation.py
+├── test
+│   ├── cry2_17.npz
+│   ├── job.py
+│   ├── __pycache__
+│   │   └── simulation_functions.cpython-312.pyc
+│   ├── simulation_functions.py
+│   └── trackerInterface.gmad
+├── simulation_functions.py
+└── trackerInterface.gmad
+
+17 directories, 26999 files
+```
+
+- condor/backup: 2
+- condor: 242
+- condor2: 1927
+- condor3: 1600

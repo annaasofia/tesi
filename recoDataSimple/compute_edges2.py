@@ -97,7 +97,7 @@ def extract_widths_from_h2(h2_lazy, range_fit_gaus=fit_range, min_entries=minimu
         f.SetRange(better_mean - 2.5 * better_sigma, better_mean + 2.5 * better_sigma)
         h1.Fit(f, "RQ0")
 
-        if (f.GetParError(2) / f.GetParameter(2)) > 0.2:
+        if (f.GetParError(2) / f.GetParameter(2)) > 0.1:
             continue
 
         # f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -range_fit_gaus, range_fit_gaus)
@@ -511,7 +511,8 @@ h2_x_val.SetTitle("Posizione X vs Deflessione #Delta#theta_{x}; x [mm]; #Delta#t
 # Estrazione e plot di DUE singole fettine (Una DENTRO e una FUORI dal cristallo)
 # Scegliamo due bin a caso basandoci sui centri Y trovati
 # bin_dentro = h2_y_val.GetXaxis().FindBin((y_lo + y_hi) / 2.0) # Esattamente a metà cristallo
-bin_dentro = h2_y_val.GetXaxis().FindBin(0)
+y1 = -2
+bin_dentro = h2_y_val.GetXaxis().FindBin(y1)
 bin_clamp = h2_y_val.GetXaxis().FindBin(-10)
 bin_fuori = h2_y_val.GetXaxis().FindBin(y_edges["e1"][0] - 1.0)
 # bin_fuori = h2_y_val.GetXaxis().FindBin(-12.0)
@@ -554,9 +555,15 @@ fig_out = plot_histo1d(
     save=f"plots_{file}_edges2/slice_outside_y.pdf", color='tab:pink', style='fill'
 )
 
-# Scegliamo un bin al centro del cristallo e uno 1.5 mm fuori dal bordo destro
-bin_dentro_x = h2_x_val.GetXaxis().FindBin((x_lo + x_hi) / 2.0) 
-bin_fuori_x  = h2_x_val.GetXaxis().FindBin(x_hi + 1.5)           
+# Scegliamo bin
+if file in [8430, 8431]:
+    x1, x2 = -0.92, -2
+elif file in [8650]:
+    x1, x2 = -0.17, -2
+elif file in [8655, 8656]:
+    x1, x2 = -0.68, -1
+bin_dentro_x = h2_x_val.GetXaxis().FindBin(x1) 
+bin_fuori_x  = h2_x_val.GetXaxis().FindBin(x2)           
 
 # Estraiamo gli istogrammi 1D
 h1_dentro_x = h2_x_val.ProjectionY("h1_dentro_x", bin_dentro_x, bin_dentro_x); h1_dentro_x.Rebin(3)
