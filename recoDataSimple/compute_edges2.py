@@ -5,14 +5,19 @@ import os
 import numpy as np
 from array import array
 import matplotlib.pyplot as plt
-from plotting_utils import plot_graph_with_fit, plot_histo1d
+from plotting_utils import plot_graph_with_fit, plot_histo1d, plot_histo2d
+from matplotlib.colors import ListedColormap
 
-
+base_viridis = plt.colormaps['viridis'].resampled(256)
+newcolors = base_viridis(np.linspace(0, 1, 256))
+newcolors[0, :] = np.array([1, 1, 1, 1]) # Il primo colore diventa bianco [RGBA]
+cmap_white_bg = ListedColormap(newcolors)
 
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
-file = 8430
+# file = 8430
+file = int(sys.argv[1])
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["data/recoDataSimple_8430_xtalMerging.root", "data/recoDataSimple_8431_xtalMerging.root"]
 
@@ -39,7 +44,6 @@ print(f"Analyzing {filename} ...")
 # FILTERING the data: single tracks and conversion from rad to urad
 df_phys = df.Filter("SingleTrack == 1")
 df_phys = df_phys.Define("thetaIn_x", "Tracks.thetaIn_x * 1e6")
-df_phys = df_phys.Filter(f"abs(thetaIn_x) < {theta_L}") 
 df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x) * 1e6")\
     .Define("Deltatheta_y", "(Tracks.thetaOut_y - Tracks.thetaIn_y) * 1e6")\
     .Define("DeltathetaErr_x", "sqrt(Tracks.thetaInErr_x * Tracks.thetaInErr_x + Tracks.thetaOutErr_x * Tracks.thetaOutErr_x) * 1e6")\
@@ -47,7 +51,7 @@ df_phys = df_phys.Define("Deltatheta_x", "(Tracks.thetaOut_x - Tracks.thetaIn_x)
 df_filtered = df_phys.Filter(f"abs(thetaIn_x) < {theta_L/2}")
 
 datasets_debug = {
-    "filtered": df_filtered,
+    # "filtered": df_filtered,
     "unfiltered": df_phys
 }
 
@@ -86,12 +90,15 @@ def extract_widths_from_h2(h2_lazy, range_fit_gaus=fit_range, min_entries=minimu
         better_sigma = f.GetParameter(2)
         better_mean = f.GetParameter(1)
 
-        if better_sigma < 1.0 or better_sigma > h1.GetRMS() * 3:
+        if better_sigma < 8.0 or better_sigma > h1.GetRMS() * 3:
             better_sigma = rough_sigma
             better_mean = h1.GetMean()
 
         f.SetRange(better_mean - 2.5 * better_sigma, better_mean + 2.5 * better_sigma)
         h1.Fit(f, "RQ0")
+
+        if (f.GetParError(2) / f.GetParameter(2)) > 0.2:
+            continue
 
         # f = ROOT.TF1(f"f_{h2v.GetName()}_{ix}", "gaus", -range_fit_gaus, range_fit_gaus)
         # f.SetParameters(h1.GetMaximum(), h1.GetMean(), max(h1.GetRMS(), 5.0))
@@ -273,18 +280,34 @@ def fit_four_step_edges(centers, sigmas, sigma_errs,
 # y_lo, y_lo_err = y_edges["e2"]
 # y_hi, y_hi_err = y_edges["e3"]
 
-x_guess = (-1.0, 1.0)
-y_guess = (-11.5, -6.0, 7.0, 8.5)
-
 # ===================== DIAGNOSTIC: filtered vs unfiltered slice grids =====================
 for label, current_df in datasets_debug.items():
     print(f"\nProcessing debug dataset: {label.upper()}")
 
-    h2_x_dbg = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,
-                                    slice_var="Tracks.d0_y", slice_min=-6.0, slice_max=7.0)
+    h2_simpleY = current_df.Histo2D((f"h2_thetaIn_vs_Deltathetay_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_y")
+    h2_simpleX = current_df.Histo2D((f"h2_thetaIn_vs_Deltathetax_{label}", "", 200, -150, 150, 100, -100, 100),"thetaIn_x", "Deltatheta_x")
+    plot_histo2d(
+        h2_simpleY,
+        xlabel=r"$\theta_{\mathrm{in},x}$ [$\mu$rad]",
+        ylabel=r"$\Delta\theta_y$ [$\mu$rad]",
+        zlabel="Entries",
+        title=rf"$\theta_{{\mathrm{{in}},x}}$ vs $\Delta\theta_y$",
+        cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/thetaInx_vs_Deltathetay_{label}.pdf")
+    plot_histo2d(
+        h2_simpleX,
+        xlabel=r"$\theta_{\mathrm{in},x}$ [$\mu$rad]",
+        ylabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        zlabel="Entries",
+        title=rf"$\theta_{{\mathrm{{in}},x}}$ vs $\Delta\theta_x$",
+        cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/thetaInx_vs_Deltathetax_{label}.pdf")
+
+    h2_x_dbg = book_scan_histogram(current_df, "Tracks.d0Out_x", "Deltatheta_y", scan_min=-3, scan_max=4, n_bins=140,
+                                    slice_var="Tracks.d0_y", slice_min=-2.0, slice_max=6.0)
     extract_and_plot_slices(h2_x_dbg, axis_label="x",
                              save=f"plots_{file}_edges2/slices_grid_x_{label}.pdf", rebin=3,
-                             xlabel_hist=r"$\Delta\theta_x$ [$\mu$rad]")
+                             xlabel_hist=r"$\Delta\theta_y$ [$\mu$rad]")
 
     if file in [8430, 8431, 8650]:
         scan_min_y, scan_max_y = -15, 9
@@ -297,6 +320,20 @@ for label, current_df in datasets_debug.items():
                              save=f"plots_{file}_edges2/slices_grid_y_{label}.pdf", rebin=3,
                              xlabel_hist=r"$\Delta\theta_y$ [$\mu$rad]")
 
+    h2_xy_defl = df_phys.Histo2D(("h2_xy_defl", "Deltatheta_x vs Deltatheta_y; #Delta#theta_x [#murad]; #Delta#theta_y [#murad]",
+                                  300, -500, 500, 300, -200, 200),"Deltatheta_x", "Deltatheta_y")
+    plot_histo2d(h2_xy_defl,
+        xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        ylabel=r"$\Delta\theta_y$ [$\mu$rad]",
+        zlabel="Entries",
+        title=rf"$\Delta\theta_x$ vs $\Delta\theta_y$",
+        cmap=cmap_white_bg,
+        save=f"{PLOT_DIR}/Deltathetax_vs_Deltathetay_{label}.pdf")
+
+x_guess = (-1.0, 1.0)
+y_guess = (-10, -5.0, 6.0, 10)
+
+# ===================== ITERATIVE FIT: until convergence =====================
 def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
     x_lo, x_hi = x_guess
     y_e1, y_e2, y_e3, y_e4 = y_guess
@@ -308,7 +345,7 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
     diverging_count = 0
 
     for it in range(max_iter):
-        h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_x", scan_min=-3, scan_max=4, n_bins=140,
+        h2_x = book_scan_histogram(df_phys, "Tracks.d0Out_x", "Deltatheta_y", scan_min=-3, scan_max=4, n_bins=140,
                                     slice_var="Tracks.d0_y", slice_min=y_e2, slice_max=y_e3)
         xc, xs, xe, _ = extract_widths_from_h2(h2_x)
         if len(xc) == 0:
@@ -320,10 +357,10 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
             print(f"iter {it}: x fit failed -- stopping, keeping last good state.")
             break
         if file in [8430, 8431, 8650]:
-            scan_min_y, scan_max_y = -15, 9
+            scan_min_y, scan_max_y = -15, 15
         elif file in [8655, 8656]:
             scan_min_y, scan_max_y = -15, 15
-        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y, n_bins=100,
+        h2_y = book_scan_histogram(df_phys, "Tracks.d0Out_y", "Deltatheta_y", scan_min=scan_min_y, scan_max=scan_max_y, n_bins=80,
                                     slice_var="Tracks.d0_x", slice_min=x_lo_new, slice_max=x_hi_new)
         yc, ys, yerr, _ = extract_widths_from_h2(h2_y)
         if len(yc) == 0:
@@ -380,13 +417,13 @@ def iterate_until_converged(df_phys, x_guess, y_guess, tol=1e-3, max_iter=8):
 
     return best_state
 
-x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y = iterate_until_converged(df_filtered, x_guess, y_guess)
+x_lo, x_hi, x_lo_err, x_hi_err, f_x, gr_x, h2_x, y_edges, y_levels, f_y, gr_y, h2_y = iterate_until_converged(df_phys, x_guess, y_guess)
 
 y_lo, y_lo_err = y_edges["e2"]
 y_hi, y_hi_err = y_edges["e3"]
 
-mean_res_x = df_filtered.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
-mean_res_y = df_filtered.Mean("DeltathetaErr_y").GetValue()
+mean_res_x = df_phys.Mean("DeltathetaErr_x").GetValue() #they are all the same but safer to take the mean of the distribution
+mean_res_y = df_phys.Mean("DeltathetaErr_y").GetValue()
 print("="*50)
 print(f"Mean resolution (x): {mean_res_x:.2f} urad - (y): {mean_res_y:.2f} urad")
 print(f"Mean resolution combined: {np.sqrt(mean_res_y**2 + mean_res_x**2):.2f} urad")
@@ -418,8 +455,8 @@ if theta_clamp_y > 0:
     err_theta_clamp_y = math.sqrt((deriv_clamp_y * err_clamp_y)**2 + (deriv_bsl_y_clamp * err_bsl_y)**2)
 
 # we are comapring the fitted erf transition point with the mean of the d0Err_x/y distributions, which is a good sanity check
-mean_d0err_x = df_filtered.Mean("Tracks.d0Err_x").GetValue()
-mean_d0err_y = df_filtered.Mean("Tracks.d0Err_y").GetValue()
+mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
+mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 
 print(f"fitted transition x = {f_x.GetParameter(4):.4f} ± {f_x.GetParError(4):.4f} mm vs mean d0Err_x = {mean_d0err_x:.4f} mm")
 print(f"fitted transition y = {f_y.GetParameter(7):.4f} ± {f_y.GetParError(7):.4f} mm vs mean d0Err_y = {mean_d0err_y:.4f} mm")
@@ -427,7 +464,7 @@ print("="*50)
 
 print("x:")
 print(f"\tbaseline sigma x  = {sigma_bsl_x:.2f} ± {f_x.GetParError(0):.2f} urad")
-print(f"\tjump sigma x      = {sigma_jump_x:.2f} ± {f_x.GetParError(1):.2f} urad")
+# print(f"\tjump sigma x      = {sigma_jump_x:.2f} ± {f_x.GetParError(1):.2f} urad")
 print(f"\tsigma mcs x = {theta_crystal_x:.2f} ± {err_theta_crystal_x:.2f} urad")
 print('='*50)
 print("y:")
@@ -446,7 +483,7 @@ fig_y = plot_graph_with_fit(
 
 fig_x = plot_graph_with_fit(
     gr_x, f_x,
-    xlabel="x [mm]", ylabel=r"$\sigma(\Delta\theta_x)$ [$\mu$rad]",
+    xlabel="x [mm]", ylabel=r"$\sigma(\Delta\theta_y)$ [$\mu$rad]",
     title="Local scattering width vs x",
     save=f"plots_{file}_edges2/scattering_width_vs_x.pdf"
 )
@@ -533,14 +570,14 @@ f_out_x = ROOT.TF1("f_out_x", "gaus", -fit_range, fit_range)
 h1_fuori_x.Fit(f_out_x, "RQ0")
 
 fig_in_x = plot_histo1d(
-    h1_dentro_x, f_in_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    h1_dentro_x, f_in_x, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
     title=(f"Crystal slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_dentro_x):.2f} mm)  "
            f"$\\sigma$ = {f_in_x.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_inside_x.pdf", color='tab:blue', style='fill'
 )
 
 fig_out_x = plot_histo1d(
-    h1_fuori_x, f_out_x, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+    h1_fuori_x, f_out_x, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
     title=(f"Outside slice (x = {h2_x_val.GetXaxis().GetBinCenter(bin_fuori_x):.2f} mm)  "
            f"$\\sigma$ = {f_out_x.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_outside_x.pdf", color='tab:pink', style='fill'
