@@ -218,6 +218,6 @@ tree -a -I '.git|node_modules'
 ```
 
 - condor/backup: 2
-- condor: 242
-- condor2: 1927
-- condor3: 1600
+- condor: 242 $\to$ 2'400'400 particles
+- condor2: 1927 $\to$  particles
+- condor3: 1600 $\to$  particles

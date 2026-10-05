@@ -41,6 +41,8 @@
     - [About MCS - adding different contributions](#about-mcs-adding-different-contributions)
     - [MCS final results](#mcs-final-results)
 14. [WEEK 14 (OCT 05)](#week-14)
+    - [Analysis and plots for the long crystal simulations](#analysis-and-plots-for-the-long-crystal-simulations)
+    - 
 
 ## WEEK 1  
 
@@ -709,6 +711,7 @@ If you know $\alpha$ at the crystal from the lattice design, you can compute the
 - about the spikes check if rebinning it changes, if it shows also on the "all" particles and if the remaining particles - the "not entered" - are compatible as the others
 
 **Digits:**  
+The golden rule of metrology (ISO/GUM) stipulates that the decimal places of the central value must align with the position of the first significant digit of the total uncertainty associated with that estimate.  
 Check the detector precision and change the uncertainty di conseguenza, not possible to have so many significance digits 0.1 um:
 - trackers have resolution of $7\,\mu\text{m}=0.007\,\text{mm}$
 - writing $0.0001\,\text{mm}$ is like claiming we have a sensibility 70 times smaller than it really is
@@ -727,7 +730,9 @@ $\to$ so in this case: **approximate everything to none decimal digits if in ura
 
 ```bash
 ssh lxplus.cern.ch
-cd /afs/cern.ch/work/a/amoro/public
+```
+```bash
+cd /afs/cern.ch/work/a/amoro/public/simulations
 ```
 ```bash
 ### set up BDSIM environment
@@ -847,13 +852,13 @@ python plot_simulation.py
 **$\to$ To save**  
 From local computer/terminal:
 ``` bash
-scp -r amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder> ./ #folder
-scp amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/<file.png> ./ #file
+scp -r amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder> ./ #folder
+scp amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/<file.png> ./ #file
 ```
 
 to instead **syncronize** (if you redo only certain plots, will copy only the changed ones):
 ``` bash
-rsync -avz amoro@lcplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/ ./<folder>/ #folder
+rsync -avz amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/ ./<folder>/ #folder
 ```
 
 ([UP](#traineeship-al-cern))
@@ -922,33 +927,63 @@ for v in 8430 8431 8650 8655 8656; do python compute_edges2.py "$v"; done
 
 run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
 -------- | --------------------- | --------------------- | -------------------------
-8430     |  0.0854 ± 0.0003      |  0.0010 ± 0.0000      | 0.1055 
-8431     |  0.0832 ± 0.0003      |  0.2623 ± 0.0103      | 0.1055
+8430     |  0.09 ± 0.01      |  0.29 ± 0.01      | 0.1055 
+8431     |  0.08 ± 0.01      |  0.28 ± 0.01      | 0.1055
 <!-- 8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055 -->
-8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
+<!-- 8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
 8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
-8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155 
+8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155  -->
 
 run [urad] | resolution | **x:** $\sigma_{bsl}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
 --         | --         | --                    |   --             | --                    | --             | --             
-8430       | 8.89       | 12.19 ± 0.00          |  64.88 ± 0.04    | 11.63 ± 0.00          | 62.60 ± 0.00   | 69.88 ± 0.04 
-8431       | 8.89       |  12.42 ± 0.01         | 65.04 ± 0.04     | 11.58 ± 0.09          | 62.79 ± 0.04   | 97.67 ± 0.67 
+8430       | 8.9       | 12.4 ± 0.1          |  65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 100.5 ± 0.7 
+8431       | 8.9       |  12.4 ± 0.1         | 65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 101.1 ± 0.7 
 <!-- 8430/8431  | 8.89       | 12.75 ± 0.00          |  78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49  -->
-8650       | 9.67       | 14.73 ± 0.01          |   95.02 ± 0.14   | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
+<!-- 8650       | 9.67       | 14.73 ± 0.01          |   95.02 ± 0.14   | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
 8655       | 9.67       | 14.74 ± 0.01          |  86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
-8656       | 9.67       | 14.76 ± 0.01          |  86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ?
+8656       | 9.67       | 14.76 ± 0.01          |  86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ? -->
+
+Even if the resolution is $\sim 7$ it is still correct to use decimal digits in the results if we are talking about the statistic uncertainty of the fit, since the estimate is accompanied by sufficient statistical data to justify that level of precision for the parameter.  
+$\delta\sigma \approx \frac{\sigma}{\sqrt{2N}}$ if $N \approx 10^6$ eventi, for $\sigma \approx 12$ we obtain $\delta\sigma \approx 12 / \sqrt{2 \cdot 10^6} \approx 0.01$.
 
 | **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
 |-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
-| **8430**        | 2.0911 ± 0.0004 | -1.0601 ± 0.0003 | 1.0310 ± 0.0002 | 13.8905 ± 0.0333 | -11.1363 ± 0.0095 | -5.4226 ± 0.0124 | 8.4680 ± 0.0309 |
-| **8431**        | 2.0901 ± 0.0004 | -1.0598 ± 0.0003 | 1.0303 ± 0.0003 | 13.7961 ± 0.0330 | -11.1507 ± 0.0095 | -5.3864 ± 0.0140 | 8.4097 ± 0.0299 |
-| **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
+| **8430**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.09 ± 0.04 | -11.07 ± 0.01 | -5.43 ± 0.01 | 8.66 ± 0.03 |
+| **8431**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.03 ± 0.04 | -11.08 ± 0.01 | -5.41 ± 0.01 | 8.62 ± 0.03 |
+<!-- | **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
 | **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
 | **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
-| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 |
+| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 | -->
 
 ([UP](#traineeship-al-cern))
 
 ## WEEK 14
+
+### Analysis and plots for the long crystal simulations
+
+Through `merge_npz.py` I merge all the runs of the three condors:  
+- condor: 242 runs $\to$ 2'400'400 particles
+- condor2: 1927 runs $\to$ 19'270'000 particles
+- condor3: 1600 runs $\to$ 16'000'000 particles
+
+**Key points for the analysis:**
+1. filter survived particles: select `state_out == 1`
+2. geometrical cut: i know for sure from the simulation script that the crystal is centered around zero so i can cut like a box - $(|x_{in}|<cry_x/2, |y_{in}|<cry_y/2)$
+3. critical angle selection: within $\pm 1/2 \,\theta_L$
+4. channeling analysis: gaus fit around the channeled peak and integral - remember to include in $N_{tot}$ also particles with the potential to be channeled that did not survive
+- multiple coulomb scattering
+- volume reflection fraction: near $\Delta\theta \approx -θ_L$ $\to$ $14\%$
+- dechanneling: histo of $\Delta\theta_x$ between 0 and the peak, on the attemped population
+- energy lost in the crystal
+
+**Results:**  
+||survived|geom hit|$\theta_b$ [urad]|$\sigma_\theta$ [urad]|$\epsilon_{eff}$|
+|--|--|--|--|--|--|
+|1|90.16%|99.1%|5999 ± 1|6.7 ± 0.1|(35.1± 0.1)%|
+|2|
+|3|
+
+
+
 
 ([UP](#traineeship-al-cern))
