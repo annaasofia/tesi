@@ -900,12 +900,12 @@ We expect that along $y$ we will have a cleaner measure, because channeling, vol
 
 #### My analysis:
 
-Analyze the tracking deflections across transverse coordinated to measure MCS.  
+Analyze the tracking deflections across transverse coordinates to measure MCS.  
 By mapping the local angular spread $\sigma(\Delta\theta)$ as a function of the transverse track position ($x$, $y$), material transitions appear as sharp steps convoluted with the telescope's spatial resolution, modeled as error functions.
 
 Channeling, volume reflection, and dechanneling are phenomena related to the orientation of the crystal planes, which in our crystal are cut or bent to deflect in the $x$-direction (this is why the channeling peak appears in $Δθ_x$, not $Δθ_y$). The $y$-direction is transverse to the bending plane, so it is not affected by these effects: it is sensitive only to isotropic MCS (projection of the same multiple Coulomb scattering) and to instrumental resolution.
 
-1. generate 2d distributions of track position versus delection angle distribution, to check if some cut/filter on the incoming angle is needed (we dont want VR or channeled particles).
+1. generate 2d distributions of track position versus deflection angle distribution, to check if some cut/filter on the incoming angle is needed (we dont want VR or channeled particles).
 2. to filter out channeled particles we simply select $\Delta\theta << \theta_b$, but unlike the short crystals there is no way to select single regions (VR, channeled, dechanneled, amorph) along $\Delta\theta_x$ and indeed the analysis using $\Delta\theta_x$ produces unreliable results (distributions not gaussian and not centered at zero and too large with respect to the theoretical expectations) - consistent with the expectation that no filtering of $θ_{in}$ can remove the VR.
 3. using $\Delta\theta_y$ because is not the axis along which channeling happens so the interactions should be pure MCS (isotropic) + detector resolution. 
 4. iterative gaussian slices: project each spatial bin of the crystal along the deflection axis ($\Delta\theta_y$), execute an initial gaussian fit within $\pm 2.5\times RMS$ and automatically refines the fit range to $\mu\pm2.5\sigma$ using fitted parameters (an rejecting unstable fits). 
@@ -980,8 +980,8 @@ Through `merge_npz.py` I merge all the runs of the three condors:
 ||survived|geom hit|$\theta_b$ [urad]|$\sigma_\theta$ [urad]|$\epsilon_{eff}$|
 |--|--|--|--|--|--|
 |1|90.16%|99.1%|5999 ± 1|6.7 ± 0.1|(35.1± 0.1)%|
-|2|
-|3|
+|2|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
+|3|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
 
 
 

@@ -501,5 +501,6 @@ efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
 print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
 
 angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(geom_data['theta_x_in'], geom_data['theta_x_out'], theta_L1, label='(geometrically selected particles)', popt=popt, fit_bin_width=fit_bin_width)
 angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
 
