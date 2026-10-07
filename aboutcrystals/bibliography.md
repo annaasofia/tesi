@@ -12,7 +12,7 @@
 [http://doi.org/10.1140/epjc/s10052-025-15092-y](http://doi.org/10.1140/epjc/s10052-025-15092-y)
 - [`cerncourier2026bentcrystals`] P. Hermes, I. Meinke, S. Redaelli, *New directions for bent crystals* Cern Courier (2026).  
 [https://cerncourier.com/new-directions-for-bent-crystals/](https://cerncourier.com/new-directions-for-bent-crystals/)
-- Aiola, S., et al. "*Progress towards the first measurement of charm baryon dipole moments.*" Physical Review D 103.7 (2021): 072003.  
+- [`aiola2021`] Aiola, S., et al. "*Progress towards the first measurement of charm baryon dipole moments.*" Physical Review D 103.7 (2021): 072003.  
 [https://doi.org/10.1103/PhysRevD.103.072003](https://doi.org/10.1103/PhysRevD.103.072003)  
 $\to$ citation [20] from European Physical Journal article
 - M. Garattini, *Overview of crystal performance at SPS-H8* (2018).  

@@ -42,6 +42,7 @@
     - [MCS final results](#mcs-final-results)
 14. [WEEK 14 (OCT 05)](#week-14)
     - [Analysis and plots for the long crystal simulations](#analysis-and-plots-for-the-long-crystal-simulations)
+    - [MCS in simulations](#mcs-in-simulations)
     - 
 
 ## WEEK 1  
@@ -519,7 +520,7 @@ cd /home/amoro/Desktop/bdsim/.install/lib/python
 export PYTHONPATH="$PWD:$PYTHONPATH"
 ```
 ```
-cd /home/amoro/Desktop/tesi/simulation/bdsim_crystal
+cd /home/amoro/Desktop/tesi/simulation/bdsim_shortcrystal
 ```
 ```
 ipython
@@ -868,7 +869,7 @@ rsync -avz amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/pl
 (from [week 12: to do about mcs (subsection)](#to-do-about-mcs))
 ### About MCS: adding different contributions
 
-We are looking at the distribution of the angular deflection, with mean always zero, and we are measuring its spread (of the distribution), which is the variance. In statistic, when you combine indipendent random variables, it is their variances that add together in quadrature.  
+We are looking at the distribution of the angular deflection, with mean always zero, and we are measuring its spread (of the distribution), which is the variance. In statistic, when you combine indipendent random variables, it is their variances that add together in quadrature. Indeed, what we are measuring is the convolution of two gaussians (widths get add in quuadrature, while means get simle sum).  
 Since the RMS angle ($\theta$) represents the standard deviation (the square root of the variance), the basic probability math dictates that the contributions combine via the square root of the sum of their squares. This is the definition of adding in quadrature. If you were to sum the RMS contributions linearly ($\theta_{total} = \theta_1 + \theta_2$), you would mathematically be assuming perfect positive correlation. Physically, this implies that if a particle scatters $1^\circ$ to the left in the first material, it "remembers" this and preferentially scatters to the left again in the next material, actively steering the particle in a continuous curve.  
 $$\sigma_{total}^2 = \sigma_1^2 + \sigma_2^2 + 2 \rho \sigma_1 \sigma_2$$
 $$\rho=0\,\,\text{(indipendent)}: \sigma_{total}^2 = \sigma_1^2 + \sigma_2^2$$
@@ -914,7 +915,7 @@ Channeling, volume reflection, and dechanneling are phenomena related to the ori
 7. because the spatial slice in $y$ depende on knowing the $x$-boundaries of the crystal and vice-versa, the function iterate until convergence (alternating convergence loop):
 $$\text{Slice } y \in [y_{e2}^{(k)}, y_{e3}^{(k)}] \longrightarrow \text{Fit } x\text{-edges} \longrightarrow \text{Slice } x \in [x_{\text{lo}}^{(k+1)}, x_{\text{hi}}^{(k+1)}] \longrightarrow \text{Fit } y\text{-edges}$$
 (checking physical consistency at every step and monitoring the maximum edge coordinate shift)  
-8. from the converged fits, we can extract $\theta_{MCS, crystal}$, $\theta_{MCS, air}$, and $\theta_{MCS, clamp}$.  
+8. from the converged fits, we can extract $\theta_{MCS, crystal}$, $\theta_{MCS, air}$, and $\theta_{MCS, clamp}$
 9. check on telescope tracking performance: the fitted transition parameter with the track impact parameter uncertainty
 
 $\to$ *“I identified that $x$ is structurally unsuitable for this purpose, I predicted that $y$ would be clean, and the agreement with the theory confirms this.”*
@@ -982,6 +983,25 @@ Through `merge_npz.py` I merge all the runs of the three condors:
 |1|90.16%|99.1%|5999 ± 1|6.7 ± 0.1|(35.1± 0.1)%|
 |2|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
 |3|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
+
+
+### MCS in simulations
+
+MCS in the simulation for Silicon is already taken into account - also nuclear interactions (for dechanneled and volume reflected particles - while for channeled particles their effect is given by the channeling model).  
+What I have to add manually is the **tracker uncertainty contribution**.
+
+#### How to apply the smear
+The measures are independent.  
+$\theta_{in} = \theta_{in} + N(0,\sigma_{in})$ with $\sigma_{in}^2=\sigma_{track}^2+\sigma^2_{air, up}$  
+$\to$ so for each particle I extract a casual number from a gaussian distribution (`rng.normal(0, s_in, theta_x_in.size)`)  
+$\theta_{out} = \theta_{out} + N(0,\sigma_{out})$ with $\sigma_{in}^2=\sigma_{track}^2+\sigma^2_{air, down}$  
+$\Delta\theta = \theta_{out}^{new} - \theta_{in}^{new}$ so $\sigma(\Delta\theta)\approx\sqrt{\sigma_{in}^2+\sigma_{out}^2}$  
+
+
+After, the Lindhard cut will be done on $\theta_{in}^{new}$, since $\sigma_{track}$ is compatible with $\theta_L$.
+
+About the air contribution:  
+the factor $\sqrt{x/X_0}$ sums exactly in quadrature (variances become linear in $x/X_0$), but the logarithmic correction does not. For two equal segments of length $x$, adding the two $θ_0$ values in quadrature instead of using a single $θ_0$ with $2x$ changes the logarithmic factor by $0.038\cdot\ln 2 ≈ 2.6\%$. 
 
 
 

@@ -11,7 +11,7 @@ drift = xt.Drift(length=1)
 line = xt.Line(elements=[drift])
 line.particle_ref = xt.Particles(mass0=xt.PROTON_MASS_EV, q0=1, energy0=180e9)
 
-bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("../bdsim_crystal/trackerInterface.gmad",
+bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("../bdsim_shortcrystal/trackerInterface.gmad",
                                                      referenceParticlePDG=2212,
                                                      referenceKineticEnergy=180e3, # MeV
                                                     relativeEnergyCut=0.1,
@@ -46,7 +46,7 @@ assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
 rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
 
-npart = 20000
+npart = 1000000
 samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
 x_impact  = samples[:, 0]
 y_impact  = samples[:, 1]
