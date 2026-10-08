@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20260918_10.npz'
+filename = 'cry1_20261008_16_pi.npz'
 data = np.load(filename)
-output_folder = 'plots_cry1'
+output_folder = 'plots_cry1_π'
 
     # cov_avg=cov_avg,
     # mu_avg=mu_avg,
@@ -194,7 +194,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
     graph[0].set_xlabel(rf'$\theta_{{in}}$ [${unit_str}$]')
-    graph[0].set_ylabel(rf'$\Delta\theta = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
+    graph[0].set_ylabel(rf'$\Delta\theta_x = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
     graph[0].set_title(f'Angular scan – {label}')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
@@ -203,9 +203,9 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     plot_bin_width = bins[1] - bins[0]
 
     graph[1].set_xlim(-75, 100)
-    graph[1].set_xlabel(rf'$\Delta\theta$ [${unit_str}$]')
+    graph[1].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
-    graph[1].set_title(rf'$\Delta\theta$ distribution – {label}')
+    graph[1].set_title(rf'$\Delta\theta_x$ distribution – {label}')
     graph[1].grid(alpha=0.3)
 
     if popt is not None and fit_bin_width is not None:
