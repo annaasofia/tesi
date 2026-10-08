@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20260918_10.npz'
+filename = 'cry1_20261007_20.npz'
 data = np.load(filename)
 output_folder = 'plots_cry1'
 

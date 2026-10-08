@@ -6,7 +6,10 @@
     - [run 26 aug](#specifics-for-cry1_20260826_15npz)
     - [run 26 aug](#specifics-for-cry1_20260826_16npz-and-cry1_20260826_18npz)
 2. [SHORT CRYSTAL RUNS (2x35x4 mm3)](#short-crystal-2)
-    - [run 1 - 01 sep](#specifics-for-cry1_20260901_17npz)
+    - [run 1 sep](#specifics-for-cry1_20260908_13npz)
+    - [run 2/3 sep](#specifics-for-cry1_20260914_18npz-and-cry1_20260916_11npz)
+    - [run 4/5 sep](#back-to-aper1100-cry1_20260917_16npz-and-cry1_20260918_10npz)
+    - [long run - oct](#specifics-for-cry2_20261007_20npz)
 3. [LONG CRYSTAL](#long-crystal---lxplus)
 
 $\to$ [run_simulation.py](run_simulation.py)
@@ -153,6 +156,11 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 ### back to `aper1=100`: `cry1_20260917_16.npz` and `cry1_20260918_10.npz`
 respectively: 20k and 200k particles  
 parameters as before 
+
+### specifics for `cry2_20261007_20.npz`
+
+$10^6$ particles
+
 
 ## LONG CRYSTAL - LXPLUS
 
