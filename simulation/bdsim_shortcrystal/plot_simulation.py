@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20261007_20.npz'
+filename = 'cry1_20260918_10.npz'
 data = np.load(filename)
 output_folder = 'plots_cry1'
 
@@ -92,6 +92,7 @@ theta_y_out_survived = theta_y_out[survived]
 zeta_out_survived = zeta_out[survived]; delta_out_survived = delta_out[survived]; ptau_out_survived = ptau_out[survived]
 
 assert np.all(sorted_idx_in[idx] == idx_out), "Mismatch nel matching particle_id in/out!"
+assert np.all(sorted_ids[pos] == idx_lost), "Mismatch id in/out per le perse!"
 
 dtheta_x = theta_x_out_survived - theta_x_in_survived
 dtheta_y = theta_y_out_survived - theta_y_in_survived
@@ -113,8 +114,8 @@ survived_data = {
 print(f"Total particles: {len(x_in)}")
 print(f"Survived particles: {np.sum(survived)}")
 
-theta_L1 = 13.228e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
-theta_L2 = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
+theta_L1 = 13.228e-6  # rad Lindhard critical angle for Si(110) at 180 GeV - short
+# theta_L2 = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV - long
 
 def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
@@ -183,10 +184,12 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=100, cmap='viridis', norm=LogNorm())
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm())
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-150, 150)
+    if label != '($θ_b =$ 50 µrad)':
+        graph[0].set_xlim(-150, 150)
     # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
     graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
@@ -196,7 +199,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color='darkorange')
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=500, color='darkorange')
     plot_bin_width = bins[1] - bins[0]
 
     graph[1].set_xlim(-75, 100)
@@ -273,7 +276,7 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     plt.savefig(f'{output_folder}/ch_footprint.pdf')
     plt.show(block=False)
 
-def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x', n_slices=50, distance_unit='mm', 
+def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='y', n_slices=50, distance_unit='mm', 
                   angle_unit='urad', fit_window=None, label='', min_per_bin=50, other_pos_in=None, other_edge=None):
 
     scale = 1e6 if angle_unit == 'urad' else 1.0
@@ -461,9 +464,9 @@ beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particle
 ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle)
 
 pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
-    pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_x'], crystal_edge=crystal_x,
+    pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_x,
     other_pos_in=survived_data['y_in'], other_edge=crystal_y,
-    plane_label='x', dtheta_label='x', n_slices=50, fit_window=30, label='- x plane')
+    plane_label='x', dtheta_label='y', n_slices=50, fit_window=30, label='- x plane')
 
 pos_y, sigmas_y, errs_y, n_y = mcs_edge_scan(
     pos_in=survived_data['y_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_y,
@@ -489,8 +492,8 @@ attempted_ids = particle_id_in[attempted_mask]
 n_tot_correct = attempted_mask.sum()
 
 # recap
-lost_mask = ~np.isin(attempted_ids, idx_out)
-n_lost_attempted = lost_mask.sum()
+lost_attempted = ~np.isin(attempted_ids, idx_out)
+n_lost_attempted = lost_attempted.sum()
 print(f"Persi tra i tentativi geometrici+Lindhard: {n_lost_attempted}/{n_tot_correct} "
       f"({n_lost_attempted/n_tot_correct*100:.1f}%)")
 
@@ -501,6 +504,6 @@ efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
 print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
 
 angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(geom_data['theta_x_in'], geom_data['theta_x_out'], theta_L1, label='(geometrically selected particles)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(geom_data['theta_x_in'], geom_data['theta_x_out'], theta_L1, label='(geometrically selected)', popt=popt, fit_bin_width=fit_bin_width)
 angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
 

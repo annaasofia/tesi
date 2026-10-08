@@ -600,16 +600,23 @@ what i can do, is study the beam distribution from a run of real data, so the im
 $\to$ in principel yes, but i need to be careful:  
 fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
 
-*Covariance matrix:*  
-[[ 1.          0.00712136  0.15318277  0.01146312]  
- [ 0.00712136  1.         -0.08064218  0.08658571]  
- [ 0.15318277 -0.08064218  1.          0.08633029]  
- [ 0.01146312  0.08658571  0.08633029  1.        ]]  
+*8430 Correlation matrix:*
+ [[ 1.          0.00249682  0.56065383  0.04752554]
+ [ 0.00249682  1.         -0.04600791  0.34909413]
+ [ 0.56065383 -0.04600791  1.          0.07679966]
+ [ 0.04752554  0.34909413  0.07679966  1.        ]]
 
-- $x-y$: correlation 0.007 $\to$ negligible
-- $x-\theta_x$: correlation 0.153 $\to$ NOT negligible
-- $y-\theta_y$: correlation 0.087 $\to$ small - but in other runs is ~0.19 $\to$ NOT negligible
-- $\theta_x-\theta_y$: correlation 0.086 $\to$ small - can be statistic rumor
+*8430 Covariance matrix:*
+ [[   4.74346824    0.01606491   89.41765855    7.18923536]
+ [   0.01606491    8.72738918   -9.9530266    71.62957414]
+ [  89.41765855   -9.9530266  5362.42227158  390.61366706]
+ [   7.18923536   71.62957414  390.61366706 4824.08887831]]
+
+
+- $x-y$: correlation 0.0025 $\to$ negligible
+- $x-\theta_x$: correlation 0.56 $\to$ NOT negligible
+- $y-\theta_y$: correlation 0.35 $\to$ NOT negligible
+- $\theta_x-\theta_y$: correlation 0.076 $\to$ small - can be statistic rumor
 
 It is correct to have positive correlation between the two, a greater angle corresponds to a greater incoming position.
 

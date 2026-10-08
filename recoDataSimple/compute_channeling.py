@@ -14,7 +14,7 @@ ROOT.gStyle.SetPalette(ROOT.kBird)
 
 def main():
 
-    file = 8430
+    file = int(sys.argv[1])
     parameters = chfun.get_run_parameters(file)
     filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
 
@@ -35,6 +35,25 @@ def main():
     df_phys = chfun.filter1_initial(df)
     count_1 = df_phys.Count()
     df_singletrack = df_phys  # kept for systematic variants (pre-spatial-cut)
+
+    # ==========================================
+    data_dict = df_singletrack.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
+    x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
+    thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
+    data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
+
+    # check correlation
+    corr_i = np.corrcoef(data_matrix)
+    print("\nCorrelation matrix:\n", corr_i)
+    # check covariance
+    cov_i = np.cov(data_matrix)
+    n_i = data_matrix.shape[1]  # numero di eventi in questo run
+    np.set_printoptions(precision=8, suppress=True)
+    print("Covariance matrix:\n", cov_i)
+    print(f"Number of events in this run: {n_i}")
+    chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
+    chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", tag2="all")
+    # ==========================================
 
     # FILTER 2: nominal spatial cut
     x_cut_margin = 0.2
@@ -57,27 +76,9 @@ def main():
     chfun.plot_impact_vs_angle(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     chfun.plot_impact(df_phys, parameters, variable="angles", tag="nominal")
     chfun.plot_impact(df_phys, parameters, variable="positions", tag="nominal", xlim=(x_min, x_max), ylim=(y_min, y_max))
-    chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
-    chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", xlim=(-3, 3), ylim=(y_min, y_max), tag2="all")
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")
-
-    data_dict = df_phys.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
-
-    x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
-    thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
-    data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
-
-    # check correlation
-    corr_i = np.corrcoef(data_matrix)
-    print("\nCorrelation matrix:\n", corr_i)
-    # check covariance
-    cov_i = np.cov(data_matrix)
-    n_i = data_matrix.shape[1]  # numero di eventi in questo run
-    np.set_printoptions(precision=8, suppress=True)
-    print("Covariance matrix:\n", cov_i)
-    print(f"Number of events in this run: {n_i}")
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()

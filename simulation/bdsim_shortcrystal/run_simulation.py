@@ -77,7 +77,7 @@ particles10 = particles1.copy()
 bds_link.TrackXSuite(0,'crystaldeflector',particles1,180e3)
 
 timestamp = datetime.now().strftime('%Y%m%d_%H')
-outfile = f'cry2_{timestamp}.npz'
+outfile = f'cry1_{timestamp}.npz'
 
 np.savez(outfile,
     # input
@@ -99,12 +99,7 @@ np.savez(outfile,
     pdg_id_in=particles10.pdg_id, pdg_id_out=particles1.pdg_id,
 
     # metadata beam
-    # bending_angle=50e-6,
-    # crystal_length=cry1.l,
-    # crystal_x=cry1.xsize,
-    # crystal_y=cry1.ysize,
-    # crystal_material=cry1.material,
-    bending_angle=6e-3,
+    bending_angle=50e-6,
     crystal_length=cry1.l,
     crystal_x=cry1.xsize,
     crystal_y=cry1.ysize,

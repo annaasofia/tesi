@@ -135,14 +135,10 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 
 |*Results (8430 run):* ||$\mu$|$\sigma$|
 |--|--|--|--|
-|after spatial cut | $\theta_x$ | -2.21 $\pm$ 0.01 | 21.83 $\pm$ 0.01|
-|            | $\theta_y$ | 8.09 $\pm$ 0.02 | 37.87 $\pm$ 0.02|
 |all         | $\theta_x$ | -0.93 $\pm$ 0.01 | 26.92 $\pm$ 0.01|
 |            | $\theta_y$ | 6.79 $\pm$ 0.01 | 40.22 $\pm$ 0.02|
-|after spatial cut | $x$ | -0.26 $\pm$ 0.01 | 2.34 $\pm$ 0.01|
-|            | $y$ | 0.65 $\pm$ 0.00 | 2.33 $\pm$ 0.00|
-|all         | $x$ | -0.12 $\pm$ 0.00 | 2.20 $\pm$ 0.00|
-|            | $y$ | 0.64 $\pm$ 0.00 | 2.34 $\pm$ 0.00|
+|all         | $x$ | -0.21 $\pm$ 0.00 | 2.30 $\pm$ 0.00|
+|            | $y$ | 0.60 $\pm$ 0.00 | 2.40 $\pm$ 0.00|
 
 | parameter | value |
 | --- | --- |
@@ -157,9 +153,43 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 respectively: 20k and 200k particles  
 parameters as before 
 
-### specifics for `cry2_20261007_20.npz`
+### specifics for `cry1_20261008_.npz` and `cry1_20261008_.npz`
 
-$10^6$ particles
+#### PROTONS
+$10^6$ protons $p$  
+```text
+Design particle properties: 
+Particle:       "proton"
+Mass:            0.938272013 GeV
+Charge:          1 e
+Total Energy:    180.002445412 GeV
+Kinetic Energy:  179.064173399 GeV
+Momentum:        180 GeV
+Gamma:           191.844628123
+Beta:            0.999986414561
+FFact:           1
+Rigidity (Brho): 600.415371357 T*m
+```
+$\to$ plots in [plots_cry1](./bdsim_shortcrystal/plots_cry1/)  
+
+#### PIONS
+$10^6$ pions $\pi^+$  
+```text
+Design particle properties: 
+Particle:       "pi+"
+Mass:            0.1395701 GeV
+Charge:          1 e
+Total Energy:    180.000054111 GeV
+Kinetic Energy:  179.860484011 GeV
+Momentum:        180 GeV
+Gamma:           1289.67489534
+Beta:            0.999999699386
+FFact:           1
+Rigidity (Brho): 600.415371357 T*m
+```
+changing also [trackerInterface_pi.gmad](./bdsim_shortcrystal/trackerInterface_pi.gmad)
+$\to$ plots in [plots_cry1_π](./bdsim_shortcrystal/plots_cry1_π/)
+
 
 
 ## LONG CRYSTAL - LXPLUS
