@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 
-filename = 'cry1_20261008_16_pi.npz'
+# filename = 'cry1_20261008_16_pi.npz'
+filename = 'cry1_20261008_20.npz'
 data = np.load(filename)
-output_folder = 'plots_cry1_π'
+# output_folder = 'plots_cry1_π'
+output_folder = 'plots_cry1'
 
     # cov_avg=cov_avg,
     # mu_avg=mu_avg,

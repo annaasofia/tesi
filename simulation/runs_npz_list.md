@@ -153,7 +153,7 @@ Now instead we are trying to reproduce the gaussian feature of the beam. From re
 respectively: 20k and 200k particles  
 parameters as before 
 
-### specifics for `cry1_20261008_.npz` and `cry1_20261008_16_pi.npz`
+### specifics for `cry1_20261008_20.npz` and `cry1_20261008_16_pi.npz`
 
 #### PROTONS
 $10^6$ protons $p$  
