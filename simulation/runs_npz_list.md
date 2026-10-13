@@ -255,7 +255,15 @@ tree -a -I '.git|node_modules'
 17 directories, 26999 files
 ```
 
+folder with wrong crystal width and wrong beam profile:  
 - condor/backup: 2
 - condor: 242 $\to$ 2'400'400 particles
 - condor2: 1927 $\to$  particles
 - condor3: 1600 $\to$  particles
+
+correct beam profile and correct crystal width ($x$):
+- condor4: $\to$
+- condor5: $\to$
+
+ultra-correct beam profile (subtracting $9^2 \,\mu\text{rad}^2$ from angular diagonal of covariance matrix):
+- condor6: $\to$

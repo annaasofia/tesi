@@ -42,8 +42,10 @@
     - [MCS final results](#mcs-final-results)
 14. [WEEK 14 (OCT 05)](#week-14)
     - [Analysis and plots for the long crystal simulations](#analysis-and-plots-for-the-long-crystal-simulations)
+15. [WEEK 15 (12 OCT)](#week-15)
     - [MCS in simulations](#mcs-in-simulations)
-    - 
+    - []()
+16. [WEEK 16 (19 OCT)](#week-16)
 
 ## WEEK 1  
 
@@ -600,17 +602,28 @@ what i can do, is study the beam distribution from a run of real data, so the im
 $\to$ in principel yes, but i need to be careful:  
 fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
 
-*8430 Correlation matrix:*
- [[ 1.          0.00249682  0.56065383  0.04752554]
- [ 0.00249682  1.         -0.04600791  0.34909413]
- [ 0.56065383 -0.04600791  1.          0.07679966]
- [ 0.04752554  0.34909413  0.07679966  1.        ]]
+|                  | $\mu_x$ [mm]     | $\sigma_x$  | $\mu_y$      | $\sigma_y$  | $\mu_{\theta,x}$ [urad] | $\sigma_{\theta,x}$ | $\mu_{\theta,y}$ | $\sigma_{\theta,y}$ |
+|------------------|--------------|-------------|--------------|-------------|------------------|---------------------|------------------|---------------------|
+| **8430**             | -0.21 ± 0.01 | 2.32 ± 0.01 | 0.60 ± 0.01 | 2.40 ± 0.01 | -0.93 ± 0.01     | 26.92 ± 0.01        | 6.79 ± 0.01      | 40.22 ± 0.01        |
+| **8431**             | -0.35 ± 0.01 | 2.37 ± 0.01 | 0.66 ± 0.01 | 2.40 ± 0.01 | -1.61 ± 0.01     | 27.03 ± 0.01        | 8.18 ± 0.01      | 40.21 ± 0.01        |
+| **8650**             | -0.60 ± 0.01 | 2.51 ± 0.01 | 0.55 ± 0.01 | 2.62 ± 0.01 | -2.79 ± 0.01     | 29.67 ± 0.01        | 6.05 ± 0.02      | 43.14 ± 0.01        |
+| **8655**             | -0.42 ± 0.01 | 2.22 ± 0.01 | -0.02 ± 0.01 | 2.53 ± 0.01 | -1.74 ± 0.01     | 29.48 ± 0.01        | -1.03 ± 0.01     | 42.27 ± 0.01        |
+| **8656**             | -0.38 ± 0.01 | 2.23 ± 0.01 | -0.04 ± 0.01 | 2.53 ± 0.01 | -1.38 ± 0.01     | 29.51 ± 0.01        | -0.78 ± 0.01     | 42.29 ± 0.01        |
+| **weighted average** | -0.37859184  | 2.24475345  | 0.36168281   | 3.07738674  | -1.62837008      | 72.30315606         | 4.15591296       | 71.04689837         |
 
-*8430 Covariance matrix:*
- [[   4.74346824    0.01606491   89.41765855    7.18923536]
- [   0.01606491    8.72738918   -9.9530266    71.62957414]
- [  89.41765855   -9.9530266  5362.42227158  390.61366706]
- [   7.18923536   71.62957414  390.61366706 4824.08887831]]
+|*8430 Correlation matrix:*  ||||
+|--|--|--|--|
+|[ 1.         | 0.00249682  | 0.56065383  | 0.04752554]  |
+|[ 0.00249682 |  1.         | -0.04600791 |  0.34909413] |
+|[ 0.56065383 | -0.04600791 |  1.         |  0.07679966] |
+|[ 0.04752554 |  0.34909413 |  0.07679966 |  1.        ] |
+
+|*8430 Covariance matrix:*||||
+|--|--|--|--|
+|[   4.74346824 |   0.01606491 |   89.41765855 |    7.18923536]|
+|[   0.01606491 |   8.72738918 |   -9.9530266  |   71.62957414]|
+|[  89.41765855 |  -9.9530266  | 5362.42227158 |  390.61366706]|
+|[   7.18923536 |  71.62957414 |  390.61366706 | 4824.08887831]|
 
 
 - $x-y$: correlation 0.0025 $\to$ negligible
@@ -860,8 +873,8 @@ python plot_simulation.py
 **$\to$ To save**  
 From local computer/terminal:
 ``` bash
-scp -r amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder> ./ #folder
-scp amoro@lxplus.cern.ch: /afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/<file.png> ./ #file
+scp -r amoro@lxplus.cern.ch:/afs/cern.ch/work/a/amoro/public/simulations/plot/<folder> ./ #folder
+scp amoro@lxplus.cern.ch:/afs/cern.ch/work/a/amoro/public/simulations/plot/<folder>/<file.png> ./ #file
 ```
 
 to instead **syncronize** (if you redo only certain plots, will copy only the changed ones):
@@ -991,6 +1004,9 @@ Through `merge_npz.py` I merge all the runs of the three condors:
 |2|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
 |3|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
 
+([UP](#traineeship-al-cern))
+
+## WEEK 15
 
 ### MCS in simulations
 
@@ -998,10 +1014,25 @@ MCS in the simulation for Silicon is already taken into account - also nuclear i
 What I have to add manually is the **tracker uncertainty contribution**.
 
 #### How to apply the smear
+$\to$ doubt: isn't the effect already taken into account in the beam distribution i got from real data?  
+Yes, but still the single values of the angles in the simulation does not have a error value, so the addition is necessary.  
+We can subtract the $\sigma_{track}$ from the incoming beam distribution (but we would need to re-run the simulation) and then reapply the error, if we don't do it, it shouldn't be a big problem: the contribution of the effect is:
+- $θ_x: \sqrt{(27² − 9²)} ≈ 25.5 µrad$ vs $27$, $\sim 5\%$ less
+- $θ_y: \sqrt{(40² − 9²)} ≈ 39 µrad$ vs $40$, $\sim 2.5\%$ less
+
+If we want to be correct we just subtract $9^2 \,\mu\text{rad}^2$ from angular diagonal of covariance matrix before the beam gets generated:  
+```python
+cov_true = cov_avg.copy()
+cov_true[2, 2] -= (9e-6)**2     # theta_x
+cov_true[3, 3] -= (9e-6)**2     # theta_y
+assert np.linalg.eigvalsh(cov_true).min() > 0
+samples = rng.multivariate_normal(mean=mu_avg, cov=cov_true, size=npart)
+```
+
 The measures are independent.  
 $\theta_{in} = \theta_{in} + N(0,\sigma_{in})$ with $\sigma_{in}^2=\sigma_{track}^2+\sigma^2_{air, up}$  
 $\to$ so for each particle I extract a casual number from a gaussian distribution (`rng.normal(0, s_in, theta_x_in.size)`)  
-$\theta_{out} = \theta_{out} + N(0,\sigma_{out})$ with $\sigma_{in}^2=\sigma_{track}^2+\sigma^2_{air, down}$  
+$\theta_{out} = \theta_{out} + N(0,\sigma_{out})$ with $\sigma_{out}^2=\sigma_{track}^2+\sigma^2_{air, down}$  
 $\Delta\theta = \theta_{out}^{new} - \theta_{in}^{new}$ so $\sigma(\Delta\theta)\approx\sqrt{\sigma_{in}^2+\sigma_{out}^2}$  
 
 
@@ -1010,7 +1041,15 @@ After, the Lindhard cut will be done on $\theta_{in}^{new}$, since $\sigma_{trac
 About the air contribution:  
 the factor $\sqrt{x/X_0}$ sums exactly in quadrature (variances become linear in $x/X_0$), but the logarithmic correction does not. For two equal segments of length $x$, adding the two $θ_0$ values in quadrature instead of using a single $θ_0$ with $2x$ changes the logarithmic factor by $0.038\cdot\ln 2 ≈ 2.6\%$. 
 
+**using:**  
+- $\theta_{in} = \theta_{out} = 9\,\mu\text{rad}$
+- $L_{air}=0$
+- seed $=83$
 
+
+([UP](#traineeship-al-cern))
+
+## WEEK 16
 
 
 ([UP](#traineeship-al-cern))

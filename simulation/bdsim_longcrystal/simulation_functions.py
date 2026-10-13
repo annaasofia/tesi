@@ -76,6 +76,12 @@ def mean_vector():
 
 if __name__ == "__main__":
     mu, cov = combine()
+    sig = np.sqrt(np.diag(cov))
+
     print("mu   [mm, mm, urad, urad]:", mu)
+    print("sigma[mm, mm, urad, urad]:", sig)
     print("sigma[mm, mm, urad, urad]:", np.sqrt(np.diag(cov)))
     print("min eigenvalue (SI):", cov_matrix()[1].min())
+
+    corr = cov / np.outer(sig, sig)
+    print("corr:\n", corr)

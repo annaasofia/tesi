@@ -1,11 +1,22 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
+import os
 
-filename = 'cry1_20260918_10.npz'
+viridis_yellow = "#fde725"
+viridis_green = "#5ec962"
+viridis_teal = "#21918c"
+viridis_blue = "#3b528b"
+viridis_purple = "#440154"
+
+filename = './runs/cry2_merged1.npz'
 data = np.load(filename)
-output_folder = 'plots_cry1'
+
+output_folder = './plots'
+os.makedirs(output_folder, exist_ok=True)
 
     # cov_avg=cov_avg,
     # mu_avg=mu_avg,
@@ -37,13 +48,14 @@ label = str(data['label'])
 # LOST PARTICLES
 # where lost particles got lost?
 print('='*50)
+print("Particles status analysis:")
 unique_states, counts = np.unique(state_out, return_counts=True)
 for s, c in zip(unique_states, counts):
-    print(f"state={s}: {c} particles")
-lost_333 = state_out == -333
-elements, counts = np.unique(at_element_out[lost_333], return_counts=True)
-for e, c in zip(elements, counts):
-    print(f"at_element={e}: {c} lost particles at -333")
+    print(f"\tstate={s}: {c} particles")
+# lost_333 = state_out == -333
+# elements, counts = np.unique(at_element_out[lost_333], return_counts=True)
+# for e, c in zip(elements, counts):
+#     print(f"\tat_element={e}: {c} lost particles at -333")
 
 # where they would have been?
 particle_id_in_valid = data['particle_id_in'][data['state_in'] == 1]
@@ -60,8 +72,8 @@ x_in_lost = x_in_valid[order][pos]
 y_in_lost = y_in_valid[order][pos]
 
 geometric_hit_lost = (np.abs(x_in_lost) < crystal_x/2) & (np.abs(y_in_lost) < crystal_y/2)
-print(f"Frazione delle perse che avrebbe comunque colpito il cristallo: {geometric_hit_lost.mean()*100:.1f}%")
-print(f"Numero di particelle perse che avrebbero dovuto MANCARE il cristallo: {(~geometric_hit_lost).sum()}")
+# print(f"Frazione delle perse che avrebbe comunque colpito il cristallo: {geometric_hit_lost.mean()*100:.1f}%")
+# print(f"Numero di particelle perse che avrebbero dovuto MANCARE il cristallo: {(~geometric_hit_lost).sum()}")
 
 # SURVIVED PARTICLES
 valid_in = state_in == 1
@@ -111,10 +123,50 @@ survived_data = {
 }
 
 print(f"Total particles: {len(x_in)}")
-print(f"Survived particles: {np.sum(survived)}")
+print(f"Survived particles: {np.sum(survived)} = {np.sum(survived)/len(x_in)*100:.2f}%")
 
-theta_L1 = 13.228e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
-theta_L2 = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
+theta_L = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
+
+# ---------- DETECTOR SMEAR (dataset parallelo, gli originali restano intatti) ----------
+rng_smear = np.random.default_rng(seed=83)
+
+def highland(p_GeV, x_over_X0, beta=1.0, z=1):
+    if x_over_X0 <= 0:
+        return 0.0
+    return (13.6e-3 / (beta * p_GeV)) * z * np.sqrt(x_over_X0) \
+           * (1 + 0.038 * np.log(x_over_X0 * z**2 / beta**2))
+
+X0_air      = 303.9      # m
+L_up        = 0.0        # m aria tra ultimo piano a monte e cristallo  
+L_down      = 0.0        # m aria tra cristallo e primo piano a valle   
+sigma_track = 9e-6       # rad                                          
+p_GeV       = p0c / 1e9
+
+s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
+s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
+
+# 1) θ_in misurato per TUTTE le particelle valide (un'estrazione sola)
+theta_x_in_meas_all = theta_x_in + rng_smear.normal(0, s_in, theta_x_in.size)
+theta_y_in_meas_all = theta_y_in + rng_smear.normal(0, s_in, theta_y_in.size)
+
+# 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
+theta_x_in_meas_surv = theta_x_in_meas_all[order_in][idx]
+theta_y_in_meas_surv = theta_y_in_meas_all[order_in][idx]
+
+# 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
+theta_x_out_meas_surv = theta_x_out_survived + rng_smear.normal(0, s_out, theta_x_out_survived.size)
+theta_y_out_meas_surv = theta_y_out_survived + rng_smear.normal(0, s_out, theta_y_out_survived.size)
+
+survived_data_smeared = dict(survived_data)
+survived_data_smeared.update({
+    'theta_x_in':  theta_x_in_meas_surv,
+    'theta_y_in':  theta_y_in_meas_surv,
+    'theta_x_out': theta_x_out_meas_surv,
+    'theta_y_out': theta_y_out_meas_surv,
+    'dtheta_x':    theta_x_out_meas_surv - theta_x_in_meas_surv,
+    'dtheta_y':    theta_y_out_meas_surv - theta_y_in_meas_surv,
+})
+print(f"Smear: s_in = {s_in*1e6:.2f} urad, s_out = {s_out*1e6:.2f} urad")
 
 def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
@@ -173,7 +225,6 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     label = label[2:]
     plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.png')
     plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.pdf')
-    plt.show(block=False)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
@@ -181,49 +232,65 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     dtheta_x = theta_x_out - theta_x_in
 
-    fig, graph = plt.subplots(1, 2, figsize=(12, 5))
+    fig, graph = plt.subplots(1, 3, figsize=(18, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=100, cmap='viridis', norm=LogNorm())
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm())
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
-    graph[0].set_ylim(-150, 150)
+    graph[0].set_ylim(-750, 6200)
+    if label=='':
+        graph[0].set_xlim(-7, 7)
     # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
     graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
     graph[0].set_xlabel(rf'$\theta_{{in}}$ [${unit_str}$]')
-    graph[0].set_ylabel(rf'$\Delta\theta = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
-    graph[0].set_title(f'Angular scan – {label}')
+    graph[0].set_ylabel(rf'$\Delta\theta_x = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
+    graph[0].set_title(f'Angular scan {label}')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color='darkorange')
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color=viridis_green)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=7250, color=viridis_green)
     plot_bin_width = bins[1] - bins[0]
+    plot_bin_width2 = bins2[1] - bins2[0]
 
-    graph[1].set_xlim(-75, 100)
-    graph[1].set_xlabel(rf'$\Delta\theta$ [${unit_str}$]')
+    graph[1].set_xlim(-750, 6200)
+    graph[1].set_yscale('log')
+    graph[1].set_ylim(500, counts.max()*1.2)
+    graph[1].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
-    graph[1].set_title(rf'$\Delta\theta$ distribution – {label}')
+    graph[1].set_title(rf'$\Delta\theta_x$ distribution {label}')
     graph[1].grid(alpha=0.3)
+
+    graph[2].set_xlim(5950, 6050)
+    graph[2].set_ylim(0, counts2.max()*1.2)
+    graph[2].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
+    graph[2].set_ylabel('Counts')
+    graph[2].set_title(rf'$\Delta\theta_x$ distribution (zoom)')
+    graph[2].grid(alpha=0.3)
 
     if popt is not None and fit_bin_width is not None:
         A, mu, sigma = popt
 
         A_scaled = A * (plot_bin_width / (fit_bin_width * scale))
+        A_scaled2 = A * (plot_bin_width2 / (fit_bin_width * scale))
         # Attenzione: mu e sigma dal fit sono in radianti, mentre il grafico è in urad!
         # Dobbiamo moltiplicarli per 'scale'
         mu_scaled = mu * scale
         sigma_scaled = sigma * scale
 
-        x_curve = np.linspace(dtheta_x.min() * scale, dtheta_x.max() * scale, 1000)
-        y_curve = gaussian(x_curve, A_scaled, mu_scaled, sigma_scaled)
-        graph[1].plot(x_curve, y_curve, color='red', lw=2)
+        x_curve_wide = np.linspace(dtheta_x.min() * scale, dtheta_x.max() * scale, 2000)
+        x_curve_zoom = np.linspace(5950, 6050, 2000)
+
+        # graph[1].plot(x_curve_wide, gaussian(x_curve_wide, A_scaled, mu_scaled, sigma_scaled), color='red', lw=2)
+        graph[2].plot(x_curve_zoom, gaussian(x_curve_zoom, A_scaled2, mu_scaled, sigma_scaled), color='red', lw=2)
+
 
     fig.tight_layout()
     if label == '(survived particles)': label = 'survived'
-    if label == '($θ_b =$ 50 µrad)': label = None
+    if label == '': label = 'final'
     plt.savefig(f'{output_folder}/angular_scan_{label}.png')
     plt.savefig(f'{output_folder}/angular_scan_{label}.pdf')
-    plt.show(block=False)
 
 def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
     distance_scale = 1e3 if distance_unit == 'mm' else 1.0
@@ -234,44 +301,57 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     x_out_channeled = x_out[channeled_mask]
     y_out_channeled = y_out[channeled_mask]
 
-    fig, graph = plt.subplots(2, 2, figsize=(10, 10))
+    fig = plt.figure(figsize=(20, 11), layout='constrained')
+    subfigs = fig.subfigures(2, 1, hspace=0.01)
 
-    h0 = graph[0, 0].hist(x_in_channeled * distance_scale, bins=100, color='royalblue')
-    graph[0, 0].axvline(-crystal_x/2 * distance_scale, color='red', ls='--', label='crystal edge')
-    graph[0, 0].axvline(crystal_x/2 * distance_scale, color='red', ls='--')
-    graph[0, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[0, 0].set_ylabel('Counts')
-    graph[0, 0].set_title('Upstream - channeled particles')
-    graph[0, 0].legend()
+    configs = [
+        {
+            'subfig': subfigs[0],
+            'title': 'All Particles',
+            'data': [x_in, y_in, x_out, y_out],
+            'color': viridis_blue,
+        },
+        {
+            'subfig': subfigs[1],
+            'title': 'Channeled Particles',
+            'data': [x_in_channeled, y_in_channeled, x_out_channeled, y_out_channeled],
+            'color': viridis_green,
+        }
+    ]
 
-    h1 = graph[0, 1].hist(y_in_channeled * distance_scale, bins=100, color='royalblue')
-    graph[0, 1].axvline(-crystal_y/2 * distance_scale, color='red', ls='--', label='crystal edge')
-    graph[0, 1].axvline(crystal_y/2 * distance_scale, color='red', ls='--')
-    graph[0, 1].set_xlabel(f'impact y [{distance_unit}]')
-    graph[0, 1].set_ylabel('Counts')
-    graph[0, 1].set_title('Upstream - channeled particles')
-    graph[0, 1].legend()
+    edge_x = crystal_x / 2 * distance_scale
+    edge_y = crystal_y / 2 * distance_scale
 
-    h2 = graph[1, 0].hist(x_out_channeled * distance_scale, bins=100, color='royalblue')
-    graph[1, 0].axvline(-crystal_x/2 * distance_scale, color='red', ls='--', label='crystal edge')
-    graph[1, 0].axvline(crystal_x/2 * distance_scale, color='red', ls='--')
-    graph[1, 0].set_xlabel(f'outgoing x [{distance_unit}]')
-    graph[1, 0].set_ylabel('Counts')
-    graph[1, 0].set_title('Downstream - channeled particles')
-    graph[1, 0].legend()
+    for cfg in configs:
+        sf = cfg['subfig']
+        # Titolo principale di riga (|titolo1| / |titolo2|)
+        sf.suptitle(cfg['title'], fontsize=12, y=1.0)
+        axes = sf.subplots(1, 4)
 
-    h3 = graph[1, 1].hist(y_out_channeled * distance_scale, bins=100, color='royalblue')
-    graph[1, 1].axvline(-crystal_y/2 * distance_scale, color='red', ls='--', label='crystal edge')
-    graph[1, 1].axvline(crystal_y/2 * distance_scale, color='red', ls='--')
-    graph[1, 1].set_xlabel(f'outgoing y [{distance_unit}]')
-    graph[1, 1].set_ylabel('Counts')
-    graph[1, 1].set_title('Downstream - channeled particles')
-    graph[1, 1].legend()
-    
-    fig.tight_layout()
-    plt.savefig(f'{output_folder}/ch_footprint.png')
-    plt.savefig(f'{output_folder}/ch_footprint.pdf')
-    plt.show(block=False)
+        # Sottotitoli raggruppati per colonne (|subtitle1| sopra plot 1-2, |subtitle2| sopra plot 3-4)
+        axes[0].annotate('Upstream', xy=(1.0, 1.05), xycoords='axes fraction',
+                         ha='center', va='bottom', fontsize=12)
+        axes[2].annotate('Downstream', xy=(1.0, 1.05), xycoords='axes fraction',
+                         ha='center', va='bottom', fontsize=12)
+
+        labels = [
+            (f'impact x [{distance_unit}]', edge_x),
+            (f'impact y [{distance_unit}]', edge_y),
+            (f'outgoing x [{distance_unit}]', edge_x),
+            (f'outgoing y [{distance_unit}]', edge_y),
+        ]
+
+        for ax, vals, (xlabel, edge) in zip(axes, cfg['data'], labels):
+            ax.hist(vals * distance_scale, bins=100, color=cfg['color'], histtype='stepfilled')
+            ax.axvline(-edge, color='red', ls='--', label='crystal edges')
+            ax.axvline(edge, color='red', ls='--')
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel('Counts')
+            ax.legend(loc='upper right')
+
+    plt.savefig(f'{output_folder}/ch_footprint.png', dpi=200, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/ch_footprint.pdf', bbox_inches='tight')
+    plt.close(fig)
 
 def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x', n_slices=50, distance_unit='mm', 
                   angle_unit='urad', fit_window=None, label='', min_per_bin=50, other_pos_in=None, other_edge=None):
@@ -363,7 +443,6 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
     fig.tight_layout()
     plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.png')
     plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.pdf')
-    plt.show(block=False)
 
     # --- example: one slice inside, one outside the crystal ---
     inside_recs = [r for r in records if abs(r['center']) <= edge_scaled]
@@ -390,7 +469,6 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
         fig2.tight_layout()
         plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.png')
         plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.pdf')
-        plt.show(block=False)
 
     return valid_pos, sigmas, sigma_errs, n_used
 
@@ -407,7 +485,7 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
 
     n_tot = len(theta_x_in)
 
-    counts, edges = np.histogram(dtheta_x, bins=200)
+    counts, edges = np.histogram(dtheta_x, bins=7250)
     centers = 0.5 * (edges[:-1] + edges[1:])
     bin_width = edges[1] - edges[0]
 
@@ -420,7 +498,8 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
         peak_x = bending_angle
 
     window = 0.5 * abs(bending_angle)
-    mask = (centers >= (peak_x - 10/scale)) & (centers < (peak_x + window))
+    # mask = (centers >= (peak_x - 150/scale)) & (centers < (peak_x + window))
+    mask = (centers >= (5990/scale)) & (centers < (peak_x + 50/scale))
     while mask.sum() < 5 and window < (dtheta_x.max() - dtheta_x.min()):
         window *= 2
         mask = np.abs(centers - bending_angle) < window
@@ -449,7 +528,7 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     # print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
     # print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
     # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
-    print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad - sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
+    print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
     return n_channeled, efficiency, popt, pcov, bin_width
 
@@ -460,46 +539,82 @@ beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particle
 
 ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle)
 
-pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
-    pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_x'], crystal_edge=crystal_x,
-    other_pos_in=survived_data['y_in'], other_edge=crystal_y,
-    plane_label='x', dtheta_label='x', n_slices=50, fit_window=30, label='- x plane')
+# pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
+#     pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_x,
+#     other_pos_in=survived_data['y_in'], other_edge=crystal_y,
+#     plane_label='x', dtheta_label='x', n_slices=50, fit_window=30, label='- x plane')
 
-pos_y, sigmas_y, errs_y, n_y = mcs_edge_scan(
-    pos_in=survived_data['y_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_y,
-    other_pos_in=survived_data['x_in'], other_edge=crystal_x,
-    plane_label='y', dtheta_label='y', n_slices=50, fit_window=None, label='- y plane')
+# pos_y, sigmas_y, errs_y, n_y = mcs_edge_scan(
+#     pos_in=survived_data['y_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_y,
+#     other_pos_in=survived_data['x_in'], other_edge=crystal_x,
+#     plane_label='y', dtheta_label='y', n_slices=50, fit_window=None, label='- y plane')
 
 # geometric cut
 geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
 geometric_hit_all = (np.abs(x_in) < crystal_x/2) & (np.abs(y_in) < crystal_y/2)
 geom_data = apply_selection(survived_data, geometric_hit)
-print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()}")
-print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()}")
+geom_data_s = apply_selection(survived_data_smeared, geometric_hit)
+
+print('-'*50)
+print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()} = {geometric_hit.sum()/len(survived_data['x_in'])*100:.1f}%")
+print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()} = {(~geometric_hit).sum()/len(survived_data['x_in'])*100:.1f}%")
 # beam_distribution_plot(geom_data['x_in'], geom_data['y_in'], geom_data['theta_x_in'], geom_data['theta_y_in'], label='- entered particles')
 
+vr_mask = (dtheta_x < -0.3*theta_L) & (dtheta_x > -3*theta_L)
+n_vr = vr_mask.sum()
+print(f"Volume reflection: {n_vr}/{len(survived_data['x_in'])} = {n_vr/len(survived_data['x_in'])*100:.1f}%")
+
 # lindhard selection
-lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L1)
-lindhard_all = np.abs(theta_x_in) < (0.5 * theta_L1)
+lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L); lindhard_all = np.abs(theta_x_in) < (0.5 * theta_L)
+lindhard_cut_s = np.abs(geom_data_s['theta_x_in']) < (0.5 * theta_L); lindhard_all_s = np.abs(theta_x_in_meas_all) < (0.5 * theta_L)
+
 final_data = apply_selection(geom_data, lindhard_cut)
+final_data_s = apply_selection(geom_data_s, lindhard_cut_s)
 
 # also keep the particles with the potential to be channeled (N_tot)
 attempted_mask = geometric_hit_all & lindhard_all
 attempted_ids = particle_id_in[attempted_mask]
 n_tot_correct = attempted_mask.sum()
 
-# recap
 lost_mask = ~np.isin(attempted_ids, idx_out)
 n_lost_attempted = lost_mask.sum()
-print(f"Persi tra i tentativi geometrici+Lindhard: {n_lost_attempted}/{n_tot_correct} "
-      f"({n_lost_attempted/n_tot_correct*100:.1f}%)")
+print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_correct} = {n_lost_attempted/n_tot_correct*100:.1f}%")
+
+attempted_mask_s = geometric_hit_all & lindhard_all_s
+n_tot_correct_s  = attempted_mask_s.sum()
 
 # efficiency
 n_channeled, eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
-efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
+n_channeled_s, eff_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
 
-print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
+efficiency_correct_s = n_channeled_s / n_tot_correct_s
+print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = {efficiency_correct_s*100:.1f}%")
 
-angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L1, label='($θ_b =$ 50 µrad)', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L1, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
 
+# --- GUARD RAIL: verifica affidabilità del fit ---
+sigma_err = np.sqrt(pcov[2, 2]) if pcov is not None else np.inf
+sigma = abs(popt[2]) if popt is not None else 0
+fit_reliable = (
+    pcov is not None
+    and np.all(np.isfinite(pcov))
+    and sigma_err < sigma          # errore sul sigma minore del sigma stesso
+    and n_channeled <= n_tot_correct  # non puoi channelare più particelle di quelle disponibili
+)
+if not fit_reliable:
+    print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
+    efficiency_correct = np.nan
+else:
+    efficiency_correct = n_channeled / n_tot_correct
+    eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct)
+    print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
+# --- fine guard rail ---
+
+# efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
+# print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
+
+angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='(smeared)', popt=popt_s, fit_bin_width=fit_bin_width_s)
+
+print('='*50)
+print(f"Plot saved in {output_folder}")
