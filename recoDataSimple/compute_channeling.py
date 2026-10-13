@@ -42,14 +42,34 @@ def main():
     thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
     data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
 
+    FIT = {
+    8430: (np.array([-0.21,  0.60, -0.93,  6.56]), np.array([2.32, 2.40, 26.97, 41.09])),
+    8431: (np.array([-0.35,  0.66, -1.60,  7.95]), np.array([2.37, 2.40, 27.08, 41.02])),
+    8650: (np.array([-0.60,  0.55, -2.79,  5.64]), np.array([2.51, 2.62, 29.82, 44.30])),
+    8655: (np.array([-0.42, -0.02, -1.73, -1.51]), np.array([2.22, 2.53, 29.63, 43.59])),
+    8656: (np.array([-0.38, -0.04, -1.37, -1.24]), np.array([2.23, 2.53, 29.66, 43.58])),
+    }
+    mu_fit, sig_fit = FIT[file]
+
+    mask = np.all(np.abs(data_matrix.T - mu_fit) < 5 * sig_fit, axis=1)
+    print("fraction kept:", mask.mean(), " n =", mask.sum())
+
+    n_i = mask.sum()       
+
+    data_cut = data_matrix[:, mask]     
+    cov_i = np.cov(data_cut)
+    print("sigma after cut:", np.sqrt(np.diag(cov_i)))
+    print("\nCorrelation matrix after cut:\n", np.corrcoef(data_cut))
+    print("\nCovariance matrix after cut:\n", cov_i)
+
     # check correlation
-    corr_i = np.corrcoef(data_matrix)
-    print("\nCorrelation matrix:\n", corr_i)
+    # corr_i = np.corrcoef(data_matrix)
+    # print("\nCorrelation matrix:\n", corr_i)
     # check covariance
-    cov_i = np.cov(data_matrix)
-    n_i = data_matrix.shape[1]  # numero di eventi in questo run
-    np.set_printoptions(precision=8, suppress=True)
-    print("Covariance matrix:\n", cov_i)
+    # cov_i = np.cov(data_matrix)
+    # n_i = data_matrix.shape[1]  # numero di eventi in questo run
+    # np.set_printoptions(precision=8, suppress=True)
+    # print("Covariance matrix:\n", cov_i)
     print(f"Number of events in this run: {n_i}")
     chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
     chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", tag2="all")

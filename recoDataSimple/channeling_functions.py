@@ -578,6 +578,15 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
     mean_y, meanErr_y = f_gaus_y.GetParameter(1), f_gaus_y.GetParError(1)
     sigma_y, sigmaErr_y = f_gaus_y.GetParameter(2), f_gaus_y.GetParError(2)
 
+    f_gaus_x = ROOT.TF1(f"f_gaus_x_{tag}", "gaus", mean_x - 5*sigma_x, mean_x + 5*sigma_x)
+    h1x.Fit(f_gaus_x, "RQ0")
+    mean_x, meanErr_x = f_gaus_x.GetParameter(1), f_gaus_x.GetParError(1)
+    sigma_x, sigmaErr_x = f_gaus_x.GetParameter(2), f_gaus_x.GetParError(2)
+    f_gaus_y = ROOT.TF1(f"f_gaus_y_{tag}", "gaus", mean_y - 5*sigma_y, mean_y + 5*sigma_y)
+    h1y.Fit(f_gaus_y, "RQ0")
+    mean_y, meanErr_y = f_gaus_y.GetParameter(1), f_gaus_y.GetParError(1)
+    sigma_y, sigmaErr_y = f_gaus_y.GetParameter(2), f_gaus_y.GetParError(2)
+
     print(f"\tFit results for {tag2} {variable}:")
     print(f"\t\t{xlabel}: mean = {mean_x:.2f} ± {meanErr_x:.2f} {units}, sigma = {sigma_x:.2f} ± {sigmaErr_x:.2f} {units}")
     print(f"\t\t{ylabel}: mean = {mean_y:.2f} ± {meanErr_y:.2f} {units}, sigma = {sigma_y:.2f} ± {sigmaErr_y:.2f} {units}")

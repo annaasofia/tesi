@@ -5,25 +5,28 @@ import xpart as xp
 from datetime import datetime
 from scipy.stats import norm
 import simulation_functions as simfun
+import time
+import sys
 
-
+jobid = int(sys.argv[1])
+t0 = time.time()
 drift = xt.Drift(length=1)
 line = xt.Line(elements=[drift])
 line.particle_ref = xt.Particles(mass0=xt.PROTON_MASS_EV, q0=1, energy0=180e9)
 
-bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("../bdsim_crystal/trackerInterface.gmad",
+bds_link = bdsim.BDSLinkTrackerInterface.GetInstance("./trackerInterface.gmad",
                                                      referenceParticlePDG=2212,
                                                      referenceKineticEnergy=180e3, # MeV
                                                     relativeEnergyCut=0.1,
                                                     batchMode = True,
-                                                    seed = 82)
+                                                    seed = jobid)
 l = bds_link.GetBDSIMLink()
 
 # long crystal 74 mm
 cry2 = bdsim.Element()
 cry2.type = bdsim.elementtype.ElementType.USERCOMPONENT
 cry2.userTypeName = "crystaldeflector"
-cry2.name = "crystaldeflector2"
+cry2.name = "crystaldeflector"
 cry2.material="G4_Si"
 cry2.xsize = 5e-3 # m
 cry2.ysize = 12.8e-3 # m
@@ -37,13 +40,14 @@ cry2.aper2 = 10e1 # m
 l.AddLinkElement(cry2)
 
 #correlated gaussian beam
-cov_avg, eigvals, n_list = simfun.cov_matrix()
+SIGMA_DET = 9e-6
+cov_avg, eigvals, n_list = simfun.cov_matrix(sigma_det_x=SIGMA_DET, sigma_det_y=SIGMA_DET)
 assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {eigvals.min()}"
 
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
-rng = np.random.default_rng(seed=82)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
+rng = np.random.default_rng(seed=jobid)  # same seed of BDSLinkTrackerInterface, per coerenza/riproducibilità
 
-npart = 20000
+npart = 10000
 samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)
 x_impact  = samples[:, 0]
 y_impact  = samples[:, 1]
@@ -57,10 +61,12 @@ particles1 = line.build_particles(
     zeta=np.zeros(npart), delta=np.zeros(npart), _capacity = int(npart*2))
 particles1.pdg_id[:npart] = np.ones(npart)*2212
 particles10 = particles1.copy()
+t1 = time.time()
 bds_link.TrackXSuite(0,'crystaldeflector',particles1,180e3)
+t2 = time.time()
 
 timestamp = datetime.now().strftime('%Y%m%d_%H')
-outfile = f'cry2_{timestamp}.npz'
+outfile = f'cry2_{jobid}.npz'
 
 np.savez(outfile,
     # input
@@ -82,11 +88,6 @@ np.savez(outfile,
     pdg_id_in=particles10.pdg_id, pdg_id_out=particles1.pdg_id,
 
     # metadata beam
-    # bending_angle=50e-6,
-    # crystal_length=cry1.l,
-    # crystal_x=cry1.xsize,
-    # crystal_y=cry1.ysize,
-    # crystal_material=cry1.material,
     bending_angle=6e-3,
     crystal_length=cry2.l,
     crystal_x=cry2.xsize,
@@ -97,10 +98,13 @@ np.savez(outfile,
 
     # metadata simulation
     npart=npart,
-    label='cry1',
+    sigma_det_deconv=SIGMA_DET,
+    label='cry2',
     cov_avg=cov_avg,
     mu_avg=mu_avg,
 )
 
 print(f"Data saved in: {outfile}")
+print(f"elapsed t1-t0: {t1-t0}")
+print(f"elapsed t2-t1: {t2-t1}")
 

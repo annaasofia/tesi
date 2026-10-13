@@ -598,27 +598,44 @@ what i did:
 
 ### Study the beam distribution
 
-what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems describable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  
+what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems descrivable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  
 $\to$ in principel yes, but i need to be careful:  
 fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
 
-|                  | $\mu_x$ [mm]     | $\sigma_x$  | $\mu_y$      | $\sigma_y$  | $\mu_{\theta,x}$ [urad] | $\sigma_{\theta,x}$ | $\mu_{\theta,y}$ | $\sigma_{\theta,y}$ |
-|------------------|--------------|-------------|--------------|-------------|------------------|---------------------|------------------|---------------------|
-| **8430**             | -0.21 ± 0.01 | 2.32 ± 0.01 | 0.60 ± 0.01 | 2.40 ± 0.01 | -0.93 ± 0.01     | 26.92 ± 0.01        | 6.79 ± 0.01      | 40.22 ± 0.01        |
-| **8431**             | -0.35 ± 0.01 | 2.37 ± 0.01 | 0.66 ± 0.01 | 2.40 ± 0.01 | -1.61 ± 0.01     | 27.03 ± 0.01        | 8.18 ± 0.01      | 40.21 ± 0.01        |
-| **8650**             | -0.60 ± 0.01 | 2.51 ± 0.01 | 0.55 ± 0.01 | 2.62 ± 0.01 | -2.79 ± 0.01     | 29.67 ± 0.01        | 6.05 ± 0.02      | 43.14 ± 0.01        |
-| **8655**             | -0.42 ± 0.01 | 2.22 ± 0.01 | -0.02 ± 0.01 | 2.53 ± 0.01 | -1.74 ± 0.01     | 29.48 ± 0.01        | -1.03 ± 0.01     | 42.27 ± 0.01        |
-| **8656**             | -0.38 ± 0.01 | 2.23 ± 0.01 | -0.04 ± 0.01 | 2.53 ± 0.01 | -1.38 ± 0.01     | 29.51 ± 0.01        | -0.78 ± 0.01     | 42.29 ± 0.01        |
-| **weighted average** | -0.37859184  | 2.24475345  | 0.36168281   | 3.07738674  | -1.62837008      | 72.30315606         | 4.15591296       | 71.04689837         |
+I check the covariance and correlation matrices not with all data but within $\pm 5 \sigma$ of the gaussian fit (98% of data), otherwise the widths of the angular distributions would be too high.
 
-|*8430 Correlation matrix:*  ||||
+|                  | $\mu_x$      | $\sigma_x$  | $\mu_y$      | $\sigma_y$  | $\mu_{\theta,x}$ | $\sigma_{\theta,x}$ | $\mu_{\theta,y}$ | $\sigma_{\theta,y}$ |
+|------------------|--------------|-------------|--------------|-------------|------------------|---------------------|------------------|---------------------|
+| 8430             | -0.21 ± 0.00 | 2.32 ± 0.00 | 0.60 ± 0.00  | 2.40 ± 0.00 | -0.93 ± 0.01     | 26.97 ± 0.01        | 6.56 ± 0.01      | 41.09 ± 0.01        |
+| 8431             | -0.35 ± 0.00 | 2.37 ± 0.00 | 0.66 ± 0.00  | 2.40 ± 0.00 | -1.60 ± 0.01     | 27.08 ± 0.01        | 7.95 ± 0.01      | 41.02 ± 0.01        |
+| 8650             | -0.60 ± 0.00 | 2.51 ± 0.00 | 0.55 ± 0.00  | 2.62 ± 0.00 | -2.79 ± 0.01     | 29.82 ± 0.01        | 5.64 ± 0.02      | 44.30 ± 0.01        |
+| 8655             | -0.42 ± 0.00 | 2.22 ± 0.00 | -0.02 ± 0.00 | 2.53 ± 0.00 | -1.73 ± 0.01     | 29.63 ± 0.01        | -1.51 ± 0.01     | 43.59 ± 0.01        |
+| 8656             | -0.38 ± 0.00 | 2.23 ± 0.00 | -0.04 ± 0.00 | 2.53 ± 0.00 | -1.37 ± 0.01     | 29.66 ± 0.01        | -1.24 ± 0.01     | 43.58 ± 0.01        |
+| weighted average | -0.37867394  | 2.01454317  | 0.3615005    | 2.80776263  | -1.62272038      | 30.89146025         | 3.64729974       | 45.734049           |
+
+|**correct** *8430 Correlation matrix after cut:*  ||||
+|--|--|--|--|
+|[ 1.         |  0.01347898 |  0.51028308 | 0.02852061]|
+|[ 0.01347898 |  1.         | -0.0796839  | 0.23902702]|
+|[ 0.51028308 | -0.0796839  |  1.         | 0.05384073]|
+|[ 0.02852061 |  0.23902702 |  0.05384073 | 1.        ]|
+
+|*8430 Correlation matrix before cut:*  ||||
 |--|--|--|--|
 |[ 1.         | 0.00249682  | 0.56065383  | 0.04752554]  |
 |[ 0.00249682 |  1.         | -0.04600791 |  0.34909413] |
 |[ 0.56065383 | -0.04600791 |  1.         |  0.07679966] |
 |[ 0.04752554 |  0.34909413 |  0.07679966 |  1.        ] |
 
-|*8430 Covariance matrix:*||||
+
+|**correct** *8430 Covariance matrix after cut:*||||
+|--|--|--|--|
+|[ 3.82592775e+00 |  7.08532402e-02 |  2.94087313e+01 | 2.44291188e+00]|
+|[ 7.08532402e-02 |  7.22218856e+00 | -6.30959887e+00 | 2.81295028e+01]|
+|[ 2.94087313e+01 | -6.30959887e+00 |  8.68147418e+02 | 6.94685664e+01]|
+|[ 2.44291188e+00 |  2.81295028e+01 |  6.94685664e+01 | 1.91761445e+03]|
+
+|*8430 Covariance matrix before cut:*||||
 |--|--|--|--|
 |[   4.74346824 |   0.01606491 |   89.41765855 |    7.18923536]|
 |[   0.01606491 |   8.72738918 |   -9.9530266  |   71.62957414]|
@@ -859,6 +876,7 @@ condor_ssh_to_job <CLUSTERID>.<jobnum>
 To remove *all* the jobs:
 ```bash
 condor_rm amoro
+condor_rm <CLUSTERID>
 ```
 
 I will have a folder `logs` where there are stored the .logs, .err, .out files (for each job), and an `output` folder with my .npz data files.
@@ -1025,8 +1043,6 @@ If we want to be correct we just subtract $9^2 \,\mu\text{rad}^2$ from angular d
 cov_true = cov_avg.copy()
 cov_true[2, 2] -= (9e-6)**2     # theta_x
 cov_true[3, 3] -= (9e-6)**2     # theta_y
-assert np.linalg.eigvalsh(cov_true).min() > 0
-samples = rng.multivariate_normal(mean=mu_avg, cov=cov_true, size=npart)
 ```
 
 The measures are independent.  
