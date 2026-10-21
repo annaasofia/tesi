@@ -262,7 +262,7 @@ folder with wrong crystal width and wrong beam profile:
 - condor3: 1600 $\to$  particles
 
 almost correct beam profile and correct crystal width ($x$):
-- condor4: 1482 $\to$ 14820000 particles (10k per job)
+- condor4: 1482 $\to$ 14'820'000 particles (10k per job)
 
 ultra-correct beam profile (within $5\sigma$ subtracting $9^2 \,\mu\text{rad}^2$ from angular diagonal of covariance matrix):
-- condor5: $\to$
+- condor5: 1974 $\to$ 19'740'000 particles (10k per job)

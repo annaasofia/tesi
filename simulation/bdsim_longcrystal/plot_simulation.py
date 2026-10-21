@@ -12,7 +12,7 @@ viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
-filename = './runs/cry2_merged1.npz'
+filename = './runs/cry2_merged5_slim.npz'
 data = np.load(filename)
 
 output_folder = './plots'
@@ -24,14 +24,16 @@ os.makedirs(output_folder, exist_ok=True)
 # reconstruct the arrays from the saved data
 x_in = data['x_in']; theta_x_in = data['px_in']
 y_in = data['y_in']; theta_y_in = data['py_in']
-zeta_in = data['zeta_in']; delta_in = data['delta_in']; ptau_in = data['ptau_in']
+# zeta_in = data['zeta_in']; delta_in = data['delta_in']; ptau_in = data['ptau_in']
 
 x_out=data['x_out']; theta_x_out=data['px_out']
 y_out=data['y_out']; theta_y_out=data['py_out']
-zeta_out=data['zeta_out']; delta_out=data['delta_out']; ptau_out=data['ptau_out']
+# zeta_out=data['zeta_out']; delta_out=data['delta_out']; ptau_out=data['ptau_out']
 
-particle_id_in = data['particle_id_in']; state_in = data['state_in']; pdg_id_in = data['pdg_id_in']
-particle_id_out = data['particle_id_out']; state_out = data['state_out']; pdg_id_out = data['pdg_id_out']; at_element_out = data['at_element_out']
+particle_id_in = data['particle_id_in']
+# state_in = data['state_in']; pdg_id_in = data['pdg_id_in']
+particle_id_out = data['particle_id_out']; state_out = data['state_out']
+#  pdg_id_out = data['pdg_id_out']; at_element_out = data['at_element_out']
 
 # single values
 npart = int(data['npart'])
@@ -44,67 +46,29 @@ p0c = float(data['p0c'])
 mass0 = float(data['mass0'])
 label = str(data['label'])
 
-
-# LOST PARTICLES
-# where lost particles got lost?
-print('='*50)
-print("Particles status analysis:")
-unique_states, counts = np.unique(state_out, return_counts=True)
-for s, c in zip(unique_states, counts):
-    print(f"\tstate={s}: {c} particles")
-# lost_333 = state_out == -333
-# elements, counts = np.unique(at_element_out[lost_333], return_counts=True)
-# for e, c in zip(elements, counts):
-#     print(f"\tat_element={e}: {c} lost particles at -333")
-
-# where they would have been?
-particle_id_in_valid = data['particle_id_in'][data['state_in'] == 1]
-x_in_valid = data['x_in'][data['state_in'] == 1]
-y_in_valid = data['y_in'][data['state_in'] == 1]
-
-lost_mask = data['state_out'] == -333
-idx_lost = data['particle_id_out'][lost_mask]
-
-order = np.argsort(particle_id_in_valid)
-sorted_ids = particle_id_in_valid[order]
-pos = np.searchsorted(sorted_ids, idx_lost)
-x_in_lost = x_in_valid[order][pos]
-y_in_lost = y_in_valid[order][pos]
-
-geometric_hit_lost = (np.abs(x_in_lost) < crystal_x/2) & (np.abs(y_in_lost) < crystal_y/2)
-# print(f"Frazione delle perse che avrebbe comunque colpito il cristallo: {geometric_hit_lost.mean()*100:.1f}%")
-# print(f"Numero di particelle perse che avrebbero dovuto MANCARE il cristallo: {(~geometric_hit_lost).sum()}")
-
-# SURVIVED PARTICLES
-valid_in = state_in == 1
-survived = state_out == 1
-
-x_in, y_in, theta_x_in, theta_y_in = x_in[valid_in], y_in[valid_in], theta_x_in[valid_in], theta_y_in[valid_in]
-zeta_in, delta_in, ptau_in = zeta_in[valid_in], delta_in[valid_in], ptau_in[valid_in]
-particle_id_in, pdg_id_in = particle_id_in[valid_in], pdg_id_in[valid_in]
-
-# filtering survived particles  
-idx_out = particle_id_out[survived]
-theta_x_out_survived = theta_x_out[survived]
-pdg_id_out_survived = pdg_id_out[survived]
-
 order_in = np.argsort(particle_id_in)
-sorted_idx_in = particle_id_in[order_in]
-idx = np.searchsorted(sorted_idx_in, idx_out)
+sorted_ids = particle_id_in[order_in]
+assert np.unique(particle_id_in).size == particle_id_in.size
 
-x_in_survived = x_in[order_in][idx]
-y_in_survived = y_in[order_in][idx]
-theta_x_in_survived = theta_x_in[order_in][idx]
-theta_y_in_survived = theta_y_in[order_in][idx]
-zeta_in_survived = zeta_in[order_in][idx]; delta_in_survived = delta_in[order_in][idx]; ptau_in_survived = ptau_in[order_in][idx]
+# perse
+lost_mask = state_out == -333
+idx_lost = particle_id_out[lost_mask]
+src_lost = order_in[np.searchsorted(sorted_ids, idx_lost)]
+x_in_lost, y_in_lost = x_in[src_lost], y_in[src_lost]
+assert np.all(particle_id_in[src_lost] == idx_lost)
 
-x_out_survived = x_out[survived]
-y_out_survived = y_out[survived]
+# sopravvissute
+survived = state_out == 1
+idx_out = particle_id_out[survived]
+idx = np.searchsorted(sorted_ids, idx_out)
+src = order_in[idx]                       # indice diretto, niente copie
+assert np.all(particle_id_in[src] == idx_out)
+
+x_in_survived, y_in_survived = x_in[src], y_in[src]
+theta_x_in_survived, theta_y_in_survived = theta_x_in[src], theta_y_in[src]
+x_out_survived, y_out_survived = x_out[survived], y_out[survived]
+theta_x_out_survived = theta_x_out[survived]
 theta_y_out_survived = theta_y_out[survived]
-zeta_out_survived = zeta_out[survived]; delta_out_survived = delta_out[survived]; ptau_out_survived = ptau_out[survived]
-
-assert np.all(sorted_idx_in[idx] == idx_out), "Mismatch nel matching particle_id in/out!"
-
 dtheta_x = theta_x_out_survived - theta_x_in_survived
 dtheta_y = theta_y_out_survived - theta_y_in_survived
 
@@ -146,16 +110,16 @@ s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
 s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
 
 # 1) θ_in misurato per TUTTE le particelle valide (un'estrazione sola)
-theta_x_in_meas_all = theta_x_in + rng_smear.normal(0, s_in, theta_x_in.size)
-theta_y_in_meas_all = theta_y_in + rng_smear.normal(0, s_in, theta_y_in.size)
+theta_x_in_meas_all = theta_x_in + rng_smear.standard_normal(theta_x_in.size, dtype=np.float32) * s_in
+theta_y_in_meas_all = theta_y_in + rng_smear.standard_normal(theta_y_in.size, dtype=np.float32) * s_in
 
 # 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
-theta_x_in_meas_surv = theta_x_in_meas_all[order_in][idx]
-theta_y_in_meas_surv = theta_y_in_meas_all[order_in][idx]
+theta_x_in_meas_surv = theta_x_in_meas_all[src]
+theta_y_in_meas_surv = theta_y_in_meas_all[src]
 
 # 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
-theta_x_out_meas_surv = theta_x_out_survived + rng_smear.normal(0, s_out, theta_x_out_survived.size)
-theta_y_out_meas_surv = theta_y_out_survived + rng_smear.normal(0, s_out, theta_y_out_survived.size)
+theta_x_out_meas_surv = theta_x_out_survived + rng_smear.standard_normal(theta_x_out_survived.size, dtype=np.float32) * s_out
+theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y_out_survived.size, dtype=np.float32) * s_out
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
@@ -225,8 +189,10 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     label = label[2:]
     plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.png')
     plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.pdf')
+    plt.close(fig)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
+
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
 
@@ -291,6 +257,81 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     if label == '': label = 'final'
     plt.savefig(f'{output_folder}/angular_scan_{label}.png')
     plt.savefig(f'{output_folder}/angular_scan_{label}.pdf')
+    plt.close(fig)
+
+def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='urad'):
+
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+
+    if label[-1] == 'y' or label[-1] == 'x':
+        label_ax = label[-1]
+    else:
+        label_ax = 'x'
+
+    fig, graph = plt.subplots(1, 2, figsize=(12, 5))
+
+    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared')
+    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.9, label='original')
+
+    if label[-1] == 'y':
+        graph[0].set_xlim(-250, 250)
+    # graph[0].set_xlim(-750, 6200)
+    graph[0].set_yscale('log')
+    graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
+    graph[0].set_xlabel(rf'$\Delta\theta_{label_ax}$ [${unit_str}$]')
+    graph[0].set_ylabel('Counts')
+    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution {label}')
+    graph[0].grid(alpha=0.3)
+    graph[0].legend()
+
+    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, label='original')
+    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, alpha=0.9, label='smeared')
+
+    if label[-1] == 'y':
+        graph[1].set_xlim(-60, 60)
+    # graph[1].set_xlim(5950, 6050)
+    # graph[1].set_ylim(0, max(counts.max(), counts_smeared.max())*1.2)
+    graph[1].set_xlabel(rf'$\Delta\theta_{label_ax}$ [${unit_str}$]')
+    graph[1].set_ylabel('Counts')
+    graph[1].set_title(rf'$\Delta\theta_{label_ax}$ distribution (zoom)')
+    graph[1].grid(alpha=0.3)
+    graph[1].legend()
+
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/smear_comparison_{label}.png')
+    plt.savefig(f'{output_folder}/smear_comparison_{label}.pdf')
+    plt.close(fig)
+
+def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+
+    fig, graph = plt.subplots(1, 2, figsize=(12, 5))
+
+    counts_smeared, _, _ = graph[0].hist(x_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
+    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+
+    # graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
+    graph[0].set_xlabel(rf'$\theta_{{in,x}}$ [${unit_str}$]')
+    graph[0].set_ylabel('Counts')
+    graph[0].set_title(rf'Incoming $\theta_{{x}}$ distribution')
+    graph[0].grid(alpha=0.3)
+    graph[0].legend()
+
+    graph[1].hist(y_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
+    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+
+    graph[1].set_xlabel(rf'$\theta_{{in,y}}$ [${unit_str}$]')
+    graph[1].set_ylabel('Counts')
+    graph[1].set_title(rf'Incoming $\theta_{{y}}$ distribution')
+    graph[1].grid(alpha=0.3)
+    graph[1].legend()
+
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/smear_comparison_angle.png')
+    plt.savefig(f'{output_folder}/smear_comparison_angle.pdf')
+    plt.close(fig)
 
 def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
     distance_scale = 1e3 if distance_unit == 'mm' else 1.0
@@ -506,7 +547,7 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
  
     x_fit, y_fit = centers[mask], counts[mask]
     A0 = y_fit.max() if len(y_fit) else 1.0
-    sigma0 = window / 2
+    sigma0 = 12e-6  # initial guess for sigma in radians
  
     popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0], maxfev=10000)
  
@@ -530,7 +571,7 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
     print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
-    return n_channeled, efficiency, popt, pcov, bin_width
+    return n_channeled, popt, pcov, bin_width
 
 # ANALYSIS
 
@@ -584,37 +625,48 @@ attempted_mask_s = geometric_hit_all & lindhard_all_s
 n_tot_correct_s  = attempted_mask_s.sum()
 
 # efficiency
-n_channeled, eff, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
-n_channeled_s, eff_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
+n_channeled, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
+n_channeled_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
 
 efficiency_correct_s = n_channeled_s / n_tot_correct_s
 print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = {efficiency_correct_s*100:.1f}%")
 
 
 # --- GUARD RAIL: verifica affidabilità del fit ---
-sigma_err = np.sqrt(pcov[2, 2]) if pcov is not None else np.inf
-sigma = abs(popt[2]) if popt is not None else 0
+sigma_err = np.sqrt(pcov_s[2, 2]) if pcov_s is not None else np.inf
+sigma = abs(popt_s[2]) if popt_s is not None else 0
 fit_reliable = (
-    pcov is not None
-    and np.all(np.isfinite(pcov))
+    pcov_s is not None
+    and np.all(np.isfinite(pcov_s))
     and sigma_err < sigma          # errore sul sigma minore del sigma stesso
-    and n_channeled <= n_tot_correct  # non puoi channelare più particelle di quelle disponibili
+    and n_channeled_s <= n_tot_correct_s  # non puoi channelare più particelle di quelle disponibili
 )
 if not fit_reliable:
     print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
     efficiency_correct = np.nan
 else:
-    efficiency_correct = n_channeled / n_tot_correct
-    eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct)
-    print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
+    efficiency_correct = n_channeled_s / n_tot_correct_s
+    eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct_s)
+    print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
 # --- fine guard rail ---
 
-# efficiency_correct = n_channeled / n_tot_correct   # non più / len(final_data)
-# print(f"Channeling efficiency - correct: {n_channeled:.0f}/{n_tot_correct} = {efficiency_correct*100:.1f}%")
+efficiency_notsmeared = n_channeled / n_tot_correct
+eff_err_binom = np.sqrt(efficiency_notsmeared*(1-efficiency_notsmeared)/n_tot_correct)
+print(f"[not smeared] Channeling efficiency: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_notsmeared*100:.1f}± {eff_err_binom*100:.1f})%")
+
 
 angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
 angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
 angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='(smeared)', popt=popt_s, fit_bin_width=fit_bin_width_s)
+
+# smear_comparison_plot(geom_data['dtheta_x'], geom_data_s['dtheta_x'], popt=popt, popt_smeared=popt_s, fit_bin_width=fit_bin_width, fit_bin_width_smeared=fit_bin_width_s, label='geometric')
+smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x')
+
+smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta_x_in'], survived_data['theta_y_in'], survived_data_smeared['theta_y_in'])
+
+for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
+    print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
+          f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
 
 print('='*50)
 print(f"Plot saved in {output_folder}")

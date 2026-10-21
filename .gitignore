@@ -1,4 +1,6 @@
 recoDataSimple/data/*.root
 simulation/bdsim_shortcrystal/*.npz
 simulation/bdsim_longcrystal/runs/*.npz
+simulation/xcoll_shortcrystal/runs/*.npz
+simulation/xcoll_longcrystal/runs/*.npz
 old_data/ROOT/*.ROOT
