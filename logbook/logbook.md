@@ -42,10 +42,12 @@
     - [MCS final results](#mcs-final-results)
 14. [WEEK 14 (OCT 05)](#week-14)
     - [Analysis and plots for the long crystal simulations](#analysis-and-plots-for-the-long-crystal-simulations)
-15. [WEEK 15 (12 OCT)](#week-15)
+15. [WEEK 15 (OCT 12)](#week-15)
     - [MCS in simulations](#mcs-in-simulations)
-    - []()
-16. [WEEK 16 (19 OCT)](#week-16)
+16. [WEEK 16 (OCT 19)](#week-16)
+    - [Plotting long crystal final simulation](#plotting-long-crystal-final-simulation)
+    - [Xcoll](#xcoll)
+17. [WEEK 17 (OCT 26)](#week-17)
 
 ## WEEK 1  
 
@@ -1066,6 +1068,36 @@ the factor $\sqrt{x/X_0}$ sums exactly in quadrature (variances become linear in
 ([UP](#traineeship-al-cern))
 
 ## WEEK 16
+
+### Plotting long crystal final simulation
+$\to$ [cry2_merged5.npz](../simulation/bdsim_longcrystal/runs/cry2_merged5.npz) [6 GB!!]
+
+Through [plot_simulation.py](../simulation/bdsim_longcrystal/plot_simulation.py):  
+- incoming beam features
+- added smear taken from data $\sigma_{tracker}=9\,\mu\text{rad}$
+- compute efficiency (taking into account in the denominator also the ones that could have channeled but were absorbed/lost)
+- both dataset are kept: comparison with/without smear
+
+**RESULTS**:
+||without ||| with $\sigma=9$|||
+|-|-|-|-|-|-|-|
+|**particles**|$\varepsilon_{ch}$|**peak**|sigma |$\varepsilon_{ch}$|**peak**|sigma|
+|19740000|(34.4± 0.0)%|5999.15 ± 0.03 urad|6.75 ± 0.03|(21.8± 0.0)%|5999.18 ± 0.02 urad |11.19 ± 0.02|
+
+
+### Xcoll
+
+Simulation through XSuite, with the XColl routine, designed for the short collimation crystals.  
+Here I can find an example: [https://github.com/xsuite/xcoll/blob/main/examples/everest_crystal.py](https://github.com/xsuite/xcoll/blob/main/examples/everest_crystal.py), which i can adapt for my use.
+
+- simulate short crystal
+- simulate long crystal
+- my beam distribution
+- adding the smear
+
+([UP](#traineeship-al-cern))
+
+## WEEK 17
 
 
 ([UP](#traineeship-al-cern))

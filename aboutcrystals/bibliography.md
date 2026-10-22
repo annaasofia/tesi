@@ -2,7 +2,7 @@
 ## BOOKS
 - [`biryukov2013crystal`] V.M. Biryukov, Y.A. Chesnokov, V.I. Kotov, *Crystal Channeling and its Application at High-Energy Accelerators. Accelerator Physics* (Springer, Berlin, 1997).   
 [https://doi.org/10.1007/978-3-662-03407-1](https://doi.org/10.1007/978-3-662-03407-1)
-- Concept of crystal collimation from slide n.104 to n.115   
+- [`redaelli2024cas`] Concept of crystal collimation from slide n.104 to n.115   
 [https://indico.cern.ch/event/1380440/contributions/6176607/attachments/2973355/5233336/SRedaelli_CAS_2024-11-21.pdf](https://indico.cern.ch/event/1380440/contributions/6176607/attachments/2973355/5233336/SRedaelli_CAS_2024-11-21.pdf)
 
 ## ARTICLES
@@ -21,9 +21,9 @@ $\to$ citation [27] from European Physical Journal article
 - [`rossi2021track` printed] R. Rossi, L.S. Esposito, M. Garattini, T.O. James, M. Pesaresi, G.Hall, W. Scandale, J. Inst. 16(05), *Track reconstruction of particle interactions in long crystals with large bending.* P05017 (2021).   
 [https://doi.org/10.1088/1748-0221/16/05/P05017](https://doi.org/10.1088/1748-0221/16/05/P05017)  
 $\to$ citation [28] from European Physical Journal article
-- Maccani, Chiara, et al. "*JACOW: The TWOCRYST fibre tracker: A detector to characterize precession crystals at the LHC.*" JACoW IPAC 2025 (2025): MOPS020.  
+- [`maccani2025ipac`] Maccani, Chiara, et al. "*JACOW: The TWOCRYST fibre tracker: A detector to characterize precession crystals at the LHC.*" JACoW IPAC 2025 (2025): MOPS020.  
 [https://inspirehep.net/files/3073dd5cbc22b6a6421d73172f97cba8](https://inspirehep.net/files/3073dd5cbc22b6a6421d73172f97cba8)
-- Hermes, Pascal. "*JACOW: Demonstrating the feasibility of a double-crystal fixed-target experimental physics setup through the TWOCRYST project in the LHC.*" JACoW IPAC 2025 (2025): 627-630.  
+- [`hermes2025ipac`] Hermes, Pascal. "*JACOW: Demonstrating the feasibility of a double-crystal fixed-target experimental physics setup through the TWOCRYST project in the LHC.*" JACoW IPAC 2025 (2025): 627-630.  
 [https://inspirehep.net/files/af953e84c7e2432f50be2678a4cc8a03](https://inspirehep.net/files/af953e84c7e2432f50be2678a4cc8a03)
 - [`hermes2025update`] Hermes, Pascal, et al. "*Update on TWOCRYST: the feasibility of double-crystal fixed-target experiments at the LHC.*" POS PROCEEDINGS OF SCIENCE 476 (2025).  
 [https://inspirehep.net/files/f42c420496f900bf7935d132c0c4bbf5](https://inspirehep.net/files/f42c420496f900bf7935d132c0c4bbf5)
