@@ -55,7 +55,12 @@ x_in_lost, y_in_lost = x_in[src_lost], y_in[src_lost]
 assert np.all(particle_id_in[src_lost] == idx_lost)
 
 # sopravvissute
-survived = state_out == 1
+# survived = state_out == 1
+finite_out = (np.isfinite(x_out) & np.isfinite(y_out) &
+              np.isfinite(theta_x_out) & np.isfinite(theta_y_out))
+print(f"Non-finite outputs among state==1: {((state_out == 1) & ~finite_out).sum()}")
+survived = (state_out == 1) & finite_out
+
 idx_out = particle_id_out[survived]
 idx = np.searchsorted(sorted_ids, idx_out)
 src = order_in[idx]                       # indice diretto, niente copie

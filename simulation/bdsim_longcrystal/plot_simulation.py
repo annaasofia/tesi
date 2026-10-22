@@ -37,10 +37,10 @@ particle_id_out = data['particle_id_out']; state_out = data['state_out']
 
 # single values
 npart = int(data['npart'])
-crystal_length = float(data['crystal_length'])
-crystal_x = float(data['crystal_x'])
-crystal_y = float(data['crystal_y'])
-bending_angle = float(data['bending_angle'])
+crystal_length = float(data['crystal_length']); print(f"crystal_length = {crystal_length*1e3:.2f} mm")
+crystal_x = float(data['crystal_x']); print(f"crystal_x = {crystal_x*1e3:.2f} mm")
+crystal_y = float(data['crystal_y']); print(f"crystal_y = {crystal_y*1e3:.2f} mm")
+bending_angle = float(data['bending_angle']); print(f"bending_angle = {bending_angle*1e3:.2f} mrad")
 crystal_material = str(data['crystal_material'])
 p0c = float(data['p0c'])
 mass0 = float(data['mass0'])
@@ -661,7 +661,6 @@ angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta
 
 # smear_comparison_plot(geom_data['dtheta_x'], geom_data_s['dtheta_x'], popt=popt, popt_smeared=popt_s, fit_bin_width=fit_bin_width, fit_bin_width_smeared=fit_bin_width_s, label='geometric')
 smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x')
-
 smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta_x_in'], survived_data['theta_y_in'], survived_data_smeared['theta_y_in'])
 
 for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:

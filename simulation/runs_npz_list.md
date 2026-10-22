@@ -266,3 +266,8 @@ almost correct beam profile and correct crystal width ($x$):
 
 ultra-correct beam profile (within $5\sigma$ subtracting $9^2 \,\mu\text{rad}^2$ from angular diagonal of covariance matrix):
 - condor5: 1974 $\to$ 19'740'000 particles (10k per job)
+
+now correct crystal width (maybe finally!!!!!!):
+- condor6
+
+
