@@ -43,6 +43,12 @@ $\to$ citation [28] from European Physical Journal article
 - Anghinolfi, Francis. "*Silicon strip detectors and their readout electronics.*" Electronic Systems for Experiments Seminar presentation. 2009.  
 [https://indico.cern.ch/event/69666/attachments/1029489/1466033/ESE_0_all.pdf](https://indico.cern.ch/event/69666/attachments/1029489/1466033/ESE_0_all.pdf)
 
+## CRYSTALS
+- [`crystals2021`] Silicon crystals for steering high-intensity particle beams at ultrahigh-energy accelerators, Phys. Rev. Research 3, 013108 (Published 3 February, 2021)  
+[https://doi.org/10.1103/PhysRevResearch.3.013108](https://doi.org/10.1103/PhysRevResearch.3.013108)
+- [`firstresults1993`] First results on proton extraction from the CERN-SPS with a bent crystal, Phys. Lett. B 313(3), 491 (1993).  
+[https://doi.org/10.1016/0370-2693(93)90024-C](https://doi.org/10.1016/0370-2693(93)90024-C)
+
 
 ## SIMULATION
 - [`iadarola2023xsuite`] G. Iadarola, R. De Maria, et al. **Xsuite**: *an integrated beam physics simulation framework (2023)*. arXiv:2310.00317  
