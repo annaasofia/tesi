@@ -48,6 +48,8 @@
     - [Plotting long crystal final simulation](#plotting-long-crystal-final-simulation)
     - [Xcoll](#xcoll)
 17. [WEEK 17 (OCT 26)](#week-17)
+18. [WEEK 18 (NOV 02)](#week-18)
+19. [WEEK 19 (NOV 09)](#week-19)
 
 ## WEEK 1  
 
@@ -1099,5 +1101,17 @@ Here I can find an example: [https://github.com/xsuite/xcoll/blob/main/examples/
 
 ## WEEK 17
 
+added a ordered logbook: [logbook_ordered.md](logbook_ordered.md)
+
+
+
+
+([UP](#traineeship-al-cern))
+
+## WEEK 18
+
+([UP](#traineeship-al-cern))
+
+## WEEK 19
 
 ([UP](#traineeship-al-cern))

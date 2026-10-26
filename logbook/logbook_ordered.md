@@ -35,27 +35,6 @@ Results:
     - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
 
-
-# Analysis
-## Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
-
-- center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
-    - ✅ in [compute_edges1.py](../recoDataSimple/compute_edges1.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
-    - ❌ what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$
-- $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
-    - to filter spatially those who entered the crystal (of dimension width $\times$ length), i look at `d0` variables $x$ and $y$ (`d0` and `d0Out`), total and from those events that will present some channeling (so $\Delta\theta_x>\sim 5850 \mu$ rad, number found as $\mu-4\sigma$ by preliminary fit) and from these last ones filtered `d0Out`, which form an almost perfect rectangular, i infere the position of the crystal with respect to the beam through a sliding window method (which maximize the integral).
-    - to filter the particles that have entered with the right angle, we first need to find $\theta_0$ in order to apply the filter $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$:
-- identify $N_{ch}$: on the $\Delta\theta_x$ filtered histogram perform a gaussian fit on the channeling peak, only from the right side of the peak, then do the integral around the peak
-- compute $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$ amd its error - we choose a binomial distribution
-
-## Measure the torsion correction✅
-Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [compute_channeling.py](../recoDataSimple/compute_channeling.py):  
-- for every small square (the $xy$ beam distribution is divided into) we find at which $\theta_{x,in}$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
-- do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a function along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y + p_3 y^2$ where $p_0$ is $\theta_{baseline}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$). we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
-- cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)  
-- computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at their impact position on the crystal surface  
-    $\to$ we obtain a global efficiency curve
-
 ## Crystal edges found for each run  
 
 Knowing that the detectors are aligned, the shift we see has only physics reasons.  
@@ -86,6 +65,33 @@ so for the $L=74\text{ mm}$ long crystals, with a $\theta_b=6\text{ mrad}$:
 $\big(1-\frac{180\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{180\cdot 10^9}}=12.992\,\mu\text{rad}$ or  
 $\big(1-\frac{150\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{150\cdot 10^9}}=14.294\,\mu\text{rad}$
 
+- ✅ correct edges since $\text{width}=12.8\text{ mm}$:
+    - correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
+    - redo `compute_edges1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
+    - redo plots about spatial cut
+    - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
+    - correct margins in `compute_channeling.py`
+
+# Analysis
+## Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
+
+- center the angle and choosing $\theta_0$ for torsion correction $\tau_y$, which is the variation of the crystalline plane orientation along the direction ($y$) perpendicular to the bending plane ($x$), and must be accounted for (the different orientations of the crystallographic planes along the crystal front surface influence the angular range in which particles can be channelled, i.e., the cut at $\pm 1/2 \,\theta_L$ may not be centred on zero, but a correction parameter $\theta_0 = \theta_0 (y)$)
+    - ✅ in [compute_edges1.py](../recoDataSimple/compute_edges1.py) we treat the crystal as if it was ideal, and we find a single global $\theta_{optimal}$ from the peak of the angular scan: we find the function of $\theta_0(x)$ and find the peak - the one that maximize the efficiency.
+    - ❌ what the articles does is that it takes the beam “spot” (`d0_x` vs `d0_y`) and divides it into a checkerboard grid. For each square on the grid, it performs an angular scan (like my previous h_scan) and finds the specific peak angle $\theta_0$ for that square. It then reapplies a correction to each particle by subtracting the local $\theta_0$
+- $N_{tot}:$ filter the data set, choosing the events that produced a single track, have a good $\chi^2$ value (?), have actually entered the crystal, and have an angle within $\pm\frac{1}{2}\theta_L$ (actually we choose them $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$):
+    - to filter spatially those who entered the crystal (of dimension width $\times$ length), i look at `d0` variables $x$ and $y$ (`d0` and `d0Out`), total and from those events that will present some channeling (so $\Delta\theta_x>\sim 5850 \mu$ rad, number found as $\mu-4\sigma$ by preliminary fit) and from these last ones filtered `d0Out`, which form an almost perfect rectangular, i infere the position of the crystal with respect to the beam through a sliding window method (which maximize the integral).
+    - to filter the particles that have entered with the right angle, we first need to find $\theta_0$ in order to apply the filter $|\theta_{in,x}-\theta_0|\leq\frac{1}{2}\theta_L$:
+- identify $N_{ch}$: on the $\Delta\theta_x$ filtered histogram perform a gaussian fit on the channeling peak, only from the right side of the peak, then do the integral around the peak
+- compute $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$ amd its error - we choose a binomial distribution
+
+## Measure the torsion correction✅
+Checkerboard grid search (1 mm $\times$ 1 mm) of torsion correction (see [week 2 analysis](#measure-the-channeling-efficiency)) $\to$ [compute_channeling.py](../recoDataSimple/compute_channeling.py):  
+- for every small square (the $xy$ beam distribution is divided into) we find at which $\theta_{x,in}$ the efficiency from the cut $\frac{1}{2}\theta_L$ is maximized
+- do a 2D torsion map ($x$, $y$, and angle shift). these values are then fitted ussing a function along $x$ and $y$ in the entire crystal surface to extract the continuous distribution of the map ($z=p_0+p_1 x + p_2 y + p_3 y^2$ where $p_0$ is $\theta_{baseline}$, $p_1$ is $\tau_x$, and $p_2$ is $\tau_y$). we will obtain an average value for the torsion on the $y$ direction, while the torsion along the $x$ direction is negligible ($\tau_x\sim 0$).  
+- cut will be $|\theta_{in,x}-(\theta_{0,center}+\tau_y\cdot d0_y)|\leq\frac{1}{2}\theta_L$ (this means that you are accepting only those particles whose entry angle ($\theta_{in}$) is at most half the Lindhard angle ($0.5 \cdot \theta_L$) away from the optimal local angle of the crystal plane at that height $y$ (which is calculated as $\theta_{off} + \tau_y \cdot y$). This is the most elegant and correct way to apply the cut, taking into account both the goniometer offset ($\theta_{off}$) and the twist ($\tau_y$) simultaneously.)  
+- computing the final $\epsilon_{ch}$, after applying an angular shift to the incoming direction of the particles, accordingly to the value of the torsion map at their impact position on the crystal surface  
+    $\to$ we obtain a global efficiency curve
+
 
 ## Mapping the torsion
 I choose a fit parabolic function (i want to use the simplest model that can accurately describe the data, but not so simple that it hides the actual physics):  
@@ -107,12 +113,6 @@ Final results:
 | 2 | 8656              | 3.80(1) urad/mm |  0.87(4) urad/mm | (18.0 ± 0.1 [stat] ± 0.0 [syst])%   | (6122.0 ± 0.3) urad | (32.4 ± 0.2) urad | 97%              |
 
 ## to do
-- ✅ correct edges since $\text{width}=12.8\text{ mm}$:
-    - correct how i do find edges along $y$ (they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3): doing also here a sliding window that mazimize the integral
-    - redo `compute_edges1.py` for each run to find edges (take advantage to also improve precision from 0.01 mm to 0.001 mm along $x$ and 0.01 mm along $y$)
-    - redo plots about spatial cut
-    - redo detectors alignment check by changing new edges and report here new results (a mean of $\sim 0.0029 \pm 0.0001$ it is not compatible with zero but is considered negligible compared to the width of the gaussian distribution, but the interpretation changes if the resolution is similar as the sigma of the gaussian)
-    - correct margins in `compute_channeling.py`
 
 - ✅ do not consider the edges in the analysis (cannot measure a local torsion angle where there's no beam so only considering the beam-illuminated window):
     - need a different consideration for edges for `filter2_spatial_cut` and for the fit: crop to where the data lives
@@ -256,6 +256,20 @@ Also exist the alternative Clopper-Pearson, for less statistics (es. se calcoli 
 If N independent measurements result in log-likelihood functions $\ln Li(θ)$, then the combined log-likelihood function is simply the sum, $\ln L(θ) = \sum \ln Li(θ)$. This can then be used to determine an approximate confidence interval or region.  
 Questo è il modo statisticamente corretto di combinare stime da run diverse (es. τ_y da 8430 e 8431 separatamente) invece di fare una media pesata ad-hoc — rilevante se in futuro si vuole combinare i risultati dei diversi run in un unico numero finale per la tesi.
 
+## Digits
+The golden rule of metrology (ISO/GUM) stipulates that the decimal places of the central value must align with the position of the first significant digit of the total uncertainty associated with that estimate.  
+Check the detector precision and change the uncertainty di conseguenza, not possible to have so many significance digits 0.1 um:
+- trackers have resolution of $7\,\mu\text{m}=0.007\,\text{mm}$
+- writing $0.0001\,\text{mm}$ is like claiming we have a sensibility 70 times smaller than it really is
+- it is better to round up to $0.01\,\text{mm}=10\,\mu\text{m}$ so compared to the $7\,\mu\text{m}$ resolution, we are safe  
+
+**$\to$ approximate everything to 2 decimal digits if in mm**
+
+Also about the angular uncertainty, that actually came from the position uncertainty: the angular resolution $\Delta\theta$ is determined by the spatial resolution of the detector (those $7\,\mu\text{m}$) divided by the distance between the tracker planes:
+$$\theta=\frac{x_2-x_1}{L}\iff\sigma_\theta=\frac{\sqrt{2}\,\sigma_x}{L}\sim5-10\,\mu\text{rad}$$
+$\to$ so in this case: **approximate everything to none decimal digits if in urad**
+
+*(In experimental physics and engineering, significant figures are not just a mathematical formality: they represent the physical limit of what your instrument is capable of measure. Writing more significant figures than necessary is equivalent to claiming to have information on a scale that your detector is physically incapable of measuring.)*
 
 
 
@@ -325,11 +339,148 @@ RESULTS:
 - along x i obtain exactly $\sim2\text{ mm}$
 - along x outside the crystal i have $\sigma\sim12\,\mu\text{rad}$ which corresponds to the detector resolution, and inside the crystal i have   
 
-[results continued in week 8](#find-the-crystal-edges-scattering-method)
+
+## Find the crystal edges: scattering method
+
+Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
+
+$\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​} = \sqrt{(\sigma_{bsl} + \sigma_{jump})^2​−\sigma_{bsl}^2​}$  
+*but the jump $(\sigma_{high} - \sigma_{bsl})$ seems more compatible with $\theta_{mcs}^{th}$*
+
+**Considerations:**
+- besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
+- consider the angle resolution (of $\Delta\theta_x$) of $\sim 8.89$ (8430/8431) or $9.67$ (8650/8655/8656)
+- compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
+- **material of the clamps:** from Highland formula $p, \beta, z$ depend on the beam, while $x, X_0$ on the material traversed. Supposing $x$ (width in $z$) as the same of the crystal or slightly more ($\sim 80\,\text{mm}$) i can resolve for $X_0$:
+    - stainless steel (Fe based) $X_0\sim 1.76\,\text{cm}$ $\to$ $\theta_{MCS} = 191.99$ (for $l=100\,\text{mm}$) 
+    - titanium $X_0\sim 3.56\,\text{cm}$ $\to$ $\theta_{MCS} = 131.60$ (for $l=100\,\text{mm}$)
+    - brass/copper $X_0\sim 1.4-1.5\,\text{cm}$ $\to$ $\theta_{MCS} = 209.90/213.77$ (for $l=100\,\text{mm}$)
+    - aluminum $X_0\sim 8.9\,\text{cm}$ $\to$ $\theta_{MCS} = 80.44$ (for $l=100\,\text{mm}$)
+    - tungsten $X_0\sim 0.35\,\text{cm}$ $\to$ $\theta_{MCS} = 455.32$ (for $l=100\,\text{mm}$)
+
+
+## To do about MCS:
+
+**Amorphous scattering**
+- the slices distribution should always be centered at zero - so now i'm seeing different effects summed up
+- only take amorpheous scattering to make sure i'm only selecting particles that never came close to alignment with any plane at any depth so they genuinely never channel, volume-reflect or dechannel - so we are sure they undergo pure random multiple coulomb scattering the whole way through
+- are we sure we have to add in quadrature?  
+check [week 13: about MCS (subsection)](#about-mcs-adding-different-contributions)
+- check rms in air - not exactly zero
+- along $y$ do fewer slices
+
+$$\theta_{RMS} = \frac{13.6 \text{ MeV}}{180000 \text{ MeV/c}} \sqrt{T_{tot}} [1 + 0.038 \ln(T_{tot})]$$
+and we can use $T_{tot}\approx T_{cryst}$ obtaining $\theta_{RMS} \approx 66 \,\mu\text{rad}$.
+
+$$\theta_{MCS,air}=\frac{13.6\,\text{MeV}}{180\,\text{GeV}} \sqrt{\frac{x}{X_0}} \bigg[1+0.038\ln\Big(\frac{x}{X_0}\Big)\bigg]$$
+and choosing $X_0\sim300\,\text{m}$ and $x=74\,\text{mm}$ (does not change much even if it is more) we get $\theta_{MCS,air}=0.812\,\mu\text{rad}$ so the term from the tracker angular resolution is still the dominant one.
+
+$$\sigma_{bsl}=\sqrt{\sigma^2_{tracker,res} + \sigma^2_{MCS, air}}$$
+and using the known $\sigma_{tracker}=12.57-13.68\,\mu\text{rad}$ we obtain:  
+$\sigma_{bsl}=12.6-13.7\,\mu\text{rad}$ to be compared with the one coming from the fit.   
+
+NB: $\sigma_{div,x}=25.4\,\mu\text{rad}$ and $\sigma_{div,y}=39.2\,\mu\text{rad}$ (which come from $\sigma_{\theta}=\sqrt{\sigma_{divergence}^2+\sigma_{tracker,res}^2}$, where $\sigma_{\theta}$ is from the data - width of the gaussian fit) do not enter the calculations because the angular divergence of the beam is common for $\theta_{in}$ and $\theta_{out}$ for a linear track and so in the difference $\Delta\theta$ it gets cancelled out.
+
+
+And for the crystal material:
+$$\sigma_{crystal}=\sqrt{\sigma^2_{MCS} + \sigma^2_{bsl} +(- \sigma^2_{74mm, air})}$$
+even though the $\sigma^2_{74mm, air}$ contribution is really small (well below angular resolution):
+$$\Delta\theta=\frac{\sigma^2_{74mm, air}}{2\theta_{cryst}}=\frac{0.812^2}{2\cdot70}\sim0.005\,\mu\text{rad}$$
+
+To have the same kind of comparison inside/outside (since the processes are independent, we can extract the pure scattering from the crystal by inverting the sum of the squares), compute:  
+- $\theta_{MCS,air}=\sqrt{\sigma^2_{fit,bsl} - \sigma^2_{tracker}}$ to be compared with $\theta_{MCS,air}^{th}=0.8\,\mu\text{rad}$
+- $\theta_{MCS,cryst}=\sqrt{\sigma^2_{fit,high} - \sigma^2_{fit,bsl}}$ to be compared with $\theta_{MCS,cryst}^{th}=66.5\,\mu\text{rad}$
+
+## About MCS: adding different contributions
+
+We are looking at the distribution of the angular deflection, with mean always zero, and we are measuring its spread (of the distribution), which is the variance. In statistic, when you combine indipendent random variables, it is their variances that add together in quadrature. Indeed, what we are measuring is the convolution of two gaussians (widths get add in quuadrature, while means get simle sum).  
+Since the RMS angle ($\theta$) represents the standard deviation (the square root of the variance), the basic probability math dictates that the contributions combine via the square root of the sum of their squares. This is the definition of adding in quadrature. If you were to sum the RMS contributions linearly ($\theta_{total} = \theta_1 + \theta_2$), you would mathematically be assuming perfect positive correlation. Physically, this implies that if a particle scatters $1^\circ$ to the left in the first material, it "remembers" this and preferentially scatters to the left again in the next material, actively steering the particle in a continuous curve.  
+$$\sigma_{total}^2 = \sigma_1^2 + \sigma_2^2 + 2 \rho \sigma_1 \sigma_2$$
+$$\rho=0\,\,\text{(indipendent)}: \sigma_{total}^2 = \sigma_1^2 + \sigma_2^2$$
+$$\rho=1\,\,\text{(correlated)}: \sigma_{total}^2 = (\sigma_1 + \sigma_2)^2$$
+While adding in quadrature is technically an approximation due to the Highland logarithmic correction, summing the RMS angles linearly is physically and statistically incorrect.  
+
+Adding in quadrature assumes that the angular deflections perfectly follow a Gaussian (normal) distribution. If multiple Coulomb scattering were purely Gaussian, adding the variances in quadrature would be 100% mathematically exact. However, the scattering distribution is not purely Gaussian.  
+
+While the vast majority of scatters are tiny "glancing" interactions that build up into a Gaussian core, particles occasionally undergo a single, hard collision with a nucleus. This is governed by Rutherford scattering, which creates heavy tails in the distribution.
+
+Because of these large-angle Rutherford scatters, the overall shape of the distribution (described by Molière theory) changes depending on how thick the material is. To define a useful "width" (RMS) for the central 98% of this non-Gaussian distribution, physicists use the Highland formula, which introduces a logarithmic correction factor to account for the thickness:
+$$\theta_0 = \frac{13.6 \text{ MeV}}{\beta c p} z \sqrt{\frac{x}{X_0}} \left[ 1 + 0.038 \ln\left(\frac{x}{X_0}\right) \right]$$
+Because of that $\ln(x/X_0)$ term, the mathematical rule of quadrature breaks. If you take two layers, calculate their Highland $\theta_0$ separately, and add them in quadrature, the logarithmic terms interact incorrectly. Adding Highland angles in quadrature systematically overestimates the true scattering angle, because you end up artificially inflating the impact of the Rutherford tails.  
+
+Adding in quadrature is still widely used in physics as a practical approximation. It holds (or is "good enough") in the following cases: first-order estimates, highly uniform materials, macroscopic vacuum gaps.
+
+**Correct formula:** If you have a particle passing through multiple layers of different materials and you want the exact RMS scattering angle according to the Particle Data Group (PDG), you do not calculate individual angles at all.Instead, you sum the fractional radiation lengths of the materials first, and then apply the Highland formula exactly once.  
+1) Calculate the total material thickness in terms of radiation lengths ($T$):$$T = \sum_{i} \frac{x_i}{X_{0,i}}$$
+2) Plug the total $T$ into the Highland formula:$$\theta_{total} = \frac{13.6 \text{ MeV}}{\beta c p} z \sqrt{T} \left[ 1 + 0.038 \ln(T) \right]$$By summing the radiation lengths before doing the math, you ensure the logarithmic correction scales correctly for the total amount of material traversed, accurately reflecting how the Gaussian core and Rutherford tails behave in reality.
+
+*For the crystal:*
+$$T_{tot} = \frac{x_{aria1}}{X_{0,aria}} + \frac{x_{cristallo}}{X_{0,cristallo}} + \frac{x_{aria2}}{X_{0,aria}}$$
+con $X_0^{air} \approx 30420 \text{ cm}$ and $X_0^{Si} \approx 9.36 \text{ cm}$.  
+different contributions: with $74 \text{ mm}$ of crystal: $T_{cryst} = \frac{7.4}{9.36} \approx 0.79$ and assumin even ($100 \text{ cm}$) of air: $T_{air} = \frac{100}{30420} \approx 0.003$.
+
+We expect that along $y$ we will have a cleaner measure, because channeling, volume reflection and dechanneling are all phenomenons happening along the bending direction, $x$, while along $y$ we will have pure mcs.
+
+## My analysis:
+
+Analyze the tracking deflections across transverse coordinates to measure MCS.  
+By mapping the local angular spread $\sigma(\Delta\theta)$ as a function of the transverse track position ($x$, $y$), material transitions appear as sharp steps convoluted with the telescope's spatial resolution, modeled as error functions.
+
+Channeling, volume reflection, and dechanneling are phenomena related to the orientation of the crystal planes, which in our crystal are cut or bent to deflect in the $x$-direction (this is why the channeling peak appears in $Δθ_x$, not $Δθ_y$). The $y$-direction is transverse to the bending plane, so it is not affected by these effects: it is sensitive only to isotropic MCS (projection of the same multiple Coulomb scattering) and to instrumental resolution.
+
+1. generate 2d distributions of track position versus deflection angle distribution, to check if some cut/filter on the incoming angle is needed (we dont want VR or channeled particles).
+2. to filter out channeled particles we simply select $\Delta\theta << \theta_b$, but unlike the short crystals there is no way to select single regions (VR, channeled, dechanneled, amorph) along $\Delta\theta_x$ and indeed the analysis using $\Delta\theta_x$ produces unreliable results (distributions not gaussian and not centered at zero and too large with respect to the theoretical expectations) - consistent with the expectation that no filtering of $θ_{in}$ can remove the VR.
+3. using $\Delta\theta_y$ because is not the axis along which channeling happens so the interactions should be pure MCS (isotropic) + detector resolution. 
+4. iterative gaussian slices: project each spatial bin of the crystal along the deflection axis ($\Delta\theta_y$), execute an initial gaussian fit within $\pm 2.5\times RMS$ and automatically refines the fit range to $\mu\pm2.5\sigma$ using fitted parameters (an rejecting unstable fits). 
+5. finally it records the resulting profile: bin centers ($x$ or $y$) vs the fitted width $\sigma$. 
+6. erf fit along $x$ (air $\to$ crystal $\to$ air) and $y$ (air $\to$ clamp $\to$ crystal $\to$ clamp $\to$ air).
+7. because the spatial slice in $y$ depende on knowing the $x$-boundaries of the crystal and vice-versa, the function iterate until convergence (alternating convergence loop):
+$$\text{Slice } y \in [y_{e2}^{(k)}, y_{e3}^{(k)}] \longrightarrow \text{Fit } x\text{-edges} \longrightarrow \text{Slice } x \in [x_{\text{lo}}^{(k+1)}, x_{\text{hi}}^{(k+1)}] \longrightarrow \text{Fit } y\text{-edges}$$
+(checking physical consistency at every step and monitoring the maximum edge coordinate shift)  
+8. from the converged fits, we can extract $\theta_{MCS, crystal}$, $\theta_{MCS, air}$, and $\theta_{MCS, clamp}$
+9. check on telescope tracking performance: the fitted transition parameter with the track impact parameter uncertainty
+
+$\to$ *“I identified that $x$ is structurally unsuitable for this purpose, I predicted that $y$ would be clean, and the agreement with the theory confirms this.”*
+
+## MCS final results
+
+```
+for v in 8430 8431 8650 8655 8656; do python compute_edges2.py "$v"; done
+```
+
+run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
+-------- | --------------------- | --------------------- | -------------------------
+8430     |  0.09 ± 0.01      |  0.29 ± 0.01      | 0.1055 
+8431     |  0.08 ± 0.01      |  0.28 ± 0.01      | 0.1055
+<!-- 8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055 -->
+<!-- 8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
+8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
+8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155  -->
+
+run [urad] | resolution | **x:** $\sigma_{bsl}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
+--         | --         | --                    |   --             | --                    | --             | --             
+8430       | 8.9       | 12.4 ± 0.1          |  65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 100.5 ± 0.7 
+8431       | 8.9       |  12.4 ± 0.1         | 65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 101.1 ± 0.7 
+<!-- 8430/8431  | 8.89       | 12.75 ± 0.00          |  78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49  -->
+<!-- 8650       | 9.67       | 14.73 ± 0.01          |   95.02 ± 0.14   | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
+8655       | 9.67       | 14.74 ± 0.01          |  86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
+8656       | 9.67       | 14.76 ± 0.01          |  86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ? -->
+
+Even if the resolution is $\sim 7$ it is still correct to use decimal digits in the results if we are talking about the statistic uncertainty of the fit, since the estimate is accompanied by sufficient statistical data to justify that level of precision for the parameter.  
+$\delta\sigma \approx \frac{\sigma}{\sqrt{2N}}$ if $N \approx 10^6$ eventi, for $\sigma \approx 12$ we obtain $\delta\sigma \approx 12 / \sqrt{2 \cdot 10^6} \approx 0.01$.
+
+| **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
+|-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
+| **8430**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.09 ± 0.04 | -11.07 ± 0.01 | -5.43 ± 0.01 | 8.66 ± 0.03 |
+| **8431**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.03 ± 0.04 | -11.08 ± 0.01 | -5.41 ± 0.01 | 8.62 ± 0.03 |
+<!-- | **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
+| **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
+| **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
+| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 | -->
+
+
 
 # Data Results 
-- Week 4: la tabella “Final results” in “Mapping the torsion” (τ_y, τ_x, ε_ch).
-- Week 6: la tabella finale in “Systematics”, con l’elenco “what i did”.
 - Week 13: “MCS final results”. Le tabelle della Week 8 nel logbook nuovo non ci sono più, quindi vale solo questa.
 
 Final results:  
@@ -343,10 +494,292 @@ Final results:
 | 2 | 8656              | 3.80(1) urad/mm |  0.87(4) urad/mm | (18.0 ± 0.1 [stat] ± 0.0 [syst])%   | (6122.0 ± 0.3) urad | (32.4 ± 0.2) urad | 97%              |
 
 
+what i did:  
+*(easy)*  
+1. shift of $\theta_0$ by $\pm$ their fit error  
+even if small is worth mentioning it in the total budget  
+0.004%  
+2. shifting lindhard angle by $\theta_in$ error:  
+my angular resolution (~8.9 µrad) is larger than $θ_L/2$ ($~6.5 µ\text{rad}$), so treating "shift the cut edge by one full resolution sigma" as systematic is too aggressive: a more defensible (and numerically stable) choice is to shift by a fraction of the resolution or a smaller fixed step, rather than the full σ  
+0.981%
+3. shifting the box margins by $d_0$ error along x *(main source)*:  
+1.098%  
+-  shifting the box margins by $d_0$ error along y (shift of 2.5% of y length):  
+0.001%
+4. n sigma integration window (changing bin min (2.5σ - 3.5σ) from which i integrate n_ch):  
+0.054%
+
+*(heavier)*
+1. fit model choice (full quadratic vs parabolic y):  
+0.031%
+2. nx/ny slice choice:  
+0.003%
+3. crystal margins cut:
+0.077%
+4. preliminary cut threshold:  
+0.063%
+
+| %        | **total** | binomial| $\theta_0$ | $\theta_L$ | shift $x$ | shift $y$ | bin min | fit model choice | nx ny choice | crystal margins cut | preliminary cut |
+|----------|-----------|---------|------------|------------|-----------|-----------|---------|------------------|--------------|---------------------|-----------------|
+| **8430** | **1.5**   | 0.063   | 0.004      | 0.981      | 1.098     | 0.001     | 0.054   | 0.031            | 0.003        | 0.077               | 0.063           |
+| **8431** | **1.5**   | 0.064   | 0.007      | 0.957      | 1.079     | 0.001     | 0.054   | 0.188            | 0.130        | 0.017               | 0.072           |
+| **8650** | **1.3**   | 0.051   | 0.003      | 0.755      | 1.001     | 0.001     | 0.066   | 0.004            | 0.034        | 0.009               | 0.000           |
+| **8655** | **1.4**   | 0.062   | 0.009      | 0.737      | 1.187     | 0.002     | 0.076   | 0.016            | 0.199        | 0.180               | 0.036           |
+| **8656** | **1.4**   | 0.058   | 0.006      | 0.814      | 1.191     | 0.001     | 0.080   | 0.010            | 0.104        | 0.164               | 0.094           |
+
+## MCS final results
+
+```
+for v in 8430 8431 8650 8655 8656; do python compute_edges2.py "$v"; done
+```
+
+run [mm] | fitted transition $x$ | fitted transition $y$ | mean position error $d_0$ 
+-------- | --------------------- | --------------------- | -------------------------
+8430     |  0.09 ± 0.01      |  0.29 ± 0.01      | 0.1055 
+8431     |  0.08 ± 0.01      |  0.28 ± 0.01      | 0.1055
+<!-- 8430/8431|  0.0900 ± 0.0002      |  0.2617 ± 0.0064      | 0.1055 -->
+<!-- 8650     |  0.0068 ± 0.0001      |  0.1375 ± 0.0062      | 0.1055
+8655     |  0.0740 ± 0.0005      |  2.6090 ± 0.0784      | 0.1155 
+8656     |  0.0731 ± 0.0005      | 2.6705 ± 0.0557       | 0.1155  -->
+
+run [urad] | resolution | **x:** $\sigma_{bsl}$ |  $\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | **y:** $\sigma_{bsl}$ | $\theta_{mcs}=\sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​}$ | $\theta_{clamp}=\sqrt{\sigma_{clamp}^2​−\sigma_{bsl}^2​}$
+--         | --         | --                    |   --             | --                    | --             | --             
+8430       | 8.9       | 12.4 ± 0.1          |  65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 100.5 ± 0.7 
+8431       | 8.9       |  12.4 ± 0.1         | 65.1 ± 0.1    | 11.5 ± 0.1          | 62.9 ± 0.1   | 101.1 ± 0.7 
+<!-- 8430/8431  | 8.89       | 12.75 ± 0.00          |  78.44 ± 0.05    | 11.80 ± 0.06          | 63.09 ± 0.03   | 99.35 ± 0.49  -->
+<!-- 8650       | 9.67       | 14.73 ± 0.01          |   95.02 ± 0.14   | 13.34 ± 0.17          | 73.54 ± 0.06   | 118.80 ± 1.68 
+8655       | 9.67       | 14.74 ± 0.01          |  86.82 ± 0.12    | ?                     | 70.50 ± 0.09   | ?
+8656       | 9.67       | 14.76 ± 0.01          |  86.66 ± 0.11    | ?                     | 70.13 ± 0.09   | ? -->
+
+Even if the resolution is $\sim 7$ it is still correct to use decimal digits in the results if we are talking about the statistic uncertainty of the fit, since the estimate is accompanied by sufficient statistical data to justify that level of precision for the parameter.  
+$\delta\sigma \approx \frac{\sigma}{\sqrt{2N}}$ if $N \approx 10^6$ eventi, for $\sigma \approx 12$ we obtain $\delta\sigma \approx 12 / \sqrt{2 \cdot 10^6} \approx 0.01$.
+
+| **run**         | **$x$ [mm]**    | $x_{min}$        | $x_{max}$       | **$y$ [mm]**     | $y_{clamp}$       | $y_{min}$        | $y_{max}$       |
+|-----------------|-----------------|------------------|-----------------|------------------|-------------------|------------------|-----------------|
+| **8430**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.09 ± 0.04 | -11.07 ± 0.01 | -5.43 ± 0.01 | 8.66 ± 0.03 |
+| **8431**        | 2.11 ± 0.01 | -1.07 ± 0.0003 | 1.05 ± 0.01 | 14.03 ± 0.04 | -11.08 ± 0.01 | -5.41 ± 0.01 | 8.62 ± 0.03 |
+<!-- | **8430 & 8431** | 2.0907 ± 0.0003 | -1.0600 ± 0.0002 | 1.0308 ± 0.0002 | 13.9346 ± 0.0195 | -11.1049 ± 0.0059 | -5.3966 ± 0.0091 | 8.5380 ± 0.0173 |
+| **8650**        | 2.0971 ± 0.0001 | -0.2709 ± 0.0001 | 1.8261 ± 0.0000 | 13.7271 ± 0.0156 | -11.8176 ± 0.0094 | -6.3653 ± 0.0156 | 7.3618 ± 0.0015 |
+| **8655**        | 2.1200 ± 0.0006 | 0.6031 ± 0.0005  | 2.7232 ± 0.0004 | 12.6059 ± 0.0717 | -10.3721 ± 0.0581 | -6.9081 ± 0.0570 | 5.6978 ± 0.0436 |
+| **8656**        | 2.1224 ± 0.0006 | 0.6015 ± 0.0004  | 2.7239 ± 0.0004 | 13.0073 ± 0.1430 | -10.2544 ± 0.0557 | -7.1044 ± 0.0575 | 5.9029 ± 0.1309 | -->
+
+
+
 # Simulation
-- BDSIM, come funziona: Week 7, “Simulation” (Geant4, BDSIM, BDSIM-Link e script demo). I comandi per lanciarla puoi lasciarli fuori o metterli in appendice.
-- Riprodurre la distribuzione del beam: Week 10, “Study the beam distribution”. Poi Week 11, “Study the beam distribution (part 2)”, e Week 12, il punto “Beam distribution” in “To do about MCS” (la correlazione x–θ e i parametri di Twiss).
-- Cristallo corto: Week 11, “Channeling Analysis on the simulated short crystal” e “Simulation results - short crystal”.
 - Cristallo lungo: Week 12, “Simulation for the long crystal” e “Submit the jobs on the cluster” (parti tecniche, valuta se metterle in appendice). Poi Week 14, “Analysis and plots for the long crystal simulations”.
 - Applicazione dello smear: Week 15, “MCS in simulations”, e Week 16, “Plotting long crystal final simulation” (confronto con/senza smear).
 - Xcoll, corto e lungo: Week 16, “Xcoll”. Per ora è solo un elenco di cose da fare, quindi la sezione andrà scritta quando avrai i risultati.
+
+
+## BDSIM Simulation
+
+**Geant4** is a Monte Carlo toolkit for simulating particles passing through matter. Given a geometry, a set of materials, and a physics list (which processes are switched on — multiple scattering, ionization, hadronic interactions, etc.), it steps particles through space and simulates their interactions stochastically. `g4FTFP_BERT` is a standard hadronic physics list (Fritiof model at high energy, Bertini cascade at low energy) — general-purpose, no crystal physics.  
+
+**BDSIM** is a Geant4-based application purpose-built for accelerator beamlines: it turns an accelerator lattice description into Geant4 geometry and tracks beam through it, including realistic material interactions in collimators, targets, and (via an extension) bent-crystal channeling. Its input language, *gmad*, looks like MAD-X syntax but describes beamline elements, materials, beam parameters, and physics options.  
+
+**BDSIM-Link** (what both scripts use) is a hybrid-tracking mode: an external code (here, xtrack/xsuite) does the fast, analytic tracking through magnets, and only hands particles to Geant4/BDSIM at the few elements where detailed matter interaction actually matters (a collimator jaw, a target, a crystal). This is much cheaper than tracking the whole ring in Geant4.
+
+in the folder [simulation/bdsim_test](../simulation/bdsim_test/) there is a [demo.py](../simulation/bdsim_test/demo.py) file which is the script:
+- tracking protons in a ring accelerator
+- with 2 objects: a helium target (generate a halo) and a tungsten jaw collimator (absorb the halo)
+- 100 turns, each turn particles are sent through coll1, emittance are recorded, then xtrack propagates the surving particles through the arc to coll2, then back to the start $\to$ surviving particle counts and coordinated at both elements are logged each turn
+- needs the file [trackerInterface.gmad](../simulation/bdsim_test/trackerInterface.gmad) for specifics
+
+in the folder [simulation/bdsim_crystal](../simulation/bdsim_crystal/) there is a [demo_crystal.py](../simulation/bdsim_crystal/demo_crystal.py) file which is the script:
+- tracking 180 GeV protons in short/long crystal
+- needs the file [trackerInterface.gmad](../simulation/bdsim_crystal/trackerInterface.gmad) for specifics
+
+$\to$ ✅ try to run a simulation of ~20000 particles for a short crystal and plot the angular scan (deflection vs incoming angle)
+
+## Study the beam distribution
+
+what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems descrivable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  
+$\to$ in principel yes, but i need to be careful:  
+fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
+
+I check the covariance and correlation matrices not with all data but within $\pm 5 \sigma$ of the gaussian fit (98% of data), otherwise the widths of the angular distributions would be too high.
+
+|                  | $\mu_x$      | $\sigma_x$  | $\mu_y$      | $\sigma_y$  | $\mu_{\theta,x}$ | $\sigma_{\theta,x}$ | $\mu_{\theta,y}$ | $\sigma_{\theta,y}$ |
+|------------------|--------------|-------------|--------------|-------------|------------------|---------------------|------------------|---------------------|
+| 8430             | -0.21 ± 0.00 | 2.32 ± 0.00 | 0.60 ± 0.00  | 2.40 ± 0.00 | -0.93 ± 0.01     | 26.97 ± 0.01        | 6.56 ± 0.01      | 41.09 ± 0.01        |
+| 8431             | -0.35 ± 0.00 | 2.37 ± 0.00 | 0.66 ± 0.00  | 2.40 ± 0.00 | -1.60 ± 0.01     | 27.08 ± 0.01        | 7.95 ± 0.01      | 41.02 ± 0.01        |
+| 8650             | -0.60 ± 0.00 | 2.51 ± 0.00 | 0.55 ± 0.00  | 2.62 ± 0.00 | -2.79 ± 0.01     | 29.82 ± 0.01        | 5.64 ± 0.02      | 44.30 ± 0.01        |
+| 8655             | -0.42 ± 0.00 | 2.22 ± 0.00 | -0.02 ± 0.00 | 2.53 ± 0.00 | -1.73 ± 0.01     | 29.63 ± 0.01        | -1.51 ± 0.01     | 43.59 ± 0.01        |
+| 8656             | -0.38 ± 0.00 | 2.23 ± 0.00 | -0.04 ± 0.00 | 2.53 ± 0.00 | -1.37 ± 0.01     | 29.66 ± 0.01        | -1.24 ± 0.01     | 43.58 ± 0.01        |
+| weighted average | -0.37867394  | 2.01454317  | 0.3615005    | 2.80776263  | -1.62272038      | 30.89146025         | 3.64729974       | 45.734049           |
+
+|**correct** *8430 Correlation matrix after cut:*  ||||
+|--|--|--|--|
+|[ 1.         |  0.01347898 |  0.51028308 | 0.02852061]|
+|[ 0.01347898 |  1.         | -0.0796839  | 0.23902702]|
+|[ 0.51028308 | -0.0796839  |  1.         | 0.05384073]|
+|[ 0.02852061 |  0.23902702 |  0.05384073 | 1.        ]|
+
+|*8430 Correlation matrix before cut:*  ||||
+|--|--|--|--|
+|[ 1.         | 0.00249682  | 0.56065383  | 0.04752554]  |
+|[ 0.00249682 |  1.         | -0.04600791 |  0.34909413] |
+|[ 0.56065383 | -0.04600791 |  1.         |  0.07679966] |
+|[ 0.04752554 |  0.34909413 |  0.07679966 |  1.        ] |
+
+
+|**correct** *8430 Covariance matrix after cut:*||||
+|--|--|--|--|
+|[ 3.82592775e+00 |  7.08532402e-02 |  2.94087313e+01 | 2.44291188e+00]|
+|[ 7.08532402e-02 |  7.22218856e+00 | -6.30959887e+00 | 2.81295028e+01]|
+|[ 2.94087313e+01 | -6.30959887e+00 |  8.68147418e+02 | 6.94685664e+01]|
+|[ 2.44291188e+00 |  2.81295028e+01 |  6.94685664e+01 | 1.91761445e+03]|
+
+|*8430 Covariance matrix before cut:*||||
+|--|--|--|--|
+|[   4.74346824 |   0.01606491 |   89.41765855 |    7.18923536]|
+|[   0.01606491 |   8.72738918 |   -9.9530266  |   71.62957414]|
+|[  89.41765855 |  -9.9530266  | 5362.42227158 |  390.61366706]|
+|[   7.18923536 |  71.62957414 |  390.61366706 | 4824.08887831]|
+
+
+- $x-y$: correlation 0.0025 $\to$ negligible
+- $x-\theta_x$: correlation 0.56 $\to$ NOT negligible
+- $y-\theta_y$: correlation 0.35 $\to$ NOT negligible
+- $\theta_x-\theta_y$: correlation 0.076 $\to$ small - can be statistic rumor
+
+It is correct to have positive correlation between the two, a greater angle corresponds to a greater incoming position.
+
+## Study the beam distribution (part 2)
+
+how to consider the correlation?
+1. Paired resampling from real data (the simplest and most robust method; it does not require assuming a functional form for the correlation):  
+```python
+idx = np.random.choice(len(x_meas), npart, replace=True)
+x_impact  = x_meas[idx]
+thetax_impact = thetax[idx]
+# y e thetay possono restare fit+sampling indipendente, o anch'essi paired se preferisci uniformità di metodo
+y_impact  = y_meas[idx]
+thetay_impact = thetay[idx]
+```
+By using the same idx for all four, you automatically preserve all the actual correlations (even the small ones), without having to decide on a case-by-case basis which ones to model.  
+
+2. **actually used**: I combined all 5 covariance matrices (correlation and covariance matrix obtained from each run), into a single one by doing a weighted average - weighted by their number of entries $w=n/n_{tot}$ - and the same for the gaussian means and sigmas. then by doing a multivariate random distribution I get my distribution.  
+`rng = np.random.default_rng(seed=82)`  
+`samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=npart)`  
+
+## Study the beam distribution (part 3)
+- it is correct to have correlation actually:  
+In beam optics, position and angle at a given location are correlated whenever the beam isn't exactly at a **waist** (a point where the beta function is at a local minimum and the Twiss `alpha` parameter is zero). The phase-space ellipse (x vs. px) has a tilt described by `alpha`: $<x·p_x> = -\alpha * emittance$.  
+If $\alpha ≠ 0$ at the crystal location (which is the general case — you'd need to specifically design the optics to have a waist exactly there), then x and px are correlated by construction. This isn't an artifact or noise — it's a direct consequence of how the beam was transported (focusing, drifts) upstream of the measurement point. A correlation of ~0.15 is modest but completely plausible for a real beamline where the crystal isn't sitting exactly at a waist.  
+Since $\alpha ≠ 0$ is now expected, you could cross-check your measured correlation against the beamline's actual Twiss parameters at the crystal location, if you have access to the optics model (MAD-X/xsuite lattice for that beamline). The theoretical relationship is: $corr(x, p_x) = -\alpha / \sqrt{1 + \alpha²}$.  
+If you know $\alpha$ at the crystal from the lattice design, you can compute the expected correlation and compare it to your measured ~0.15 as a sanity check — if they roughly agree, that's strong confirmation the correlation is real beam optics and not, say, a reconstruction/tracking artifact in your telescope analysis.
+
+- about the spikes check if rebinning it changes, if it shows also on the "all" particles and if the remaining particles - the "not entered" - are compatible as the others
+
+## Channeling Analysis on the simulated short crystal
+
+(i am currently not saving the variables `delta` - momentum divergence, `zeta` - longitudinal coordinate, `ptau` - energy divergence, `pdg_id` and `weight`)
+
+- no single track selection or detector alignment checks needed.
+- selecting the survived particles (`state_out == 1`)(also `state_in == 1` needed? just confirms a slot is a real, active particle at the start) we are selecting the particles that survived without being absorbed (made it through).s
+- what is the aperture? it describes the surrounding vacuum-pipe/housing aperture - the mechanical structure around the crystal. think about changing `cry1.aper1` which is 50 mm meters (was 100 meters before!! so a lot of particles were not passing though the crystal (survived with a $\Delta\theta=0$)): keeping it greater than the crystal's dimension is also keeping the `state_out` filter physically meaningful (decoupling what survived the aperture and what hit the crystal)
+- *spatial cut* (selection of the ones that actually enter the crystal) on the impact position needed: $|x_{in}| < x_{size}/2$ and $|y_{in}| < y_{size}/2$ .
+- *Lindhard cut:* $|\theta_{in}| < \theta_L/2$ so selecting the particles with the potential to be channeled.
+- now we can compute the channeling efficiency on the "subset" (= went inside the crystal and entered within the angular acceptance)
+
+**Results:**  
+with [18 sep run](../simulation/bdsim_crystal/cry1_20260918_10.npz) of 200.000 particles and through [plot_simulation.py](../simulation/bdsim_crystal/plot_simulation.py) we obtain:  
+- channeling efficiency: $\epsilon_{ch}=26190/32201=81.3\%$ if area below, or $82.4\%$ if within $\pm 3 \sigma$
+- channeling peak: $\theta_b=(50.04\pm0.09)\,\mu\text{rad}$ and $\sigma=(7.12\pm0.09)\,\mu\text{rad}$
+
+## Simulation results - short crystal
+
+Out of 200k simulated particles for the short crystal:
+- survived = all
+    - what gets the particles absorbed, is the inelastic nuclear interaction, that goes like $1-e^{-L/\lambda}$, where $\lambda$ is the length for the nuclear interaction in silicon ($\sim 46.2\,\text{cm}$):
+    - short crystal ($L=4\,\text{mm}$): $(1-e^{-4/462})=0.9\%$
+    - long crystal ($L=74\,\text{mm}$): $(1-e^{-74/462})=15\%$
+- within critical angle ~ 120  
+    - 120/650 ~ 18% of survivors land within the lindhard window, and that is what i expect from my beam divergence: $\sigma(\theta_x)$ is around $30 \,\mu\text{rad}$ and $\theta_L/2\sim6.6\,\mu\text{rad}$, for a gaussian of that width, the fraction falling inside $\pm\theta_L/2$ works out about 18-19% $\to$ so this part of the pipeline is behaving exactly as physics predicts, my beam is simply more divergent than the crystal's angular acceptance.
+    - for a gaussian angular distribution with width $\sigma_\theta$, the fraction of particles falling inside a symmetric window $\pm a$ around the mean is $f=erf(\frac{a}{\sigma_\theta\sqrt{2}})$. in our case $\pm a=\pm\theta_L/2$ and using $\sigma_\theta\sim27\,\mu\text{rad}$ we get $f\sim19.4%$
+
+
+## Simulation for the long crystal
+Through `merge_npz.py` I merge all the runs of the three condors:  
+- condor: 242 runs $\to$ 2'400'400 particles
+- condor2: 1927 runs $\to$ 19'270'000 particles
+- condor3: 1600 runs $\to$ 16'000'000 particles
+
+**Key points for the analysis:**
+1. filter survived particles: select `state_out == 1`
+2. geometrical cut: i know for sure from the simulation script that the crystal is centered around zero so i can cut like a box - $(|x_{in}|<cry_x/2, |y_{in}|<cry_y/2)$
+3. critical angle selection: within $\pm 1/2 \,\theta_L$
+4. channeling analysis: gaus fit around the channeled peak and integral - remember to include in $N_{tot}$ also particles with the potential to be channeled that did not survive
+- multiple coulomb scattering
+- volume reflection fraction: near $\Delta\theta \approx -θ_L$ $\to$ $14\%$
+- dechanneling: histo of $\Delta\theta_x$ between 0 and the peak, on the attemped population
+- energy lost in the crystal
+
+**Results:**  
+||survived|geom hit|$\theta_b$ [urad]|$\sigma_\theta$ [urad]|$\epsilon_{eff}$|
+|--|--|--|--|--|--|
+|1|90.16%|99.1%|5999 ± 1|6.7 ± 0.1|(35.1± 0.1)%|
+|2|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
+|3|90.15%|99.2%|5999 ± 1|6.7 ± 0.1|(34.9± 0.1)%|
+
+## MCS in simulations
+
+MCS in the simulation for Silicon is already taken into account - also nuclear interactions (for dechanneled and volume reflected particles - while for channeled particles their effect is given by the channeling model).  
+What I have to add manually is the **tracker uncertainty contribution**.
+
+## How to apply the smear
+$\to$ doubt: isn't the effect already taken into account in the beam distribution i got from real data?  
+Yes, but still the single values of the angles in the simulation does not have a error value, so the addition is necessary.  
+We can subtract the $\sigma_{track}$ from the incoming beam distribution (but we would need to re-run the simulation) and then reapply the error, if we don't do it, it shouldn't be a big problem: the contribution of the effect is:
+- $θ_x: \sqrt{(27² − 9²)} ≈ 25.5 µrad$ vs $27$, $\sim 5\%$ less
+- $θ_y: \sqrt{(40² − 9²)} ≈ 39 µrad$ vs $40$, $\sim 2.5\%$ less
+
+If we want to be correct we just subtract $9^2 \,\mu\text{rad}^2$ from angular diagonal of covariance matrix before the beam gets generated:  
+```python
+cov_true = cov_avg.copy()
+cov_true[2, 2] -= (9e-6)**2     # theta_x
+cov_true[3, 3] -= (9e-6)**2     # theta_y
+```
+
+The measures are independent.  
+$\theta_{in} = \theta_{in} + N(0,\sigma_{in})$ with $\sigma_{in}^2=\sigma_{track}^2+\sigma^2_{air, up}$  
+$\to$ so for each particle I extract a casual number from a gaussian distribution (`rng.normal(0, s_in, theta_x_in.size)`)  
+$\theta_{out} = \theta_{out} + N(0,\sigma_{out})$ with $\sigma_{out}^2=\sigma_{track}^2+\sigma^2_{air, down}$  
+$\Delta\theta = \theta_{out}^{new} - \theta_{in}^{new}$ so $\sigma(\Delta\theta)\approx\sqrt{\sigma_{in}^2+\sigma_{out}^2}$  
+
+
+After, the Lindhard cut will be done on $\theta_{in}^{new}$, since $\sigma_{track}$ is compatible with $\theta_L$.
+
+About the air contribution:  
+the factor $\sqrt{x/X_0}$ sums exactly in quadrature (variances become linear in $x/X_0$), but the logarithmic correction does not. For two equal segments of length $x$, adding the two $θ_0$ values in quadrature instead of using a single $θ_0$ with $2x$ changes the logarithmic factor by $0.038\cdot\ln 2 ≈ 2.6\%$. 
+
+**using:**  
+- $\theta_{in} = \theta_{out} = 9\,\mu\text{rad}$
+- $L_{air}=0$
+- seed $=83$
+
+## Plotting long crystal final simulation
+$\to$ [cry2_merged5.npz](../simulation/bdsim_longcrystal/runs/cry2_merged5.npz) [6 GB!!]
+
+Through [plot_simulation.py](../simulation/bdsim_longcrystal/plot_simulation.py):  
+- incoming beam features
+- added smear taken from data $\sigma_{tracker}=9\,\mu\text{rad}$
+- compute efficiency (taking into account in the denominator also the ones that could have channeled but were absorbed/lost)
+- both dataset are kept: comparison with/without smear
+
+**RESULTS**:
+||without ||| with $\sigma=9$|||
+|-|-|-|-|-|-|-|
+|**particles**|$\varepsilon_{ch}$|**peak**|sigma |$\varepsilon_{ch}$|**peak**|sigma|
+|19740000|(34.4± 0.0)%|5999.15 ± 0.03 urad|6.75 ± 0.03|(21.8± 0.0)%|5999.18 ± 0.02 urad |11.19 ± 0.02|
+
+## Xcoll
+
+Simulation through XSuite, with the XColl routine, designed for the short collimation crystals.  
+Here I can find an example: [https://github.com/xsuite/xcoll/blob/main/examples/everest_crystal.py](https://github.com/xsuite/xcoll/blob/main/examples/everest_crystal.py), which i can adapt for my use.
+
+- simulate short crystal
+- simulate long crystal
+- my beam distribution
+- adding the smear
