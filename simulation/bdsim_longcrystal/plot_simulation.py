@@ -341,6 +341,7 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     y_in_channeled = y_in[channeled_mask]
     x_out_channeled = x_out[channeled_mask]
     y_out_channeled = y_out[channeled_mask]
+    shift = crystal_length * bending_angle/2
 
     fig = plt.figure(figsize=(20, 11), layout='constrained')
     subfigs = fig.subfigures(2, 1, hspace=0.01)
@@ -386,6 +387,11 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
             ax.hist(vals * distance_scale, bins=100, color=cfg['color'], histtype='stepfilled')
             ax.axvline(-edge, color='red', ls='--', label='crystal edges')
             ax.axvline(edge, color='red', ls='--')
+            if cfg['title'] == 'Channeled Particles' and xlabel.startswith('outgoing x'):
+                ax.axvline(-edge + shift * distance_scale, color='red', ls='--')
+                ax.axvline(edge + shift * distance_scale, color='red', ls='--')
+                ax.axvline(-edge, color='orange', ls='--', label='crystal edges no bend')
+                ax.axvline(edge, color='orange', ls='--')
             ax.set_xlabel(xlabel)
             ax.set_ylabel('Counts')
             ax.legend(loc='upper right')

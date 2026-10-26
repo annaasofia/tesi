@@ -1,7 +1,7 @@
 import ROOT
 import sys
 
-f = ROOT.TFile.Open("../data/recoDataSimple_8430_xtalMerging.root")
+f = ROOT.TFile.Open(f"../data/recoDataSimple_{sys.argv[1]}_xtalMerging.root")
 
 if not f or f.IsZombie():
     print("Error: file has not opened correctly.")
@@ -30,3 +30,5 @@ for branch in list_branches:
         print(f"     Leaf: {name_leaf} - type {type_leaf}")
     
     print('-'*40)
+
+print(f"Tree contains {events} events.")
