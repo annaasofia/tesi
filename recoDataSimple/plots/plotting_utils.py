@@ -287,7 +287,8 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     else:
         fig = ax.figure
 
-    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', vmin=vmin, vmax=vmax)
+    # mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', vmin=vmin, vmax=vmax)
+    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', rasterized=True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if title:
@@ -395,7 +396,8 @@ def plot_tf2(f, x_range, y_range, nx=120, ny=120, ax=None,
     else:
         fig = ax.figure
 
-    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='auto')
+    # mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='auto')
+    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='auto', rasterized=True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if title:

@@ -272,8 +272,8 @@ pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=axs0a[1,1], xlabel="x [mm]", ylabel="y [
 axs0a[1,1].add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 axs0a[1,1].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=1, ls='--'))
 fig0a.tight_layout()
-fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.pdf")
-fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.png")
+fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.pdf", dpi=300)
+fig0a.savefig(f"plots_{file}_edges1/spatial_cut_box.png", dpi=300)
 plt.close(fig0a)
 
 fig0b, axs0b = plt.subplots(2, 2, figsize=(14, 10))
@@ -288,15 +288,15 @@ pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0b[1,0], xlabel="x [mm]", ylabel="y [mm]"
 # 4) Outgoing channeled
 pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=axs0b[1,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (Channeled)", cmap=cmap_white_bg)
 fig0b.tight_layout()
-fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.pdf")
-fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.png")
+fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.pdf", dpi=300)
+fig0b.savefig(f"plots_{file}_edges1/spatial_cut_nobox.png", dpi=300)
 
 
 fig0c, ax0c = plt.subplots(figsize=(8, 7))
 pu.plot_histo2d(plot_h_d0_xy, ax=ax0c, xlabel="x [mm]", ylabel="y [mm]", title="Incoming beam of all particles", cmap=cmap_white_bg)
 ax0c.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
-fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.pdf")
-fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.png")
+fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.pdf", dpi=300)
+fig0c.savefig(f"plots_{file}_edges1/spatial_cut2_box.png", dpi=300)
 plt.close(fig0c)
 
 # c1 = ROOT.TCanvas("c1", "d0_x and d0_y of channeled particles", 1000, 900)
@@ -352,8 +352,8 @@ pu._style_axes(ax_right1)
 
 fig1.suptitle("Downstream (Channeled)", fontsize=16, y=0.95)
 
-fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.pdf")
-fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.png")
+fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.pdf", dpi=300)
+fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.png", dpi=300)
 plt.close(fig1)
 
 # c2 = ROOT.TCanvas("c2", "d0_x and d0_y of channeled particles", 1000, 900)
@@ -407,8 +407,8 @@ pu._style_axes(ax_top2)
 pu._style_axes(ax_right2)
 
 fig2.suptitle("Upstream (Channeled)", fontsize=16, y=0.95)
-fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.pdf")
-fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.png")
+fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.pdf", dpi=300)
+fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.png", dpi=300)
 plt.close(fig2)
 
 # now that we have the crystal area/position, we can apply the spatial cut to the entire dataframe
