@@ -268,6 +268,7 @@ ultra-correct beam profile (within $5\sigma$ subtracting $9^2 \,\mu\text{rad}^2$
 - condor5: 1974 $\to$ 19'740'000 particles (10k per job)
 
 now correct crystal width (maybe finally!!!!!!):
-- condor6
+- condor6: 1905 $\to$ 19050000 particles
+- condor7: 1899 $\to$ 18990000 particles
 
 

@@ -12,7 +12,7 @@ viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
-filename = './runs/cry2_merged5_slim.npz'
+filename = './runs/cry2_merged6_slim.npz'
 data = np.load(filename)
 
 output_folder = './plots'
