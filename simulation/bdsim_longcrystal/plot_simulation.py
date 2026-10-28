@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -12,10 +14,11 @@ viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
-filename = './runs/cry2_merged6_slim.npz'
+n = sys.argv[1] if len(sys.argv) > 1 else '6'
+filename = f'./runs/cry2_merged{n}_slim.npz'
 data = np.load(filename)
 
-output_folder = './plots'
+output_folder = f'./plots{n}'
 os.makedirs(output_folder, exist_ok=True)
 
     # cov_avg=cov_avg,
@@ -149,7 +152,7 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
 
     fig, graph = plt.subplots(2, 2, figsize=(10, 10))
     # 1. Grafico (x, y) - Beam impact position
-    h0 = graph[0, 0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm())
+    h0 = graph[0, 0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
     fig.colorbar(h0[3], ax=graph[0, 0], label='Counts')
     graph[0, 0].set_xlabel(f'impact x [{distance_unit}]')
     graph[0, 0].set_ylabel(f'impact y [{distance_unit}]')
@@ -158,7 +161,7 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     graph[0, 0].set_ylim(y_lim)
     graph[0, 0].grid(alpha=0.3)
 
-    h00 = graph[0, 1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm())
+    h00 = graph[0, 1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
     fig.colorbar(h00[3], ax=graph[0, 1], label='Counts')
     graph[0, 1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
     graph[0, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
@@ -167,7 +170,7 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     graph[0, 1].set_ylim(theta_y_lim)
     graph[0, 1].grid(alpha=0.3)
 
-    h1 = graph[1, 0].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm())
+    h1 = graph[1, 0].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
     fig.colorbar(h1[3], ax=graph[1, 0], label='Counts')
     graph[1, 0].set_xlabel(f'impact x [{distance_unit}]')
     graph[1, 0].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
@@ -176,7 +179,7 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     graph[1, 0].set_ylim(theta_x_lim)
     graph[1, 0].grid(alpha=0.3)
 
-    h2 = graph[1, 1].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm())
+    h2 = graph[1, 1].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
     fig.colorbar(h2[3], ax=graph[1, 1], label='Counts')
     graph[1, 1].set_xlabel(f'impact y [{distance_unit}]')
     graph[1, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
@@ -187,8 +190,8 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
 
     fig.tight_layout()
     label = label[2:]
-    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.png')
-    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.pdf')
+    plt.savefig(f'{output_folder}/impact_distribution_{label}.png', dpi=300)
+    plt.savefig(f'{output_folder}/impact_distribution_{label}.pdf')
     plt.close(fig)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
@@ -200,7 +203,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     fig, graph = plt.subplots(1, 3, figsize=(18, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm())
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm(), rasterized=True)
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-750, 6200)
@@ -211,12 +214,12 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
     graph[0].set_xlabel(rf'$\theta_{{in}}$ [${unit_str}$]')
     graph[0].set_ylabel(rf'$\Delta\theta_x = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
-    graph[0].set_title(f'Angular scan {label}')
+    graph[0].set_title(f'Angular scan')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color=viridis_green)
-    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=7250, color=viridis_green)
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color=viridis_green, rasterized=True)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=7250, color=viridis_green, rasterized=True)
     plot_bin_width = bins[1] - bins[0]
     plot_bin_width2 = bins2[1] - bins2[0]
 
@@ -225,7 +228,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[1].set_ylim(500, counts.max()*1.2)
     graph[1].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
-    graph[1].set_title(rf'$\Delta\theta_x$ distribution {label}')
+    graph[1].set_title(rf'$\Delta\theta_x$ distribution')
     graph[1].grid(alpha=0.3)
 
     graph[2].set_xlim(5950, 6050)
@@ -255,7 +258,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     fig.tight_layout()
     if label == '(survived particles)': label = 'survived'
     if label == '': label = 'final'
-    plt.savefig(f'{output_folder}/angular_scan_{label}.png')
+    plt.savefig(f'{output_folder}/angular_scan_{label}.png', dpi=300)
     plt.savefig(f'{output_folder}/angular_scan_{label}.pdf')
     plt.close(fig)
 
@@ -271,8 +274,8 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared')
-    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.9, label='original')
+    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared', rasterized=True)
+    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.5, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[0].set_xlim(-250, 250)
@@ -285,8 +288,8 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, label='original')
-    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, alpha=0.9, label='smeared')
+    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, label='original', rasterized=True)
+    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, alpha=0.5, label='smeared', rasterized=True)
 
     if label[-1] == 'y':
         graph[1].set_xlim(-60, 60)
@@ -299,7 +302,7 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     graph[1].legend()
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/smear_comparison_{label}.png')
+    plt.savefig(f'{output_folder}/smear_comparison_{label}.png', dpi=300)
     plt.savefig(f'{output_folder}/smear_comparison_{label}.pdf')
     plt.close(fig)
 
@@ -310,7 +313,7 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
     counts_smeared, _, _ = graph[0].hist(x_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
 
     # graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\theta_{{in,x}}$ [${unit_str}$]')
@@ -320,7 +323,7 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     graph[0].legend()
 
     graph[1].hist(y_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
 
     graph[1].set_xlabel(rf'$\theta_{{in,y}}$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
@@ -329,11 +332,11 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     graph[1].legend()
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/smear_comparison_angle.png')
+    plt.savefig(f'{output_folder}/smear_comparison_angle.png', dpi=300)
     plt.savefig(f'{output_folder}/smear_comparison_angle.pdf')
     plt.close(fig)
 
-def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
+def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, label = '', distance_unit='mm'):
     distance_scale = 1e3 if distance_unit == 'mm' else 1.0
 
     channeled_mask = np.abs(dtheta_x - bending_angle) < (tol_frac * bending_angle)
@@ -341,7 +344,7 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     y_in_channeled = y_in[channeled_mask]
     x_out_channeled = x_out[channeled_mask]
     y_out_channeled = y_out[channeled_mask]
-    shift = crystal_length * bending_angle/2
+    shift = crystal_length * bending_angle/2 # 0.222 mm
 
     fig = plt.figure(figsize=(20, 11), layout='constrained')
     subfigs = fig.subfigures(2, 1, hspace=0.01)
@@ -351,13 +354,13 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
             'subfig': subfigs[0],
             'title': 'All Particles',
             'data': [x_in, y_in, x_out, y_out],
-            'color': viridis_blue,
+            'color': viridis_teal,
         },
         {
             'subfig': subfigs[1],
             'title': 'Channeled Particles',
             'data': [x_in_channeled, y_in_channeled, x_out_channeled, y_out_channeled],
-            'color': viridis_green,
+            'color': viridis_teal,
         }
     ]
 
@@ -396,8 +399,8 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
             ax.set_ylabel('Counts')
             ax.legend(loc='upper right')
 
-    plt.savefig(f'{output_folder}/ch_footprint.png', dpi=200, bbox_inches='tight')
-    plt.savefig(f'{output_folder}/ch_footprint.pdf', bbox_inches='tight')
+    plt.savefig(f'{output_folder}/ch_footprint_{label}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/ch_footprint_{label}.pdf', bbox_inches='tight')
     plt.close(fig)
 
 def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x', n_slices=50, distance_unit='mm', 
@@ -488,8 +491,8 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.png')
-    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.pdf')
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.png', dpi=300)
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.pdf', dpi=300)
 
     # --- example: one slice inside, one outside the crystal ---
     inside_recs = [r for r in records if abs(r['center']) <= edge_scaled]
@@ -514,8 +517,8 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
             ax2.grid(alpha=0.3)
         fig2.suptitle(f'Example slice fits {label}')
         fig2.tight_layout()
-        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.png')
-        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.pdf')
+        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.png', dpi=300)
+        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.pdf', dpi=300)
 
     return valid_pos, sigmas, sigma_errs, n_used
 
@@ -584,7 +587,8 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
 beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particles')
 # beam_distribution_plot(x_in_survived, y_in_survived, theta_x_in_survived, theta_y_in_survived, label='- survived particles')
 
-ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle)
+ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle, label='survived')
+# ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle, label='all')
 
 # pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
 #     pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_x,
@@ -661,9 +665,10 @@ eff_err_binom = np.sqrt(efficiency_notsmeared*(1-efficiency_notsmeared)/n_tot_co
 print(f"[not smeared] Channeling efficiency: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_notsmeared*100:.1f}± {eff_err_binom*100:.1f})%")
 
 
-angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='(smeared)', popt=popt_s, fit_bin_width=fit_bin_width_s)
+# angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
+# angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(geom_data_s['theta_x_in'], geom_data_s['theta_x_out'], theta_L, label='entered', popt=popt, fit_bin_width=fit_bin_width_s)
+angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='smeared', popt=popt_s, fit_bin_width=fit_bin_width_s)
 
 # smear_comparison_plot(geom_data['dtheta_x'], geom_data_s['dtheta_x'], popt=popt, popt_smeared=popt_s, fit_bin_width=fit_bin_width, fit_bin_width_smeared=fit_bin_width_s, label='geometric')
 smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x')

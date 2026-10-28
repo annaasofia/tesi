@@ -1103,6 +1103,16 @@ Here I can find an example: [https://github.com/xsuite/xcoll/blob/main/examples/
 
 added a ordered logbook: [logbook_ordered.md](logbook_ordered.md)
 
+- bdsim long
+    - redo with correct geometry
+    - add smear
+    - in channelled: particles that enters within $\Delta x\sim0.222\,\text{mm}$ of the right edge, exits the side face before reaching the end = it loses the channelling or exits with a reduced $\Delta\theta$ (and so gets rejected). the cutoff should not be entirely sharp, for particles that exit the side within the last 20% of the length, the cutoff does not reject them, so there is a blurred band of $0.08\,\text{mm}$
+- bdsim short
+    - add smear
+- xcoll long
+    - report same analysis of bdsim
+- xcoll short
+
 
 
 

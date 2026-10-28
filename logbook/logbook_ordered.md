@@ -3,7 +3,7 @@
     - ✅ [To do preliminary](#to-do-preliminary)
     - ✅ [Crystal edges found for each run](#crystal-edges-found-for-each-run)
 2. [Analysis](#analysis)
-    - [Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$](#measure-the-channeling-efficiency)
+    - ✅ [Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$](#measure-the-channeling-efficiency)
     - [Measure the torsion correction](#measure-the-torsion-correction)
     - [Mapping the torsion](#mapping-the-torsion)
     - [To do about torsion](#to-do-about-torsion)
