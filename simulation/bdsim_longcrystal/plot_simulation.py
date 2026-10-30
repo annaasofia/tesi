@@ -135,6 +135,20 @@ survived_data_smeared.update({
 })
 print(f"Smear: s_in = {s_in*1e6:.2f} urad, s_out = {s_out*1e6:.2f} urad")
 
+# CHANNELED
+d  = (crystal_x/2 - survived_data['x_in']) * 1e3          # mm, distanza dal bordo destro
+dx = (survived_data['x_out'] - survived_data['x_in']) * 1e3
+ok = (np.abs(survived_data['y_in']) < crystal_y/2) & (d > 0) & (d < 0.6)
+
+fig, ax = plt.subplots(figsize=(6, 5))
+ax.hist2d(d[ok], dx[ok], bins=[120, 150], cmap='viridis', norm=LogNorm())
+ax.axhline(crystal_length*bending_angle/2*1e3, color='red', ls='--', label='Δx = θ_b L/2')
+ax.plot([0, 0.6], [0, 0.6], 'w:', label='x_out = +edge')
+ax.set_xlabel('d dal bordo destro [mm]'); ax.set_ylabel('x_out − x_in [mm]')
+ax.legend(); fig.savefig(f'{output_folder}/edge_dx_test.png', dpi=200)
+
+print('x_out max (mm):', survived_data['x_out'].max()*1e3, '| edge:', crystal_x/2*1e3)
+
 def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'

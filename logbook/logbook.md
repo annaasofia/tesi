@@ -1113,6 +1113,31 @@ added a ordered logbook: [logbook_ordered.md](logbook_ordered.md)
     - report same analysis of bdsim
 - xcoll short
 
+### Chapters 3 & 4
+
+Use this rule: chapter 3 says what you do and why, chapter 4 says what you found.  
+A quick test for any figure, table or sentence is whether it would change if you ran on different data (another run, a new calibration). If it would, it belongs to chapter 4. If it stays with the method, it belongs to chapter 3. Quantities that are inputs to the method, such as the tracker resolution, θ_L and the Highland expectation, stay in chapter 3.
+
+It is fine to show one representative run in chapter 3 to illustrate a method. The figure just needs to be there to explain the procedure, and you cite it from chapter 4 instead of repeating it. Do not put everything about real data in chapter 4.
+
+| Topic | Chapter 3 (method) | Chapter 4 (results) |
+|---|---|---|
+| Detector alignment | The three tests and the acceptance criteria. One example plot (the distribution of $d_0^{\mathrm{out}}-d_0^{\mathrm{in}}$ with its fit) is optional. | The table for all runs, the comments, and the remark that the tracker does not explain the shift in run 8650. It can be the first section, as data-quality validation. |
+| Crystal footprint | The sliding window, the shift Δx, and the figure with the in/out projections (it illustrates the process). | The table of edges per run, and the comparison with the MCS edges. |
+| Torsion | The grid, the models, the local cut, and optionally one example map. | τ_y per run, the residual maps, the efficiency maps, and the comparison between runs. |
+| Efficiency | Definitions of $N_{tot}$ and $N_{ch}$, and the choice of window. | Final efficiencies, peak position and width. |
+| MCS | The Highland formula, the measurement method, and why you use $y$. | The $\theta_{\mathrm{MCS}}$ and clamp tables, and the discussion of the clamp material. |
+| Systematics | The sources and the shift-and-rerun procedure. | The table of contributions per run and the total. |
+| Block stability | The procedure. | The RMS/error ratio. |
+
+**My preliminary analysis**
+- **$\Delta\theta_x$ spectrum:** the first section of chapter 4 can present it with the peaks identified (unchannelled, volume reflection, channelled, dechannelling plateau).
+- **Beam profile and divergence:** if it is already in chapter 2 (`tab:beamdivergence`), leave it there. Otherwise it goes in chapter 4 as beam characterisation, because it is also the input to the simulation in chapter 5.
+- **8650 exploration:** this is a result, so it goes in chapter 4.
+- **Strip spikes:** keep a short paragraph in chapter 3, because it is an instrumental effect that explains a feature of the footprint figure.
+
+**Link with the simulation**  
+Put the shared parts in chapter 3: the efficiency definition, $N_{tot}$, $N_{ch}$, the fit and the window. Say in the chapter 3 introduction that they are used for both data and simulation. Chapter 5 then refers back to them ("the same procedure of \cref{sec:3.x} is applied") and describes only what is specific to the simulation: survival, aperture, spatial cut and smearing.
 
 
 

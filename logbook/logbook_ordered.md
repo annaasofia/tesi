@@ -13,13 +13,23 @@
 4. [Multiple coulomb scattering](#multiple-coulomb-scattering)
 5. [Data results](#data-results)
 6. [Simulation](#simulation)
+    - [BDSIM Simulation](#bdsim-simulation)
+    - [Study the beam distribution 1](#study-the-beam-distribution)
+    - [Study the beam distribution 2](#study-the-beam-distribution-part-2)
+    - [Study the beam distribution 3](#study-the-beam-distribution-part-3)
+    - [Channeling Analysis on the simulated short crystal](#channeling-analysis-on-the-simulated-short-crystal)
+    - [Simulation results - short crystal](#simulation-results---short-crystal)
+    - [Simulation for the long crystal](#simulation-for-the-long-crystal)
+    - [MCS in simulations](#mcs-in-simulations)
+    - [How to apply the smear](#how-to-apply-the-smear)
+    - [Plotting long crystal final simulation](#plotting-long-crystal-final-simulation)
+    - [XColl](#xcoll)
 
 # Preliminary Analysis
 ## Calibrate the detectors and alignment check
-Calibrate the detectors with [check_alignment_detectors.py](../recoDataSimple/preliminary_analysis/check_alignment_detectors.py):  
-    1) compute histograms in $x$ and $y$ showing $d0_{out} - d0_{in}$: if the offset is smaller than $\sim 1–2\,\sigma$ of its own fit error, treat it as statistically consistent with zero;  
-    2) fit linearly $d0_{in}$ vs $d0_{out}$, which slope should be $\sim 1$, in this way we also know there is no rotation and no scale mismatch between the two detectors planes (confirmation of alignment);  
-    3) also check fit quality skewness (asymmetry of a data distribution around its mean) to ensure no asymmetric tail or contaminating subpopulation.  
+1) ~~compute histograms in $x$ and $y$ showing $d0_{out} - d0_{in}$: if the offset is smaller than $\sim 1–2\,\sigma$ of its own fit error, treat it as statistically consistent with zero;~~  
+2) ~~fit linearly $d0_{in}$ vs $d0_{out}$, which slope should be $\sim 1$, in this way we also know there is no rotation and no scale mismatch between the two detectors planes (confirmation of alignment);~~  
+3) ~~also check fit quality skewness (asymmetry of a data distribution around its mean) to ensure no asymmetric tail or contaminating subpopulation.~~  
 
 Results:  
 |  | **x** |  |  |  |  |  | **y** |  |  |  |  |  |
@@ -34,36 +44,30 @@ Results:
 ## To do preliminary
 - explore 8650:  
     $\to$ compared in [compare_histo.py](../recoDataSimple/preliminary_analysis/compare_histo.py)
-    - Luigi and Melanie said there were some problems during the data taking and with one magnet: at energy 150GeV/c and by beamline hardware constraint also the current was lowered (otherwise particles would not follow the intended trajectory)
-    - wider critical angle
+    ~~- Luigi and Melanie said there were some problems during the data taking and with one magnet: at energy 150GeV/c and by beamline hardware constraint also the current was lowered (otherwise particles would not follow the intended trajectory)~~
     - channeling peak sigma is wider, as lower momentum particles get kicked around more (more multiple coulomb scattering, as mcs scales as $1/p$)
     - lower efficiency, as dechanneling probability increases at lower energy (trajectory more easily perturbed out of the channel)
     - why channeling peak shifted by $~70\,\mu\text{rad}$? the tracker calibration itself is not the source of the anomaly (see [offset results](#calibrate-the-detectors-and-alignment-check))
-
-- look into the spikes: select bins with spikes vs the ones that have not: 
-    - the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.
+- look into the spikes:   
+    ~~- the periodic spikes seen in the downstream impact position distribution of channeled particles are an instrumental artifact (purely geometric/instrumental), not a beam or crystal effect: each tracking plane measures a hit only to the precision of one readout strip, so the position from any single plane is quantized in steps of the strip pitch $p$. A track's slope is reconstructed from the difference between hits on two planes separated by baseline $L$, so the slope itself is quantized in steps of $p/L$. When this slope is extrapolated a distance $D$ back to the crystal exit (or any reference plane), the reconstructed position inherits a quantization step of order $Δx ≈ p × D / L$ (a short baseline $L$ amplifies this step, a long baseline suppresses it). In our setup, the upstream arm spans $≈10\text{ m}$ while the downstream arm spans only $≈0.5\text{ m}$: a factor of $~20$ difference in $L$. For a comparable extrapolation distance $D$, this means the downstream reconstructed position is quantized in steps roughly $20×$ coarser than upstream. That coarse grid becomes visible as periodic spikes in `d0Out_x`, while the upstream arm's much finer slope resolution keeps its position distribution effectively continuous.~~
 - look for each bin of efficiency mapping how different are the plots deltatheta vs theta for different efficiency
 
 ## Crystal edges found for each run  
 
 Along $y$:
-- gaussian distribution both incoming and outgoing
-- consistency check: mean and edges of incoming/outgoing are compatible
-- they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3
-- doing also here a sliding window that mazimize the integral
+- ~~gaussian distribution both incoming and outgoing~~
+- ~~consistency check: mean and edges of incoming/outgoing are compatible~~
+- ~~they are statistically identical since $\Delta y < \sigma_\mu$, compatibility of 0.3~~
+- ~~doing also here a sliding window that mazimize the integral~~
 
 Along $x$:
-- incoming/outgoing cannot be averaged due to $\Delta x = 0.22\,\text{mm}$
-- only using outgoing distribution because has cleaner edges
+- ~~incoming/outgoing cannot be averaged due to $\Delta x = 0.22\,\text{mm}$~~
+- ~~only using outgoing distribution because has cleaner edges~~
 - i need a quantitative reason of "more cleaner" like the width of the transition or the slope
 
 $\Delta x$:  
-Knowing that the detectors are aligned, the shift we see has only physics reasons.  
-We can compute precisely the $x$ shift for channeled particles:  
-- curvature radius $R=\frac{L}{\theta}\sim 12$ m  
-- the lateral displacement at the end of an arc is $\Delta x = R (1 - \cos\theta)$
-- considering $\cos\theta=1-\theta^2/2$ (small angles)
-- we obtain $\Delta x = \frac{L\cdot\theta}{2}$
+~~Knowing that the detectors are aligned, the shift we see has only physics reasons.~~  
+~~We can compute precisely the $x$ shift for channeled particles:~~  
 
 | **run** | **$x_{min}$** |**$x_{max}$**|**$y_{min}$** |**$y_{max}$** |
 |-|-|-|-|-|
@@ -72,19 +76,6 @@ We can compute precisely the $x$ shift for channeled particles:
 |**8650**|[-0.2744 ± 0.1155 mm | 1.7256 ± 0.1117 mm]|[-5.7450 ± 0.1156 mm | 7.0550 ± 0.1117 mm]|
 |**8655**|[0.5536 ± 0.1155 mm | 2.5536 ± 0.1117 mm]|[-6.9150 ± 0.1156 mm | 5.8850 ± 0.1117 mm]|
 |**8656**|[0.5546 ± 0.1155 mm | 2.5546 ± 0.1117 mm]|[-6.8750 ± 0.1156 mm | 5.9250 ± 0.1117 mm]|
-
-So also we can correct the Lindhard angle estimation:
-$$\theta_L=\bigg(1-\frac{\rho_c}{\rho}\bigg)\sqrt{\frac{2U_0}{E}}$$
-where:
-- $\rho_c=\frac{E}{U'(x_c)}$ is the critical radius
-- $E = p\beta c = 180\, \text{GeV}$ or $150\, \text{GeV}$
-- $U'(x_c)=5.7\text{ GeV/cm}$ for the (110) plane in silicon
-- $U_0=16\text{ eV}$ for silicon
-- $\rho=\frac{L}{\theta_b}$
-
-so for the $L=74\text{ mm}$ long crystals, with a $\theta_b=6\text{ mrad}$:  
-$\big(1-\frac{180\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{180\cdot 10^9}}=12.992\,\mu\text{rad}$ or  
-$\big(1-\frac{150\cdot 10\cdot 6 \cdot 10^{-3}}{74\cdot5.7}\big)\sqrt{\frac{2\cdot 16}{150\cdot 10^9}}=14.294\,\mu\text{rad}$
 
 # Analysis
 ## Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$
@@ -149,9 +140,6 @@ Final results:
     - $d_{in,x}$ and $d_{in,y}$ have $\sim0.105473\text{ mm}$ error for 8430/8431 and $\sim0.115547\text{ mm}$ for 8650/8655/8656
     - $d_{out,x}$ and $d_{out,y}$ have $\sim0.093297\text{ mm}$ error for 8430/8431 and $\sim0.111709\text{ mm}$ for 8650/8655/8656
 
-in [`compute_edges1.py`](../recoDataSimple/compute_edges1.py):
-- adding in quadrature: `d0` errors (tracker resolution on the coordinates) + uncertainty due to binning choice
-- no error from fitting 
 
 in [`compute_edges2.py`](../recoDataSimple/compute_edges2.py):
 - resolution subtraction: since my mcs width is a convolution of physics and tracker resolution (the resolution adds in quadrature to a gaussian width, not linearly):
@@ -607,8 +595,8 @@ $\to$ ✅ try to run a simulation of ~20000 particles for a short crystal and pl
 
 ## Study the beam distribution
 
-what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems descrivable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  
-$\to$ in principel yes, but i need to be careful:  
+~~what i can do, is study the beam distribution from a run of real data, so the impact distributions of $(x,y)$ and $(\theta_x, \theta_y)$, three out of four are perfect gaussian distributions, while the histogram of the position $x$ seems descrivable by a uniform distribution, but is indeed a normal distribution too, just on a wider range. can i simply sample their results and put them in the simulation?  ~~  
+~~$\to$ in principel yes, but i need to be careful:  ~~  
 fitting the 1d marginal distributions and then sampling them indipendently is correct only if the variables are uncorrelated with one another. If, on the other hand, there is a correlation (e.g. $x-\theta_x$, which is very common in a real beam due to the upstream optics), sampling $x$ and $\theta$ from two separate `np.random.normal()` distributions destroys the correlation, even if each marginal distribution individually appears perfect.
 
 I check the covariance and correlation matrices not with all data but within $\pm 5 \sigma$ of the gaussian fit (98% of data), otherwise the widths of the angular distributions would be too high.
@@ -683,8 +671,6 @@ In beam optics, position and angle at a given location are correlated whenever t
 If $\alpha ≠ 0$ at the crystal location (which is the general case — you'd need to specifically design the optics to have a waist exactly there), then x and px are correlated by construction. This isn't an artifact or noise — it's a direct consequence of how the beam was transported (focusing, drifts) upstream of the measurement point. A correlation of ~0.15 is modest but completely plausible for a real beamline where the crystal isn't sitting exactly at a waist.  
 Since $\alpha ≠ 0$ is now expected, you could cross-check your measured correlation against the beamline's actual Twiss parameters at the crystal location, if you have access to the optics model (MAD-X/xsuite lattice for that beamline). The theoretical relationship is: $corr(x, p_x) = -\alpha / \sqrt{1 + \alpha²}$.  
 If you know $\alpha$ at the crystal from the lattice design, you can compute the expected correlation and compare it to your measured ~0.15 as a sanity check — if they roughly agree, that's strong confirmation the correlation is real beam optics and not, say, a reconstruction/tracking artifact in your telescope analysis.
-
-- about the spikes check if rebinning it changes, if it shows also on the "all" particles and if the remaining particles - the "not entered" - are compatible as the others
 
 ## Channeling Analysis on the simulated short crystal
 
