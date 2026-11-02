@@ -5,8 +5,8 @@
 2. [Analysis](#analysis)
     - ✅ [Measure the channeling efficiency $\epsilon_{ch}=\frac{N_{ch}}{N_{tot}}\cdot 100$](#measure-the-channeling-efficiency)
     - ✅ [Measure the torsion correction](#measure-the-torsion-correction)
-    - [Mapping the torsion](#mapping-the-torsion)
-    - [To do about torsion](#to-do-about-torsion)
+    - ✅ [Mapping the torsion](#mapping-the-torsion)
+    - ✅ [To do about torsion](#to-do-about-torsion)
 3. [Error analysis](#error-analysis)
     - [Taking into account d and theta errors](#taking-into-account-d-and-theta-errors)
     - [Computing efficiency errors](#computing-efficiency-errors)
@@ -14,6 +14,9 @@
     - ✅ [PDG on errors](#pdg-on-errors)
     - ✅ [Digits](#digits)
 4. [Multiple coulomb scattering](#multiple-coulomb-scattering)
+    - ✅ [Measuring multiple coulomb scattering](#measuring-multiple-coulomb-scattering)
+    - [Find the crystal edges: scattering method](#find-the-crystal-edges-scattering-method)
+    - [To do about MCS](#to-do-about-mcs)
 5. [Data results](#data-results)
 6. [Simulation](#simulation)
     - [BDSIM Simulation](#bdsim-simulation)
@@ -77,7 +80,6 @@ Final results:
 
 
 # Error Analysis
-- Week 12: la sezione “Digits” (cifre significative), dentro “To do about MCS”.
 
 ## Taking into account d and theta errors
 
@@ -135,12 +137,7 @@ This threshold (preliminary_cut_on_deltatheta) determines who counts as "channel
 - crystal dimension box:  
 shifting the x margins of $\pm$ the $d_0$ error ($0.1\text{ mm}=5%$)  
 as expected, the efficiency is higher if the margins are narrower and lower if margins are broader, meaning that the statistical distribution decreases there and/or because the local angular acceptance is less precise at the edges (miscut, edge damage) *(consistent with the fact that we cut the edges when computing the efficiency - the signal is less reliable near the edges)*: this is not an artifact of the method: 0.105 mm out of 2 mm is literally the spatial resolution relative to the smallest dimension of the crystal, so it makes sense that the efficiency would be sensitive to this.
-- crystal cut margins:  
-defines where i compute the final efficiency, subset of the entrance surface - needa refit of the torsion map with different margins
-- critical angle $\theta_L$
-- bkg subtraction? NO
-- shift of $\theta_0$ by $\pm$ their fit error?   
-this is testing how much the efficiency is changed if we shift the baseline by $\pm 1\sigma$ of its fit error
+
 
 what i did:  
 *(easy)*  
@@ -199,43 +196,13 @@ Questo è il modo statisticamente corretto di combinare stime da run diverse (es
 
 
 # Multiple Coulomb Scattering
-- Week 6: solo i punti su compute_edges2.py in “Taking into account d and theta errors”, se ti servono.
-- Week 8: tutta la sezione “Find the crystal edges: scattering method”.
-- Week 12: “To do about MCS”, solo la parte “Amorphous scattering” (calcolo di σ_bsl, MCS in aria, ecc.).
-- Week 13: “About MCS: adding different contributions” e “My analysis”.
 
-The question we need to ask ourselves is: on average, how much will this particle be deflected at the end of its path? Most of the particles will be deviated of an angle near zero (center of the gaussian distribution).  
-The width of this curve is the key value: it tells us how much, on average, the particle is deflected. This value is called the root-mean-square (RMS) angle (angolo quadratico medio) and is denoted by $\theta_0$, and can be computed through the Highland formula, which is derived by Rutherford scattering cross section formula.  
-In the formula we have: $\theta_0\propto 1/p$, $\propto 1/\beta c$ (the higher the velocity and more massive the particle is, the less deviated it gets), and $\propto z$. Then we also have the material's characteristics: the width $x$ and the radiation length $X_0$ (depends on the 'density').  
 
-$\to$ from [PDG: Passage of Particles Through Matter](https://pdg.lbl.gov/2023/reviews/rpp2023-rev-passage-particles-matter.pdf#section.34.3)
-
-A charged particle traversing a medium is deflected by many small-angle scatters. Most of this deflection is due to Coulomb scattering from nuclei as described by the Rutherford cross section. (However, for hadronic projectiles, the strong interactions also contribute to multiple scattering.)  
-For many small-angle scatters the net scattering and displacement distributions are Gaussian via the central limit theorem. Less frequent “hard” scatters produce non-Gaussian tails *(= particelle che prendono grandi spallate perche colpiscono nucleo in pieno)*. These Coulomb scattering distributions are well-represented by the theory of Molière (relativistic pions, kaons, and protons). If we define  
-
-$\theta_0=\theta_{plane}^{rms}=\frac{1}{\sqrt{2}}\theta_{space}^{rms}$  
-
-then it is sufficient for many applications to use a Gaussian approximation for the central 98% of the projected angular distribution, with an rms width given by Lynch & Dahl:  
-
-$\theta_0=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.088\log_{10}\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
-$=\frac{13.6\text{ MeV}}{\beta c p}z\sqrt{\frac{x}{X_0}}\big[1+0.038\ln\big(\frac{x z^2}{X_0 \beta^2}\big)\big]$  
-
-Here $p$, $βc$, and $z$ are the momentum, speed, and charge number of the incident particle, and $x/X_0$ is the thickness of the scattering medium in radiation lengths. This takes into account the $p$ and $z$ dependence quite well at small $Z$, but for large $Z$ and small $x$ the $β$-dependence is not well represented. This equation describes scattering from a single material, while the usual problem involves the multiple scattering of a particle traversing many different layers and mixtures. Since it is from a fit to a Molière distribution, it is incorrect to add the individual $θ_0$ contributions in quadrature *(= non si puo' sommare e basta i contributi aria + silicio + rame ecc, ci sarebbe grave sottostima deviazione)*; the result is systematically too small. It is much more accurate to apply this equation once, after finding $x$ and $X_0$ for the combined scatterer.  
-
-The nonprojected (space) and projected (plane) angular distributions are given approximately by  
-
-$\frac{1}{2\pi\theta_0^2}\exp\big(-\frac{\theta^2_{space}}{2\theta_0^2}\big)d\Omega$  
-$\frac{1}{\sqrt{2\pi}\theta_0}\exp\big(-\frac{\theta^2_{plane}}{2\theta_0^2}\big)d\theta_{plane}$  
-
-where $θ$ is the deflection angle. In this approximation, $\theta^2_{space} ≈ (θ_{plane,x}^2 + θ_{plane,y}^2)$, where the $x$ and $y$ axes are orthogonal to the direction of motion, and $dΩ ≈ dθ_{plane,x} dθ_{plane,y}$. Deflections into $θ_{plane,x}$ and $θ_{plane,y}$ are independent and identically distributed. Fig. 34.10 shows these and other quantities sometimes used to describe multiple Coulomb scattering. They are  
-
-$\psi^{rms}_{plane}=\frac{1}{\sqrt{3}}\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}\theta_0$    
-$y^{rms}_{plane}=\frac{1}{\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{\sqrt{3}}x\theta_0$  
-$s^{rms}_{plane}=\frac{1}{4\sqrt{3}}x\theta_{plane}^{rms}=\frac{1}{4\sqrt{3}}x\theta_0$  
+This takes into account the $p$ and $z$ dependence quite well at small $Z$, but for large $Z$ and small $x$ the $β$-dependence is not well represented. 
 
 All the quantitative estimates in this section apply only in the limit of small $θ^{rms}_{plane}$ and in the absence of large-angle scatters. The random variables $s$, $ψ$, $y$, and $θ$ in a given plane are correlated. Obviously, $y ≈ xψ$. In addition, $y$ and $θ$ have the correlation coefficient $ρ_{yθ} = \sqrt{3}/2 ≈ 0.87$ *(1 would be perfect correlation)*.  
 
-For Monte Carlo generation of a joint ($y_{plane}$, $θ_{plane}$) distribution, or for other calculations, it may be most convenient to work with independent Gaussian random variables ($z_1$, $z_2$) with mean zero and variance one, and then set  
+For **Monte Carlo** generation of a joint ($y_{plane}$, $θ_{plane}$) distribution, or for other calculations, it may be most convenient to work with independent Gaussian random variables ($z_1$, $z_2$) with mean zero and variance one, and then set  
 
 $y_{plane}=z_1\, x\, \theta_0(1-\rho^2_{y\theta})^{1/2}/\sqrt{3}+z_2\,\rho_{y\theta}\, x\, \theta_0/\sqrt{3}=z_1\, x\, \theta_0/\sqrt{12}+z_2\, x\, \theta_0/2$  
 $\theta_{plane}=z_2\,\theta_0$  
@@ -243,39 +210,13 @@ $\theta_{plane}=z_2\,\theta_0$
 In this way the computer instantaneously gets an exit angle and a final position, which are correlated (no need of simulating all the small scatterings happening inside).  
 Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represents the displacement that would have occurred had the deflection $θ_{plane}$ all occurred at the single point $x/2$.  
 
-$\to$ **multiple coulomb scattering RMS of protons ($z=1$) for the $L=74\text{ mm}$ long silicon crystals ($X_0\sim9.37\text{ cm}$):**  
-$\theta_0=66.5 \,\mu\text{rad}$
-
 ## Measuring multiple coulomb scattering
-
-$\to$ performed in [compute_edges2.py](../recoDataSimple/compute_edges2.py) (this method provides indipendence from channeling efficiency or torsion)
-
-My current method ([compute_edges1.py](../recoDataSimple/compute_edges1.py)) to find the crystal edges is isolating the channeled particles, then use their impact position distribution to find where the population is the densest and call that the crystal footprint, but this only uses the channeled fraction, so ~20% of all the particles that actually crossed the crystal. what Luigi was suggesting instead is instead of relying on channeling at all, i can use the fact that every particle that physically traverses the crystal, picks up extra multiple coulomb scatterings that a particle passing beside the crystal does not.
-
-- in small bins $(x,y)$ across the beam spot, compute the width (gaussian sigma or rms) of the outgoing angular distribution $\Delta\theta_x$ (or $\theta_{out}$) rather than its channeled peak position
-- i am considering $\Delta\theta_x$ only on a range $\pm 150\,\mu\text{rad}$, in order to exclude channeling particles, while mcs is a purely statistic process and can be described by a gaussian curve around zero.
-- map the local width as a function of impact position: outside the crystal, the width sits at the baseline, inside the crystal it should jump to $\theta_0\sim66.5\,\mu\text{rad}$ so the edges are were there should be a sharp, well-defined transition - that can be fitted through a step function  
-
-1. in reality $\sigma_{measured}$ has also detector resolution contribution (usually measured through a run without target) (added in quadrature): $\sigma_{meas}=\sqrt{\sigma_{mcs}^2+\sigma_{track,in}^2+\sigma_{track,out}^2}$
-2. why outside the crystal we don't get zero but $\sim12\,\mu\text{rad}$? even without the crystal, particles would still not travel with a perfect linear track, the beam has an intrinsic angular divergence (should be of $\sim12-15\,\mu\text{rad}$)
-
-RESULTS:  
-- i obtain a width in y of $\sim 8.4\text{ mm}$ instead of $12.8\text{ mm}$: re-try considering only one slide, but anyway could be because what we're getting it the *primary clean beam* (don't worry that for the torsion analysis we are not considering the edges anyway) $\to$ infact we are detecting the clamps and the clean beam
-- along x i obtain exactly $\sim2\text{ mm}$
-- along x outside the crystal i have $\sigma\sim12\,\mu\text{rad}$ which corresponds to the detector resolution, and inside the crystal i have   
-
 
 ## Find the crystal edges: scattering method
 
-Results from [compute_edges2.py](../recoDataSimple/compute_edges2.py):
-
-$\theta_{MCS} = \sqrt{\sigma_{high}^2​−\sigma_{bsl}^2​} = \sqrt{(\sigma_{bsl} + \sigma_{jump})^2​−\sigma_{bsl}^2​}$  
-*but the jump $(\sigma_{high} - \sigma_{bsl})$ seems more compatible with $\theta_{mcs}^{th}$*
 
 **Considerations:**
-- besides computing baseline and the high level, which difference in quadrature should give the $\theta_{mcs}$ i can also:
-- consider the angle resolution (of $\Delta\theta_x$) of $\sim 8.89$ (8430/8431) or $9.67$ (8650/8655/8656)
-- compare the impact position resolution/uncertainty with the width of the erf transition (how blurred and not perfectly sharp) so is a quality check: we expect that gradient not to be arbitrary, but to be explained by the tracker’s spatial resolution (d0Err_x/y, the uncertainty with which you measure the impact position). If the two numbers are comparable, it means that the “blurred” edge you see in the fit is simply a known instrumental resolution effect, not a true, physically gradual edge of the crystal (i.e., it is not edge damage or extensive mechanical damage). If, on the other hand, the fitted transition were much wider than d0Err, it would be a sign that something else is going on.
+
 - **material of the clamps:** from Highland formula $p, \beta, z$ depend on the beam, while $x, X_0$ on the material traversed. Supposing $x$ (width in $z$) as the same of the crystal or slightly more ($\sim 80\,\text{mm}$) i can resolve for $X_0$:
     - stainless steel (Fe based) $X_0\sim 1.76\,\text{cm}$ $\to$ $\theta_{MCS} = 191.99$ (for $l=100\,\text{mm}$) 
     - titanium $X_0\sim 3.56\,\text{cm}$ $\to$ $\theta_{MCS} = 131.60$ (for $l=100\,\text{mm}$)
