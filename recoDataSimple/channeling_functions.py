@@ -9,6 +9,22 @@ import matplotlib.gridspec as gridspec
 import plotting_utils as pu
 from matplotlib.colors import ListedColormap
 
+# --- 1. MODIFY FONT MATPLOTLIB ---
+plt.rcParams.update({
+    'font.size': 16,          # Dimensione generale del font
+    'axes.titlesize': 18,     # Dimensione dei titoli dei singoli assi/subplot
+    'axes.labelsize': 16,     # Dimensione delle etichette (x, y)
+    'xtick.labelsize': 14,    # Dimensione dei numeri sull'asse x
+    'ytick.labelsize': 14,    # Dimensione dei numeri sull'asse y
+    'legend.fontsize': 14,    # Dimensione del testo nella legenda
+    'figure.titlesize': 20    # Dimensione del suptitle (titolo globale della figura)
+})
+
+# --- 2. MODIFY FONT ROOT (for TCanvas "c_eff_curve") ---
+ROOT.gStyle.SetTitleSize(0.05, "xyz")  # Etichette assi
+ROOT.gStyle.SetLabelSize(0.04, "xyz")  # Numeri assi
+ROOT.gStyle.SetTextSize(0.05)          # Testo generale
+
 PLOT_DIR = "plots"
 
 base_viridis = plt.colormaps['viridis'].resampled(256)
@@ -404,10 +420,35 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         eff_err = math.sqrt(eff_ch/100.0 * (1.0 - eff_ch/100.0) / N_tot) * 100.0
 
     if tag == "nominal":
-        pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-            ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
-            title="Angular Deflection",
-            save=f"{PLOT_DIR}/defl_logy.pdf")
+        x_split_1 = 200
+        x_split_2 = 5945.4
+        h_left = h_cut_value.Clone(f"h_left_{tag}")
+        h_center = h_cut_value.Clone(f"h_center_{tag}")
+        h_right = h_cut_value.Clone(f"h_right_{tag}")
+        for i in range(1, h_cut_value.GetNbinsX() + 1):
+            x_val = h_cut_value.GetBinCenter(i)
+            if x_val < x_split_1:
+                h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
+                h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
+            elif x_val <= x_split_2:
+                h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
+                h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
+            else:
+                h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
+                h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
+
+        ax = pu.plot_histo1d(h_left, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+            ylabel="Events", logy=True, style="fill", color="#3b528b", alpha=1.0, 
+            title="Angular Deflection", data_label="Not channelled peak")
+        pu.plot_histo1d(h_center, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#5ec962", alpha=1.0, data_label="De-channelled plateau")
+        pu.plot_histo1d(h_right, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#cc4678", alpha=1.0, data_label="Channelled peak")
+        ax.legend(loc='upper center', frameon=True)
+        plt.savefig(f"{PLOT_DIR}/defl_logy_coloured.pdf", bbox_inches='tight')
+
+        # pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        #     ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
+        #     title="Angular Deflection",
+        #     save=f"{PLOT_DIR}/defl_logy.pdf")
     
         ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
             fit_range=(fit_min, fit_max) if N_tot > 0 else None,
@@ -548,8 +589,8 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
         fitx_lim_min, fitx_lim_max = -100, 100
         fity_lim_min, fity_lim_max = -100, 100
     elif variable == "positions":
-        x_min, x_max = xlim if xlim is not None else (-2, 3)
-        y_min, y_max = ylim if ylim is not None else (-8, 9)
+        x_min, x_max = xlim if xlim is not None else (-6, 6)
+        y_min, y_max = ylim if ylim is not None else (-14, 14)
         x = "Tracks.d0_x"
         y = "Tracks.d0_y"
         xlabel = r"$x$ [mm]"
@@ -613,7 +654,7 @@ def plot_impact(df, parameters, variable="angles", tag="nominal", xlim=None, yli
     ax_right.set_xlabel("Events")
     pu._style_axes(ax_right)
 
-    fig.suptitle(f"{title} ({tag2})", fontsize=16, y=0.92)
+    fig.suptitle(f"{title} ({tag2})", fontsize=24, y=0.92)
     fig.savefig(f"{PLOT_DIR}/{label}_{tag2}.pdf", bbox_inches='tight')
     fig.savefig(f"{PLOT_DIR}/{label}_{tag2}.png", bbox_inches='tight')
     plt.close(fig)
@@ -686,6 +727,44 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
         vmin=5900,vmax=6200)
     
     return h2_deflection_map
+
+def plot_angularscan(df):
+    h2 = df.Histo2D(
+        ("h2_angularscan", 
+        "Angular Scan; #theta_{in,x} [#murad]; #Delta#theta_x [#murad]", 
+        400, -150, 150, 400, -1500, 7000), "thetaIn_x", "Deltatheta_x"
+    ).GetValue()
+    h1x = h2.ProjectionX("h1_x")
+    xmin, xmax = -37, -37+13
+    x_bin_min = h2.GetXaxis().FindBin(xmin)
+    x_bin_max = h2.GetXaxis().FindBin(xmax)
+    h1y = h2.ProjectionY("h1_y", x_bin_min, x_bin_max)
+
+    fig1 = plt.figure(figsize=(16, 10))
+    gs1 = gridspec.GridSpec(2, 2, width_ratios=(3, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
+
+    ax_main = fig1.add_subplot(gs1[1, 0])
+    ax_top = fig1.add_subplot(gs1[0, 0], sharex=ax_main)
+    ax_right = fig1.add_subplot(gs1[1, 1], sharey=ax_main)
+
+    pu.plot_histo2d(h2, ax=ax_main, xlabel=r"$\theta_{in,x}$ [$\mu$rad]", ylabel=r"$\Delta\theta_x$ [$\mu$rad]", cmap=cmap_white_bg, colorbar=False, save=None)
+    pu.plot_histo1d(h1x, ax=ax_top, style="fill", color=viridis_purple, ylabel="Events", alpha=0.9)
+    ax_main.axvline(xmin, color='red', ls='--', lw=2)
+    ax_main.axvline(xmax, color='red', ls='--', lw=2)
+    ax_top.tick_params(labelbottom=False); ax_top.set_xlabel("")
+
+    centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h1y)
+    ax_right.stairs(contents_y1, edges_y1, fill=True, color="red", orientation='horizontal', alpha=0.9)
+
+    ax_right.tick_params(labelleft=False); ax_right.set_xlabel("Events")
+    pu._style_axes(ax_top)
+    pu._style_axes(ax_right)
+
+    fig1.suptitle("Angular scan", fontsize=24, y=0.92)
+
+    fig1.savefig(f"{PLOT_DIR}/angularscan.pdf", dpi=300)
+    fig1.savefig(f"{PLOT_DIR}/angularscan.png", dpi=300)
+    plt.close(fig1)
 
 def filter1_initial(df):
     df_filtered = df.Filter("SingleTrack == 1")

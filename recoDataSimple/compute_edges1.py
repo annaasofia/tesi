@@ -261,9 +261,14 @@ fig0a, axs0a = plt.subplots(2, 2, figsize=(14, 10))
 # 1) Incoming all
 pu.plot_histo2d(plot_h_d0_xy, ax=axs0a[0,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (All)", cmap=cmap_white_bg)
 # axs0a[0,0].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+axs0a[0,0].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+# axs0a[0,0].add_patch(Rectangle((-1.07, -5.43), 2.11, 14.09, fill=False, edgecolor='limegreen', lw=2))
 # 2) Outgoing all
 pu.plot_histo2d(plot_h_d0_Out_xy, ax=axs0a[0,1], xlabel="x [mm]", ylabel="y [mm]", title="Downstream (All)", cmap=cmap_white_bg)
 # axs0a[0,1].add_patch(Rectangle((-2.0, -8.0), 4.0, 16.0, fill=False, edgecolor='magenta', lw=2))
+axs0a[0,1].add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+axs0a[0,1].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=1, ls='--'))
+
 # 3) Incoming channeled
 pu.plot_histo2d(plot_h_d0_xy_ch, ax=axs0a[1,0], xlabel="x [mm]", ylabel="y [mm]", title="Upstream (Channeled)", cmap=cmap_white_bg)
 axs0a[1,0].add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
@@ -330,19 +335,19 @@ ax_right1 = fig1.add_subplot(gs1[1, 1], sharey=ax_main1)
 
 # Mappa 2D principale
 pu.plot_histo2d(plot_h_d0_Out_xy_ch, ax=ax_main1, xlabel="x [mm]", ylabel="y [mm]", cmap=cmap_white_bg, colorbar=False)
-ax_main1.add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+# ax_main1.add_patch(Rectangle((x_min+delta_x, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
 #h_d0_Out_x_ch.Rebin(10)
 pu.plot_histo1d(h_d0_Out_x_ch, ax=ax_top1, style="fill", color=plasma_fucsia, ylabel="Counts", alpha=1.0)
-ax_top1.axvline(x_min+delta_x, color='red', ls='--', lw=2)
-ax_top1.axvline(x_max+delta_x, color='red', ls='--', lw=2)
+# ax_top1.axvline(x_min+delta_x, color='red', ls='--', lw=2)
+# ax_top1.axvline(x_max+delta_x, color='red', ls='--', lw=2)
 ax_top1.tick_params(labelbottom=False); ax_top1.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per usare l'orientamento orizzontale
 #h_d0_Out_y_ch.Rebin(10)
 centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h_d0_Out_y_ch)
 ax_right1.stairs(contents_y1, edges_y1, fill=True, color=plasma_fucsia, orientation='horizontal', alpha=1.0)
-ax_right1.axhline(y_min, color='red', ls='--', lw=2)
-ax_right1.axhline(y_max, color='red', ls='--', lw=2)
+# ax_right1.axhline(y_min, color='red', ls='--', lw=2)
+# ax_right1.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro invertendo X e Y per adattarsi all'orientamento orizzontale
 fy_x, fy_y = pu.tf1_to_curve(f_gaus_out, y_min, y_max)
 ax_right1.plot(fy_y, fy_x, color=plasma_blue, lw=1, ls='--') 
@@ -352,8 +357,8 @@ pu._style_axes(ax_right1)
 
 fig1.suptitle("Downstream (Channeled)", fontsize=16, y=0.95)
 
-fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.pdf", dpi=300)
-fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_box.png", dpi=300)
+fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_NObox.pdf", dpi=300)
+fig1.savefig(f"plots_{file}_edges1/d0_Out_projxy_NObox.png", dpi=300)
 plt.close(fig1)
 
 # c2 = ROOT.TCanvas("c2", "d0_x and d0_y of channeled particles", 1000, 900)
@@ -386,19 +391,19 @@ ax_right2 = fig2.add_subplot(gs2[1, 1], sharey=ax_main2)
 
 # Mappa 2D principale
 pu.plot_histo2d(plot_h_d0_xy_ch, ax=ax_main2, xlabel="x [mm]", ylabel="y [mm]", cmap=cmap_white_bg, colorbar=False)
-ax_main2.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
+# ax_main2.add_patch(Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, fill=False, edgecolor='red', lw=2))
 # Proiezione X (Top)
 #h_d0_x_ch.Rebin(10)
 pu.plot_histo1d(h_d0_x_ch, ax=ax_top2, style="fill", color=plasma_fucsia, ylabel="Counts", alpha=1.0)
-ax_top2.axvline(x_min, color='red', ls='--', lw=2)
-ax_top2.axvline(x_max, color='red', ls='--', lw=2)
+# ax_top2.axvline(x_min, color='red', ls='--', lw=2)
+# ax_top2.axvline(x_max, color='red', ls='--', lw=2)
 ax_top2.tick_params(labelbottom=False); ax_top2.set_xlabel("")
 # Proiezione Y (Right) - Estratta manualmente per l'orientamento orizzontale
 #h_d0_y_ch.Rebin(10)
 centers_y2, contents_y2, yerr_y2, edges_y2 = pu.th1_to_arrays(h_d0_y_ch)
 ax_right2.stairs(contents_y2, edges_y2, fill=True, color=plasma_fucsia, orientation='horizontal', alpha=1.0)
-ax_right2.axhline(y_min, color='red', ls='--', lw=2)
-ax_right2.axhline(y_max, color='red', ls='--', lw=2)
+# ax_right2.axhline(y_min, color='red', ls='--', lw=2)
+# ax_right2.axhline(y_max, color='red', ls='--', lw=2)
 # Fit su asse Y destro 
 fy_x2, fy_y2 = pu.tf1_to_curve(f_gaus_in, y_min, y_max)
 ax_right2.plot(fy_y2, fy_x2, color=plasma_blue, lw=1, ls='--')
@@ -407,8 +412,8 @@ pu._style_axes(ax_top2)
 pu._style_axes(ax_right2)
 
 fig2.suptitle("Upstream (Channeled)", fontsize=16, y=0.95)
-fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.pdf", dpi=300)
-fig2.savefig(f"plots_{file}_edges1/d0_projxy_box.png", dpi=300)
+fig2.savefig(f"plots_{file}_edges1/d0_projxy_NObox.pdf", dpi=300)
+fig2.savefig(f"plots_{file}_edges1/d0_projxy_NObox.png", dpi=300)
 plt.close(fig2)
 
 # now that we have the crystal area/position, we can apply the spatial cut to the entire dataframe

@@ -17,7 +17,7 @@ ROOT.ROOT.EnableImplicitMT()
 ROOT.gStyle.SetOptStat(0)
 
 # file = 8430
-file = int(sys.argv[1])
+file = int(sys.argv[1]) if len(sys.argv) > 1 else 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"
 files = ["data/recoDataSimple_8430_xtalMerging.root", "data/recoDataSimple_8431_xtalMerging.root"]
 

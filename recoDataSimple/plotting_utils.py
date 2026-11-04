@@ -223,7 +223,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     
     owns_axes = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=(16, 6))
         owns_axes = True
     else:
         fig = ax.figure
