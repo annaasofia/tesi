@@ -230,10 +230,7 @@ Note that the second term for $y_{plane}$ equals $x\,θ_{plane}/2$ and represent
 **Amorphous scattering**
 - the slices distribution should always be centered at zero - so now i'm seeing different effects summed up
 - only take amorpheous scattering to make sure i'm only selecting particles that never came close to alignment with any plane at any depth so they genuinely never channel, volume-reflect or dechannel - so we are sure they undergo pure random multiple coulomb scattering the whole way through
-- are we sure we have to add in quadrature?  
-check [week 13: about MCS (subsection)](#about-mcs-adding-different-contributions)
-- check rms in air - not exactly zero
-- along $y$ do fewer slices
+
 
 $$\theta_{RMS} = \frac{13.6 \text{ MeV}}{180000 \text{ MeV/c}} \sqrt{T_{tot}} [1 + 0.038 \ln(T_{tot})]$$
 and we can use $T_{tot}\approx T_{cryst}$ obtaining $\theta_{RMS} \approx 66 \,\mu\text{rad}$.

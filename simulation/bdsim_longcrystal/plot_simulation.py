@@ -1,5 +1,4 @@
 import sys
-
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -7,6 +6,16 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
 import os
+
+plt.rcParams.update({
+    'font.size': 16,          # Dimensione generale del font
+    'axes.titlesize': 18,     # Dimensione dei titoli dei singoli assi/subplot
+    'axes.labelsize': 16,     # Dimensione delle etichette (asse x, y)
+    'xtick.labelsize': 14,    # Dimensione dei numeri sull'asse x
+    'ytick.labelsize': 14,    # Dimensione dei numeri sull'asse y
+    'legend.fontsize': 14,    # Dimensione del testo nella legenda
+    'figure.titlesize': 20    # Dimensione del suptitle (titolo globale della figura)
+})
 
 viridis_yellow = "#fde725"
 viridis_green = "#5ec962"
@@ -20,9 +29,6 @@ data = np.load(filename)
 
 output_folder = f'./plots{n}'
 os.makedirs(output_folder, exist_ok=True)
-
-    # cov_avg=cov_avg,
-    # mu_avg=mu_avg,
 
 # reconstruct the arrays from the saved data
 x_in = data['x_in']; theta_x_in = data['px_in']
@@ -149,6 +155,107 @@ ax.legend(); fig.savefig(f'{output_folder}/edge_dx_test.png', dpi=200)
 
 print('x_out max (mm):', survived_data['x_out'].max()*1e3, '| edge:', crystal_x/2*1e3)
 
+def _grid_edges(crystal_x, crystal_y, nx_bins, ny_bins, distance_unit='mm'):
+    ds = 1e3 if distance_unit == 'mm' else 1.0
+    xe = np.linspace(-crystal_x / 2, crystal_x / 2, nx_bins + 1) * ds
+    ye = np.linspace(-crystal_y / 2, crystal_y / 2, ny_bins + 1) * ds
+    return xe, ye, ds
+
+def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x, crystal_y,
+                    nx_bins=6, ny_bins=7, n_sigma=3, min_den=50, min_num=10, tag='smeared',
+                    distance_unit='mm', angle_unit='urad'):
+    """
+    x_den, y_den : posizioni di impatto di TUTTE le particelle 'attempted'
+                   (geometric hit + Lindhard), incluse le perse -> denominatore
+    x_num, y_num, dtheta_num : particelle sopravvissute dopo gli stessi tagli (final_data*)
+    mu, sigma    : picco di canalizzazione dal fit globale (in rad)
+    Canalizzata  = |dtheta - mu| < n_sigma * sigma  (conteggio, niente fit per bin)
+    Griglia: nx_bins lungo x, ny_bins lungo y.
+    """
+    xe, ye, ds = _grid_edges(crystal_x, crystal_y, nx_bins, ny_bins, distance_unit)
+    ascale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+ 
+    in_win = np.abs(dtheta_num - mu) < n_sigma * sigma
+    xc, yc, dc = x_num[in_win] * ds, y_num[in_win] * ds, dtheta_num[in_win]
+ 
+    den, _, _ = np.histogram2d(x_den * ds, y_den * ds, bins=[xe, ye])
+    num, _, _ = np.histogram2d(xc, yc, bins=[xe, ye])
+ 
+    with np.errstate(divide='ignore', invalid='ignore'):
+        eff = np.where(den >= min_den, num / den, np.nan)
+ 
+    # peak per bin (mediana dei canalizzati)
+    ix = np.digitize(xc, xe) - 1
+    iy = np.digitize(yc, ye) - 1
+    ok = (ix >= 0) & (ix < nx_bins) & (iy >= 0) & (iy < ny_bins)
+    peak = np.full((nx_bins, ny_bins), np.nan)
+    for i in range(nx_bins):
+        for j in range(ny_bins):
+            sel = ok & (ix == i) & (iy == j)
+            if sel.sum() >= min_num:
+                peak[i, j] = np.median(dc[sel]) * ascale
+ 
+    # --- figura 2x1: efficiency | deflection peak ---
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6))
+    panels = [
+        (eff * 100, 'Channeling efficiency [%]', axs[0]),
+        (peak, rf'Deflection peak [${unit_str}$]', axs[1]),
+    ]
+    for M, title, ax in panels:
+        pc = ax.pcolormesh(xe, ye, M.T, cmap='viridis')
+        fig.colorbar(pc, ax=ax)
+        ax.set_xlabel(f'impact x [{distance_unit}]')
+        ax.set_ylabel(f'impact y [{distance_unit}]')
+        ax.set_title(f'{title}')
+        for i in range(nx_bins):
+            for j in range(ny_bins):
+                if np.isfinite(M[i, j]):
+                    txt_color = 'black' if pc.norm(M[i, j]) > 0.5 else 'white'
+                    ax.text(0.5 * (xe[i] + xe[i + 1]), 0.5 * (ye[j] + ye[j + 1]),
+                            f'{M[i, j]:.1f}', ha='center', va='center', fontsize=8, color=txt_color)
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/efficiency_maps_{tag}.png', dpi=200)
+    plt.savefig(f'{output_folder}/efficiency_maps_{tag}.pdf')
+    plt.close(fig)
+ 
+    print(f"[{tag}] map: {np.isfinite(eff).sum()}/{nx_bins * ny_bins} bins with den >= {min_den}; "
+          f"count-based global eff (±{n_sigma}σ) = {num.sum() / den.sum() * 100:.1f}%")
+    return eff, peak, den, num
+
+
+def eff_profile(var_den, var_num_all, dtheta_num, mu, sigma, edges, scale=1.0, n_sigma=3, min_den=50):
+    """Efficienza 1D vs una variabile qualunque (x, y, theta_x_in...). Errori binomiali."""
+    in_win = np.abs(dtheta_num - mu) < n_sigma * sigma
+    den, _ = np.histogram(var_den * scale, bins=edges)
+    num, _ = np.histogram(var_num_all[in_win] * scale, bins=edges)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        eff = np.where(den >= min_den, num / den, np.nan)
+        err = np.sqrt(eff * (1 - eff) / den)
+    return 0.5 * (edges[1:] + edges[:-1]), eff, err
+ 
+def profiles_plot(x_den, y_den, th_den, fd, mu, sigma, crystal_x, crystal_y, theta_L, tag='smeared', n_bins=10):
+    """fd = final_data (o final_data_s): dict con x_in, y_in, theta_x_in, dtheta_x"""
+    fig, axs = plt.subplots(1, 3, figsize=(16, 4.5))
+    specs = [
+        (x_den, fd['x_in'], np.linspace(-crystal_x / 2, crystal_x / 2, n_bins + 1) * 1e3, 1e3, 'impact x [mm]'),
+        (y_den, fd['y_in'], np.linspace(-crystal_y / 2, crystal_y / 2, n_bins + 1) * 1e3, 1e3, 'impact y [mm]'),
+        (th_den, fd['theta_x_in'], np.linspace(-0.5 * theta_L, 0.5 * theta_L, n_bins + 1) * 1e6, 1e6, r'$\theta_{x,in}$ [$\mu$rad]'),
+    ]
+    for ax, (vd, vn, edges, sc, xl) in zip(axs, specs):
+        c, e, er = eff_profile(vd, vn, fd['dtheta_x'], mu, sigma, edges, scale=sc)
+        ax.errorbar(c, e * 100, yerr=er * 100, fmt='o', color="black", capsize=3)
+        ax.set_xlabel(xl); ax.set_ylabel('Efficiency [%]'); ax.grid(alpha=0.3)
+        if vd is th_den:
+            ax.axvline(-0.5 * theta_L * 1e6, color='red', lw=1, ls='--', label=r'$\pm 1/2 \theta_L$')
+            ax.axvline(0.5 * theta_L * 1e6, color='red', lw=1, ls='--')
+            ax.legend()
+    fig.suptitle(f'Efficiency profiles')
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/efficiency_profiles_{tag}.png', dpi=200)
+    plt.savefig(f'{output_folder}/efficiency_profiles_{tag}.pdf')
+    plt.close(fig)
+
 def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
@@ -160,50 +267,50 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     x_lim = (x_in.min() * distance_scale, x_in.max() * distance_scale)
     y_lim = (y_in.min() * distance_scale, y_in.max() * distance_scale)
     theta_x_lim = (-150, 150) if angle_unit == 'urad' else (theta_x_in.min() * scale, theta_x_in.max() * scale)
-    theta_y_lim = (-150, 150) if angle_unit == 'urad' else (theta_y_in.min() * scale, theta_y_in.max() * scale)
+    theta_y_lim = (-200, 200) if angle_unit == 'urad' else (theta_y_in.min() * scale, theta_y_in.max() * scale)
     # theta_x_lim = (theta_x_in.min() * scale, theta_x_in.max() * scale)
     # theta_y_lim = (theta_y_in.min() * scale, theta_y_in.max() * scale)
 
-    fig, graph = plt.subplots(2, 2, figsize=(10, 10))
+    fig, graph = plt.subplots(1, 4, figsize=(20, 6))
     # 1. Grafico (x, y) - Beam impact position
-    h0 = graph[0, 0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
-    fig.colorbar(h0[3], ax=graph[0, 0], label='Counts')
-    graph[0, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[0, 0].set_ylabel(f'impact y [{distance_unit}]')
-    graph[0, 0].set_title(f'Beam Impact Position (x, y) {label}')
-    graph[0, 0].set_xlim(x_lim)
-    graph[0, 0].set_ylim(y_lim)
-    graph[0, 0].grid(alpha=0.3)
+    h0 = graph[0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h0[3], ax=graph[0], label='Counts')
+    graph[0].set_xlabel(f'impact x [{distance_unit}]')
+    graph[0].set_ylabel(f'impact y [{distance_unit}]')
+    graph[0].set_title(f'Beam Impact Position (x, y)')
+    graph[0].set_xlim(x_lim)
+    graph[0].set_ylim(y_lim)
+    graph[0].grid(alpha=0.3)
 
-    h00 = graph[0, 1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
-    fig.colorbar(h00[3], ax=graph[0, 1], label='Counts')
-    graph[0, 1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
-    graph[0, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
-    graph[0, 1].set_title(f'Angular Distribution {label}')
-    graph[0, 1].set_xlim(theta_x_lim)
-    graph[0, 1].set_ylim(theta_y_lim)
-    graph[0, 1].grid(alpha=0.3)
+    h00 = graph[1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h00[3], ax=graph[1], label='Counts')
+    graph[1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
+    graph[1].set_title(f'Angular Distribution')
+    graph[1].set_xlim(theta_x_lim)
+    graph[1].set_ylim(theta_y_lim)
+    graph[1].grid(alpha=0.3)
 
-    h1 = graph[1, 0].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
-    fig.colorbar(h1[3], ax=graph[1, 0], label='Counts')
-    graph[1, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[1, 0].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
-    graph[1, 0].set_title(f'Horizontal Phase Space (x, $θ_x$) {label}')
-    graph[1, 0].set_xlim(x_lim)
-    graph[1, 0].set_ylim(theta_x_lim)
-    graph[1, 0].grid(alpha=0.3)
+    h1 = graph[2].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h1[3], ax=graph[2], label='Counts') 
+    graph[2].set_xlabel(f'impact x [{distance_unit}]')
+    graph[2].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[2].set_title(f'Horizontal Phase Space (x, $θ_x$)')
+    graph[2].set_xlim(x_lim)
+    graph[2].set_ylim(theta_x_lim)
+    graph[2].grid(alpha=0.3)
 
-    h2 = graph[1, 1].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
-    fig.colorbar(h2[3], ax=graph[1, 1], label='Counts')
-    graph[1, 1].set_xlabel(f'impact y [{distance_unit}]')
-    graph[1, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
-    graph[1, 1].set_title(f'Vertical Phase Space (y, $θ_y$) {label}')
-    graph[1, 1].set_xlim(y_lim)
-    graph[1, 1].set_ylim(theta_y_lim)
-    graph[1, 1].grid(alpha=0.3)
+    h2 = graph[3].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h2[3], ax=graph[3], label='Counts')
+    graph[3].set_xlabel(f'impact y [{distance_unit}]')
+    graph[3].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
+    graph[3].set_title(f'Vertical Phase Space (y, $θ_y$)')
+    graph[3].set_xlim(y_lim)
+    graph[3].set_ylim(theta_y_lim)
+    graph[3].grid(alpha=0.3)
 
     fig.tight_layout()
-    label = label[2:]
+    # label = label[2:]
     plt.savefig(f'{output_folder}/impact_distribution_{label}.png', dpi=300)
     plt.savefig(f'{output_folder}/impact_distribution_{label}.pdf')
     plt.close(fig)
@@ -249,7 +356,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[2].set_ylim(0, counts2.max()*1.2)
     graph[2].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[2].set_ylabel('Counts')
-    graph[2].set_title(rf'$\Delta\theta_x$ distribution (zoom)')
+    graph[2].set_title(rf'$\Delta\theta_x$ distribution (Channelled peak zoom)')
     graph[2].grid(alpha=0.3)
 
     if popt is not None and fit_bin_width is not None:
@@ -289,7 +396,7 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
     counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared', rasterized=True)
-    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.5, label='original', rasterized=True)
+    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[0].set_xlim(-250, 250)
@@ -298,12 +405,12 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\Delta\theta_{label_ax}$ [${unit_str}$]')
     graph[0].set_ylabel('Counts')
-    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution {label}')
+    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, label='original', rasterized=True)
-    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, alpha=0.5, label='smeared', rasterized=True)
+    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, label='smeared', rasterized=True)
+    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[1].set_xlim(-60, 60)
@@ -543,62 +650,104 @@ def apply_selection(data_dict, cut):
 def gaussian(x, A, mu, sigma):
     return A * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
-def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4, angle_unit='urad'):
+def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4,
+                          angle_unit='urad', weights=None, bins=7250, verbose=True):
+    """
+    Come prima, ma:
+      - fit pesato Poisson (sigma = sqrt(counts), absolute_sigma=True)
+      - pcov gonfiata di max(1, chi2/ndf) se il fit è povero
+      - errore su N_ch propagato da pcov con la correlazione A-sigma
+    weights/bins servono solo al bootstrap.
+    Ritorna: n_channeled, n_channeled_err, popt, pcov, bin_width
+    """
     scale = 1e6 if angle_unit == 'urad' else 1.0
-    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
-
-    n_tot = len(theta_x_in)
-
-    counts, edges = np.histogram(dtheta_x, bins=7250)
+ 
+    counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
     centers = 0.5 * (edges[:-1] + edges[1:])
     bin_width = edges[1] - edges[0]
-
+ 
     search_window = 0.5 * abs(bending_angle)
     search_mask = np.abs(centers - bending_angle) < search_window
-
+ 
     if search_mask.sum() > 0:
         peak_x = centers[search_mask][np.argmax(counts[search_mask])]
     else:
         peak_x = bending_angle
-
+ 
     window = 0.5 * abs(bending_angle)
-    # mask = (centers >= (peak_x - 150/scale)) & (centers < (peak_x + window))
-    mask = (centers >= (5990/scale)) & (centers < (peak_x + 50/scale))
+    mask = (centers >= (5990 / scale)) & (centers < (peak_x + 50 / scale))
     while mask.sum() < 5 and window < (dtheta_x.max() - dtheta_x.min()):
         window *= 2
         mask = np.abs(centers - bending_angle) < window
  
     x_fit, y_fit = centers[mask], counts[mask]
     A0 = y_fit.max() if len(y_fit) else 1.0
-    sigma0 = 12e-6  # initial guess for sigma in radians
+    sigma0 = 12e-6  # rad
  
-    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0], maxfev=10000)
+    sig_y = np.sqrt(np.maximum(y_fit, 1.0))   # errori Poisson per bin
+    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0],
+                           sigma=sig_y, absolute_sigma=True, maxfev=10000)
  
-    A, mu, sigma = popt
-    sigma = abs(sigma)
+    chi2 = np.sum(((y_fit - gaussian(x_fit, *popt)) / sig_y) ** 2)
+    ndf = len(x_fit) - 3
+    chi2_ndf = chi2 / ndf if ndf > 0 else np.nan
+    if np.isfinite(chi2_ndf) and chi2_ndf > 1:
+        pcov = pcov * chi2_ndf
+ 
+    A, mu, sigma_signed = popt
+    sigma = abs(sigma_signed)
     perr = np.sqrt(np.diag(pcov))
-    mu_err = perr[1]
-    sigma_err = perr[2]
+    mu_err, sigma_err = perr[1], perr[2]
  
     n_channeled = A * sigma * np.sqrt(2 * np.pi) / bin_width
-    efficiency = n_channeled / n_tot if n_tot > 0 else np.nan
+ 
+    # propagazione: N = A |sigma| sqrt(2pi) / bw, con covarianza A-sigma
+    J = np.array([sigma * np.sqrt(2 * np.pi) / bin_width,
+                  np.sign(sigma_signed) * A * np.sqrt(2 * np.pi) / bin_width])
+    C = pcov[np.ix_([0, 2], [0, 2])]
+    n_channeled_err = np.sqrt(J @ C @ J)
+ 
+    if verbose:
+        print('-' * 50)
+        print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | "
+              f"Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f} | "
+              f"chi2/ndf = {chi2_ndf:.2f} ({len(x_fit)} bins)")
+        print(f"N_ch = {n_channeled:.0f} ± {n_channeled_err:.0f} (fit)")
+ 
+    return n_channeled, n_channeled_err, popt, pcov, bin_width
 
-    n_3sigma = np.sum(np.abs(dtheta_x - mu) < 3 * sigma)
-    n_2sigma = np.sum(np.abs(dtheta_x - mu) < 2 * sigma)
-    n_above  = np.sum(dtheta_x > (mu - 2 * sigma))
+def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=True):
+    """
+    Bootstrap Poissoniano: ogni sopravvissuta pesa Poisson(1), le perse contribuiscono
+    solo al denominatore (Poisson(n_tot - n_surv)). Il fit è rifatto ad ogni replica con
+    gli stessi bin del fit nominale. Cattura fit + conteggio + correlazione num/den.
+    dtheta_final : dtheta_x di final_data (o final_data_s)
+    n_tot        : n_tot_correct (o n_tot_correct_s)
+    """
+    rng = np.random.default_rng(seed)
+    _, edges = np.histogram(dtheta_final, bins=7250)   # stessi bin del fit nominale
+    n_surv = len(dtheta_final)
+    effs = []
+    for _ in range(n_boot):
+        w = rng.poisson(1.0, n_surv).astype(float)
+        n_tot_b = w.sum() + rng.poisson(max(n_tot - n_surv, 0))
+        try:
+            n_ch_b = channeling_efficiency(dtheta_final, dtheta_final, weights=w,
+                                           bins=edges, verbose=False)[0]
+        except RuntimeError:
+            continue
+        effs.append(n_ch_b / n_tot_b)
+    effs = np.array(effs)
+    if verbose:
+        print(f"bootstrap: {len(effs)}/{n_boot} fit ok | eff = {effs.mean()*100:.2f}% | "
+              f"std = {effs.std(ddof=1)*100:.3f}%")
+    return effs.std(ddof=1), effs
 
-    print('-'*50)
-    # print(f"Channeling efficiency: {n_channeled:.0f}/{n_tot} = {efficiency*100:.1f}%")
-    # print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
-    # print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
-    # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
-    print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
-    return n_channeled, popt, pcov, bin_width
 
-# ANALYSIS
+# ANALYSIS ========================================================================================
 
-beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particles')
+beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='all')
 # beam_distribution_plot(x_in_survived, y_in_survived, theta_x_in_survived, theta_y_in_survived, label='- survived particles')
 
 ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle, label='survived')
@@ -648,35 +797,40 @@ print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_corre
 attempted_mask_s = geometric_hit_all & lindhard_all_s
 n_tot_correct_s  = attempted_mask_s.sum()
 
-# efficiency
-n_channeled, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
-n_channeled_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
+# EFFICIENCY ========================================================================================
+n_channeled,   n_ch_err,   popt,   pcov,   fit_bin_width   = channeling_efficiency(final_data['theta_x_in'],   final_data['dtheta_x'])
+n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
 
-efficiency_correct_s = n_channeled_s / n_tot_correct_s
-print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = {efficiency_correct_s*100:.1f}%")
+eff_ns,   eff_s     = n_channeled / n_tot_correct,     n_channeled_s / n_tot_correct_s
+stat_ns,  stat_s    = n_ch_err / n_tot_correct,        n_ch_err_s / n_tot_correct_s       # errore statistico (fit)
+binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1-eff_s)/n_tot_correct_s)  # solo conteggio
+
+print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
+print(f"[smeared]     eff = ({eff_s*100:.2f} ± {stat_s*100:.2f} [fit]) %   (binomiale: ±{binom_s*100:.2f})")
+
+# controllo indipendente (opzionale, ~secondi)
+boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
+boot_s,  _ = efficiency_bootstrap(final_data_s['dtheta_x'], n_tot_correct_s)
+ 
 
 
-# --- GUARD RAIL: verifica affidabilità del fit ---
-sigma_err = np.sqrt(pcov_s[2, 2]) if pcov_s is not None else np.inf
-sigma = abs(popt_s[2]) if popt_s is not None else 0
-fit_reliable = (
-    pcov_s is not None
-    and np.all(np.isfinite(pcov_s))
-    and sigma_err < sigma          # errore sul sigma minore del sigma stesso
-    and n_channeled_s <= n_tot_correct_s  # non puoi channelare più particelle di quelle disponibili
-)
-if not fit_reliable:
-    print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
-    efficiency_correct = np.nan
-else:
-    efficiency_correct = n_channeled_s / n_tot_correct_s
-    eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct_s)
-    print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
-# --- fine guard rail ---
-
-efficiency_notsmeared = n_channeled / n_tot_correct
-eff_err_binom = np.sqrt(efficiency_notsmeared*(1-efficiency_notsmeared)/n_tot_correct)
-print(f"[not smeared] Channeling efficiency: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_notsmeared*100:.1f}± {eff_err_binom*100:.1f})%")
+# # --- GUARD RAIL: verifica affidabilità del fit ---
+# sigma_err = np.sqrt(pcov_s[2, 2]) if pcov_s is not None else np.inf
+# sigma = abs(popt_s[2]) if popt_s is not None else 0
+# fit_reliable = (
+#     pcov_s is not None
+#     and np.all(np.isfinite(pcov_s))
+#     and sigma_err < sigma          # errore sul sigma minore del sigma stesso
+#     and n_channeled_s <= n_tot_correct_s  # non puoi channelare più particelle di quelle disponibili
+# )
+# if not fit_reliable:
+#     print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
+#     efficiency_correct = np.nan
+# else:
+#     efficiency_correct = n_channeled_s / n_tot_correct_s
+#     eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct_s)
+#     print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
+# # --- fine guard rail ---
 
 
 # angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
@@ -691,6 +845,26 @@ smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta
 for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
     print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
           f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
+
+# --- non smeared ---
+mu_ns, sig_ns = popt[1], abs(popt[2])
+efficiency_maps(x_in[attempted_mask], y_in[attempted_mask],
+                final_data['x_in'], final_data['y_in'], final_data['dtheta_x'],
+                mu_ns, sig_ns, crystal_x, crystal_y, nx_bins=5, ny_bins=7, tag='original')
+profiles_plot(x_in[attempted_mask], y_in[attempted_mask], theta_x_in[attempted_mask],
+              final_data, mu_ns, sig_ns, crystal_x, crystal_y, theta_L, tag='original')
+
+# --- smeared (denominatore con lindhard_all_s, già in attempted_mask_s) ---
+mu_s, sig_s = popt_s[1], abs(popt_s[2])
+efficiency_maps(x_in[attempted_mask_s], y_in[attempted_mask_s],
+                final_data_s['x_in'], final_data_s['y_in'], final_data_s['dtheta_x'],
+                mu_s, sig_s, crystal_x, crystal_y, nx_bins=5, ny_bins=7, tag='smeared')
+profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_all[attempted_mask_s],
+              final_data_s, mu_s, sig_s, crystal_x, crystal_y, theta_L, tag='smeared')
+
+
+np.save(f'{output_folder}/dtheta_x_final_smeared_bdsim.npy', final_data_s['dtheta_x'])
+print(f"Salvato array dtheta_x per la routine bdsim")
 
 print('='*50)
 print(f"Plot saved in {output_folder}")

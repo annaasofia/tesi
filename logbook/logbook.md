@@ -1103,16 +1103,6 @@ Here I can find an example: [https://github.com/xsuite/xcoll/blob/main/examples/
 
 added a ordered logbook: [logbook_ordered.md](logbook_ordered.md)
 
-- bdsim long
-    - redo with correct geometry
-    - add smear
-    - in channelled: particles that enters within $\Delta x\sim0.222\,\text{mm}$ of the right edge, exits the side face before reaching the end = it loses the channelling or exits with a reduced $\Delta\theta$ (and so gets rejected). the cutoff should not be entirely sharp, for particles that exit the side within the last 20% of the length, the cutoff does not reject them, so there is a blurred band of $0.08\,\text{mm}$
-- bdsim short
-    - add smear
-- xcoll long
-    - report same analysis of bdsim
-- xcoll short
-
 ### Chapters 3 & 4
 
 Use this rule: chapter 3 says what you do and why, chapter 4 says what you found.  
@@ -1144,6 +1134,21 @@ Put the shared parts in chapter 3: the efficiency definition, $N_{tot}$, $N_{ch}
 ([UP](#traineeship-al-cern))
 
 ## WEEK 18
+
+- bdsim long
+    - in channelled: particles that enters within $\Delta x\sim0.222\,\text{mm}$ of the right edge, exits the side face before reaching the end = it loses the channelling or exits with a reduced $\Delta\theta$ (and so gets rejected). the cutoff should not be entirely sharp, for particles that exit the side within the last 20% of the length, the cutoff does not reject them, so there is a blurred band of $0.08\,\text{mm}$
+- bdsim short
+    - add smear
+- xcoll long
+    - report same analysis of bdsim
+- xcoll short
+
+| sim         | particles | survived | survived that hit the crystal | $\theta_b$     | $\sigma$     | $\chi^2/ndf$ | $\varepsilon$                               | $\varepsilon$ not smeared                   |
+|-------------|-----------|----------|-------------------------------|----------------|--------------|--------------|---------------------------------------------|---------------------------------------------|
+| bdsim long  | 19050000  | 96.49%   | 34.2%                         | 5999.29 ± 0.05 | 11.03 ± 0.04 | 1.30         | (20.16 ± 0.07 [fit]) %   (binomiale: ±0.03) | (30.30 ± 0.58 [fit]) %   (binomiale: ±0.04) |
+| xcoll long  | 20000000  | 95.44%   | 33.7%                         | 5999.51 ± 0.05 | 11.51 ± 0.03 | 1.71         | (41.23 ± 0.12 [fit]) %   (binomiale: ±0.04) | (48.98 ± 2.65 [fit]) %   (binomiale: ±0.04) |
+| bdsim short |           |          |                               |                |              |              |                                             |                                             |
+| bsdim short |           |          |                               |                |              |              |                                             |                                             |
 
 ([UP](#traineeship-al-cern))
 
