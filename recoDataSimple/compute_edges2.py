@@ -488,6 +488,37 @@ fig_x = plot_graph_with_fit(
     save=f"plots_{file}_edges2/scattering_width_vs_x.pdf"
 )
 
+def theta_mcs_error(gr, f, grad_fn, label=""):
+    """Rifà il fit dai parametri convergiti, scala gli errori per sqrt(chi2/ndf)
+    e propaga con la covarianza completa. grad_fn(params) -> (theta, gradiente)."""
+    res = gr.Fit(f, "RQS0")
+    chi2ndf = res.Chi2() / res.Ndf()
+    scale = math.sqrt(max(chi2ndf, 1.0))
+    p = [f.GetParameter(i) for i in range(f.GetNpar())]
+    theta, grad = grad_fn(p)
+    var = sum(grad[i] * grad[j] * res.CovMatrix(i, j)
+              for i in range(len(grad)) for j in range(len(grad)))
+    err_plain = math.sqrt(var)
+    print(f"{label}: chi2/ndf = {chi2ndf:.2f}, theta = {theta:.2f} "
+          f"± {err_plain:.2f} (fit) -> ± {err_plain*scale:.2f} (scaled)")
+    return theta, err_plain * scale
+
+# y: sigma_crystal = p[2], sigma_bsl = p[0]
+def grad_y(p):
+    th = math.sqrt(max(p[2]**2 - p[0]**2, 1e-12))
+    g = [0.0] * len(p)
+    g[0], g[2] = -p[0] / th, p[2] / th
+    return th, g
+
+# x: sigma_high = p[0]+p[1], sigma_bsl = p[0]
+def grad_x(p):
+    th = math.sqrt(max((p[0] + p[1])**2 - p[0]**2, 1e-12))
+    g = [0.0] * len(p)
+    g[0], g[1] = p[1] / th, (p[0] + p[1]) / th
+    return th, g
+
+theta_y, err_y = theta_mcs_error(gr_y, f_y, grad_y, "y crystal")
+theta_x, err_x = theta_mcs_error(gr_x, f_x, grad_x, "x crystal")
  
 print("=" * 50)
 print(f"Crystal footprint from scattering method:")
