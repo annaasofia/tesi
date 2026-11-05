@@ -1,10 +1,24 @@
+import os
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.cm import ScalarMappable
+from matplotlib.patches import Ellipse
+
 from scipy.optimize import curve_fit
-import os
+
+plt.rcParams.update({
+    'font.size': 16,          # Dimensione generale del font
+    'axes.titlesize': 18,     # Dimensione dei titoli dei singoli assi/subplot
+    'axes.labelsize': 16,     # Dimensione delle etichette (asse x, y)
+    'xtick.labelsize': 14,    # Dimensione dei numeri sull'asse x
+    'ytick.labelsize': 14,    # Dimensione dei numeri sull'asse y
+    'legend.fontsize': 14,    # Dimensione del testo nella legenda
+    'figure.titlesize': 20    # Dimensione del suptitle (titolo globale della figura)
+})
 
 viridis_yellow = "#fde725"
 viridis_green = "#5ec962"
@@ -12,10 +26,11 @@ viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
-filename = './runs/cry2_20261021_16.npz'
+# filename = 'cry1_20261008_16_pi.npz'
+filename = './runs/cry1_20261021_16.npz'
 data = np.load(filename)
-
-output_folder = './plots'
+# output_folder = 'plots_cry1_π'
+output_folder = 'plots'
 os.makedirs(output_folder, exist_ok=True)
 
 # reconstruct the arrays from the saved data
@@ -28,16 +43,16 @@ y_out=data['y_out']; theta_y_out=data['py_out']
 # zeta_out=data['zeta_out']; delta_out=data['delta_out']; ptau_out=data['ptau_out']
 
 particle_id_in = data['particle_id_in']
-# state_in = data['state_in']; pdg_id_in = data['pdg_id_in']
+# state_in = data['state_in']#; pdg_id_in = data['pdg_id_in']
 particle_id_out = data['particle_id_out']; state_out = data['state_out']
 #  pdg_id_out = data['pdg_id_out']; at_element_out = data['at_element_out']
 
 # single values
 npart = int(data['npart'])
-crystal_length = float(data['crystal_length'])
-crystal_x = float(data['crystal_x'])
-crystal_y = float(data['crystal_y'])
-bending_angle = float(data['bending_angle'])
+crystal_length = float(data['crystal_length']); print(f"crystal_length = {crystal_length*1e3:.2f} mm")
+crystal_x = float(data['crystal_x']); print(f"crystal_x = {crystal_x*1e3:.2f} mm")
+crystal_y = float(data['crystal_y']); print(f"crystal_y = {crystal_y*1e3:.2f} mm")
+bending_angle = float(data['bending_angle']); print(f"bending_angle = {bending_angle*1e3:.2f} mrad")
 crystal_material = str(data['crystal_material'])
 p0c = float(data['p0c'])
 mass0 = float(data['mass0'])
@@ -74,6 +89,7 @@ theta_y_out_survived = theta_y_out[survived]
 dtheta_x = theta_x_out_survived - theta_x_in_survived
 dtheta_y = theta_y_out_survived - theta_y_in_survived
 
+
 survived_data = {
     'x_in': x_in_survived,
     'y_in': y_in_survived,
@@ -89,12 +105,12 @@ survived_data = {
 }
 
 print(f"Total particles: {len(x_in)}")
-print(f"Survived particles: {np.sum(survived)} = {np.sum(survived)/len(x_in)*100:.2f}%")
+print(f"Survived particles: {np.sum(survived)}")
 
-theta_L = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
+theta_L = 13.228e-6  # rad Lindhard critical angle for Si(110) at 180 GeV - short
 
 # ---------- DETECTOR SMEAR (dataset parallelo, gli originali restano intatti) ----------
-rng_smear = np.random.default_rng(seed=83)
+rng_smear = np.random.default_rng(seed=17)
 
 def highland(p_GeV, x_over_X0, beta=1.0, z=1):
     if x_over_X0 <= 0:
@@ -134,6 +150,106 @@ survived_data_smeared.update({
 })
 print(f"Smear: s_in = {s_in*1e6:.2f} urad, s_out = {s_out*1e6:.2f} urad")
 
+def _grid_edges(crystal_x, crystal_y, nx_bins, ny_bins, distance_unit='mm'):
+    ds = 1e3 if distance_unit == 'mm' else 1.0
+    xe = np.linspace(-crystal_x / 2, crystal_x / 2, nx_bins + 1) * ds
+    ye = np.linspace(-crystal_y / 2, crystal_y / 2, ny_bins + 1) * ds
+    return xe, ye, ds
+
+def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x, crystal_y,
+                    nx_bins=6, ny_bins=7, n_sigma=3, min_den=50, min_num=10, tag='smeared',
+                    distance_unit='mm', angle_unit='urad'):
+    """
+    x_den, y_den : posizioni di impatto di TUTTE le particelle 'attempted'
+                   (geometric hit + Lindhard), incluse le perse -> denominatore
+    x_num, y_num, dtheta_num : particelle sopravvissute dopo gli stessi tagli (final_data*)
+    mu, sigma    : picco di canalizzazione dal fit globale (in rad)
+    Canalizzata  = |dtheta - mu| < n_sigma * sigma  (conteggio, niente fit per bin)
+    Griglia: nx_bins lungo x, ny_bins lungo y.
+    """
+    xe, ye, ds = _grid_edges(crystal_x, crystal_y, nx_bins, ny_bins, distance_unit)
+    ascale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+ 
+    in_win = np.abs(dtheta_num - mu) < n_sigma * sigma
+    xc, yc, dc = x_num[in_win] * ds, y_num[in_win] * ds, dtheta_num[in_win]
+ 
+    den, _, _ = np.histogram2d(x_den * ds, y_den * ds, bins=[xe, ye])
+    num, _, _ = np.histogram2d(xc, yc, bins=[xe, ye])
+ 
+    with np.errstate(divide='ignore', invalid='ignore'):
+        eff = np.where(den >= min_den, num / den, np.nan)
+ 
+    # peak per bin (mediana dei canalizzati)
+    ix = np.digitize(xc, xe) - 1
+    iy = np.digitize(yc, ye) - 1
+    ok = (ix >= 0) & (ix < nx_bins) & (iy >= 0) & (iy < ny_bins)
+    peak = np.full((nx_bins, ny_bins), np.nan)
+    for i in range(nx_bins):
+        for j in range(ny_bins):
+            sel = ok & (ix == i) & (iy == j)
+            if sel.sum() >= min_num:
+                peak[i, j] = np.median(dc[sel]) * ascale
+ 
+    # --- figura 2x1: efficiency | deflection peak ---
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6))
+    panels = [
+        (eff * 100, 'Channeling efficiency [%]', axs[0]),
+        (peak, rf'Deflection peak [${unit_str}$]', axs[1]),
+    ]
+    for M, title, ax in panels:
+        pc = ax.pcolormesh(xe, ye, M.T, cmap='viridis')
+        fig.colorbar(pc, ax=ax)
+        ax.set_xlabel(f'impact x [{distance_unit}]')
+        ax.set_ylabel(f'impact y [{distance_unit}]')
+        ax.set_title(f'{title}')
+        for i in range(nx_bins):
+            for j in range(ny_bins):
+                if np.isfinite(M[i, j]):
+                    txt_color = 'black' if pc.norm(M[i, j]) > 0.5 else 'white'
+                    ax.text(0.5 * (xe[i] + xe[i + 1]), 0.5 * (ye[j] + ye[j + 1]),
+                            f'{M[i, j]:.1f}', ha='center', va='center', fontsize=8, color=txt_color)
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/efficiency_maps_{tag}.png', dpi=200)
+    plt.savefig(f'{output_folder}/efficiency_maps_{tag}.pdf')
+    plt.close(fig)
+ 
+    print(f"[{tag}] map: {np.isfinite(eff).sum()}/{nx_bins * ny_bins} bins with den >= {min_den}; "
+          f"count-based global eff (±{n_sigma}σ) = {num.sum() / den.sum() * 100:.1f}%")
+    return eff, peak, den, num
+
+def eff_profile(var_den, var_num_all, dtheta_num, mu, sigma, edges, scale=1.0, n_sigma=3, min_den=50):
+    """Efficienza 1D vs una variabile qualunque (x, y, theta_x_in...). Errori binomiali."""
+    in_win = np.abs(dtheta_num - mu) < n_sigma * sigma
+    den, _ = np.histogram(var_den * scale, bins=edges)
+    num, _ = np.histogram(var_num_all[in_win] * scale, bins=edges)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        eff = np.where(den >= min_den, num / den, np.nan)
+        err = np.sqrt(eff * (1 - eff) / den)
+    return 0.5 * (edges[1:] + edges[:-1]), eff, err
+ 
+def profiles_plot(x_den, y_den, th_den, fd, mu, sigma, crystal_x, crystal_y, theta_L, tag='smeared', n_bins=10):
+    """fd = final_data (o final_data_s): dict con x_in, y_in, theta_x_in, dtheta_x"""
+    fig, axs = plt.subplots(1, 3, figsize=(16, 4.5))
+    specs = [
+        (x_den, fd['x_in'], np.linspace(-crystal_x / 2, crystal_x / 2, n_bins + 1) * 1e3, 1e3, 'impact x [mm]'),
+        (y_den, fd['y_in'], np.linspace(-crystal_y / 2, crystal_y / 2, n_bins + 1) * 1e3, 1e3, 'impact y [mm]'),
+        (th_den, fd['theta_x_in'], np.linspace(-0.5 * theta_L, 0.5 * theta_L, n_bins + 1) * 1e6, 1e6, r'$\theta_{x,in}$ [$\mu$rad]'),
+    ]
+    for ax, (vd, vn, edges, sc, xl) in zip(axs, specs):
+        c, e, er = eff_profile(vd, vn, fd['dtheta_x'], mu, sigma, edges, scale=sc)
+        ax.errorbar(c, e * 100, yerr=er * 100, fmt='o', color="black", capsize=3)
+        ax.set_xlabel(xl); ax.set_ylabel('Efficiency [%]'); ax.grid(alpha=0.3)
+        if vd is th_den:
+            ax.axvline(-0.5 * theta_L * 1e6, color='red', lw=1, ls='--', label=r'$\pm 1/2 \theta_L$')
+            ax.axvline(0.5 * theta_L * 1e6, color='red', lw=1, ls='--')
+            ax.legend()
+    fig.suptitle(f'Efficiency profiles')
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/efficiency_profiles_{tag}.png', dpi=200)
+    plt.savefig(f'{output_folder}/efficiency_profiles_{tag}.pdf')
+    plt.close(fig)
+
 def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, distance_unit='mm', angle_unit='urad'):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
@@ -145,52 +261,52 @@ def beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label=None, dista
     x_lim = (x_in.min() * distance_scale, x_in.max() * distance_scale)
     y_lim = (y_in.min() * distance_scale, y_in.max() * distance_scale)
     theta_x_lim = (-150, 150) if angle_unit == 'urad' else (theta_x_in.min() * scale, theta_x_in.max() * scale)
-    theta_y_lim = (-150, 150) if angle_unit == 'urad' else (theta_y_in.min() * scale, theta_y_in.max() * scale)
+    theta_y_lim = (-200, 200) if angle_unit == 'urad' else (theta_y_in.min() * scale, theta_y_in.max() * scale)
     # theta_x_lim = (theta_x_in.min() * scale, theta_x_in.max() * scale)
     # theta_y_lim = (theta_y_in.min() * scale, theta_y_in.max() * scale)
 
-    fig, graph = plt.subplots(2, 2, figsize=(10, 10))
+    fig, graph = plt.subplots(1, 4, figsize=(20, 6))
     # 1. Grafico (x, y) - Beam impact position
-    h0 = graph[0, 0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h0[3], ax=graph[0, 0], label='Counts')
-    graph[0, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[0, 0].set_ylabel(f'impact y [{distance_unit}]')
-    graph[0, 0].set_title(f'Beam Impact Position (x, y) {label}')
-    graph[0, 0].set_xlim(x_lim)
-    graph[0, 0].set_ylim(y_lim)
-    graph[0, 0].grid(alpha=0.3)
+    h0 = graph[0].hist2d(x_in * distance_scale, y_in * distance_scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h0[3], ax=graph[0], label='Counts')
+    graph[0].set_xlabel(f'impact x [{distance_unit}]')
+    graph[0].set_ylabel(f'impact y [{distance_unit}]')
+    graph[0].set_title(f'Beam Impact Position (x, y)')
+    graph[0].set_xlim(x_lim)
+    graph[0].set_ylim(y_lim)
+    graph[0].grid(alpha=0.3)
 
-    h00 = graph[0, 1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h00[3], ax=graph[0, 1], label='Counts')
-    graph[0, 1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
-    graph[0, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
-    graph[0, 1].set_title(f'Angular Distribution {label}')
-    graph[0, 1].set_xlim(theta_x_lim)
-    graph[0, 1].set_ylim(theta_y_lim)
-    graph[0, 1].grid(alpha=0.3)
+    h00 = graph[1].hist2d(theta_x_in * scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h00[3], ax=graph[1], label='Counts')
+    graph[1].set_xlabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
+    graph[1].set_title(f'Angular Distribution')
+    graph[1].set_xlim(theta_x_lim)
+    graph[1].set_ylim(theta_y_lim)
+    graph[1].grid(alpha=0.3)
 
-    h1 = graph[1, 0].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h1[3], ax=graph[1, 0], label='Counts')
-    graph[1, 0].set_xlabel(f'impact x [{distance_unit}]')
-    graph[1, 0].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
-    graph[1, 0].set_title(f'Horizontal Phase Space (x, $θ_x$) {label}')
-    graph[1, 0].set_xlim(x_lim)
-    graph[1, 0].set_ylim(theta_x_lim)
-    graph[1, 0].grid(alpha=0.3)
+    h1 = graph[2].hist2d(x_in * distance_scale, theta_x_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h1[3], ax=graph[2], label='Counts') 
+    graph[2].set_xlabel(f'impact x [{distance_unit}]')
+    graph[2].set_ylabel(rf'$\theta_x$ [${unit_str}$]')
+    graph[2].set_title(f'Horizontal Phase Space (x, $θ_x$)')
+    graph[2].set_xlim(x_lim)
+    graph[2].set_ylim(theta_x_lim)
+    graph[2].grid(alpha=0.3)
 
-    h2 = graph[1, 1].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm())
-    fig.colorbar(h2[3], ax=graph[1, 1], label='Counts')
-    graph[1, 1].set_xlabel(f'impact y [{distance_unit}]')
-    graph[1, 1].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
-    graph[1, 1].set_title(f'Vertical Phase Space (y, $θ_y$) {label}')
-    graph[1, 1].set_xlim(y_lim)
-    graph[1, 1].set_ylim(theta_y_lim)
-    graph[1, 1].grid(alpha=0.3)
+    h2 = graph[3].hist2d(y_in * distance_scale, theta_y_in * scale, bins=100, cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h2[3], ax=graph[3], label='Counts')
+    graph[3].set_xlabel(f'impact y [{distance_unit}]')
+    graph[3].set_ylabel(rf'$\theta_y$ [${unit_str}$]')
+    graph[3].set_title(f'Vertical Phase Space (y, $θ_y$)')
+    graph[3].set_xlim(y_lim)
+    graph[3].set_ylim(theta_y_lim)
+    graph[3].grid(alpha=0.3)
 
     fig.tight_layout()
-    label = label[2:]
-    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.png')
-    plt.savefig(f'{output_folder}/gaus_impact_distribution_{label}.pdf')
+    # label = label[2:]
+    plt.savefig(f'{output_folder}/impact_distribution_{label}.png', dpi=300)
+    plt.savefig(f'{output_folder}/impact_distribution_{label}.pdf')
     plt.close(fig)
 
 def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width=None, label=None, angle_unit='urad'):
@@ -202,10 +318,10 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     fig, graph = plt.subplots(1, 3, figsize=(18, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm())
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm(), rasterized=True)
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
-    graph[0].set_ylim(-750, 6200)
+    graph[0].set_ylim(-100, 120)
     if label=='':
         graph[0].set_xlim(-7, 7)
     # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
@@ -213,28 +329,28 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
     graph[0].set_xlabel(rf'$\theta_{{in}}$ [${unit_str}$]')
     graph[0].set_ylabel(rf'$\Delta\theta_x = \theta_{{out}} - \theta_{{in}}$ [${unit_str}$]')
-    graph[0].set_title(f'Angular scan {label}')
+    graph[0].set_title(f'Angular scan')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color=viridis_green)
-    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=7250, color=viridis_green)
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
     plot_bin_width = bins[1] - bins[0]
     plot_bin_width2 = bins2[1] - bins2[0]
 
-    graph[1].set_xlim(-750, 6200)
-    graph[1].set_yscale('log')
-    graph[1].set_ylim(500, counts.max()*1.2)
+    graph[1].set_xlim(-100, 120)
+    # graph[1].set_yscale('log')
+    # graph[1].set_ylim(500, counts.max()*1.2)
     graph[1].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
-    graph[1].set_title(rf'$\Delta\theta_x$ distribution {label}')
+    graph[1].set_title(rf'$\Delta\theta_x$ distribution')
     graph[1].grid(alpha=0.3)
 
-    graph[2].set_xlim(5950, 6050)
+    graph[2].set_xlim(20, 80)
     graph[2].set_ylim(0, counts2.max()*1.2)
     graph[2].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[2].set_ylabel('Counts')
-    graph[2].set_title(rf'$\Delta\theta_x$ distribution (zoom)')
+    graph[2].set_title(rf'$\Delta\theta_x$ distribution (Channelled peak zoom)')
     graph[2].grid(alpha=0.3)
 
     if popt is not None and fit_bin_width is not None:
@@ -248,7 +364,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
         sigma_scaled = sigma * scale
 
         x_curve_wide = np.linspace(dtheta_x.min() * scale, dtheta_x.max() * scale, 2000)
-        x_curve_zoom = np.linspace(5950, 6050, 2000)
+        x_curve_zoom = np.linspace(20, 80, 2000)
 
         # graph[1].plot(x_curve_wide, gaussian(x_curve_wide, A_scaled, mu_scaled, sigma_scaled), color='red', lw=2)
         graph[2].plot(x_curve_zoom, gaussian(x_curve_zoom, A_scaled2, mu_scaled, sigma_scaled), color='red', lw=2)
@@ -257,9 +373,276 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     fig.tight_layout()
     if label == '(survived particles)': label = 'survived'
     if label == '': label = 'final'
-    plt.savefig(f'{output_folder}/angular_scan_{label}.png')
+    plt.savefig(f'{output_folder}/angular_scan_{label}.png', dpi=300)
     plt.savefig(f'{output_folder}/angular_scan_{label}.pdf')
     plt.close(fig)
+
+def angular_scan_regions_plot_old(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
+                              n_sigma=3, ch_frac=0.5, am_edge=1.0, vr_edge=1.0,
+                              xlim=(-100, 100), ylim=(-75, 95), nbins_y=170,
+                              label='', angle_unit='urad'):
+    """
+    Finestre in theta_in:  AM: < -am_edge*theta_L | CH: |theta_in| < ch_frac*theta_L | VR: > vr_edge*theta_L
+    CH  = nella finestra CH e |dtheta - mu| < n_sigma*sigma
+    DCH = nella finestra CH, tra n_sigma*sigma_AM e mu - n_sigma*sigma
+    """
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    th, dth = theta_x_in * scale, dtheta_x * scale
+    thL, thb = theta_L * scale, theta_b * scale
+    mu_u, sig_u = mu * scale, sigma * scale
+
+    am_win = th < -am_edge * thL
+    ch_win = np.abs(th) < ch_frac * thL
+    vr_win = th > vr_edge * thL
+
+    # larghezza dell'AM (MAD) per separare DCH dalla componente non deflessa
+    sig_am = 1.4826 * np.median(np.abs(dth[am_win] - np.median(dth[am_win]))) if am_win.any() else 0.0
+
+    is_ch = ch_win & (np.abs(dth - mu_u) < n_sigma * sig_u)
+    is_dch = ch_win & (dth < mu_u - n_sigma * sig_u) & (dth > n_sigma * sig_am)
+
+    c_am, c_dch, c_ch, c_vr = viridis_purple, viridis_teal, viridis_green, viridis_yellow
+    colors = plt.cm.viridis(np.linspace(0, 1, 6))
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(-0.5, 6.5, 1), cmap.N)
+
+    fig = plt.figure(figsize=(15, 6))
+    gs = fig.add_gridspec(1, 4, width_ratios=[3.2, 1, 1, 1], wspace=0.08)
+    ax0 = fig.add_subplot(gs[0])
+    axs = [fig.add_subplot(gs[i], sharey=ax0) for i in (1, 2, 3)]
+
+    # --- sinistra: angular scan ---
+    h = ax0.hist2d(th, dth, bins=300, range=[xlim, ylim], cmap='viridis', norm=LogNorm(), rasterized=True)
+    # fig.colorbar(h[3], ax=ax0, pad=0.01, label='Counts')
+    for (a, b, c) in [(xlim[0], -am_edge * thL, c_am),
+                      (-ch_frac * thL, ch_frac * thL, c_ch),
+                      (vr_edge * thL, xlim[1], c_vr)]:
+        ax0.axvspan(a, b, color=c, alpha=0.12, lw=0)
+        ax0.axvline(a, color=c, lw=1.5); ax0.axvline(b, color=c, lw=1.5)
+    ax0.axhline(0, color='gray', lw=0.8, ls='--')
+    ax0.axhline(thb, color='gray', lw=0.8, ls='--')
+    ax0.set_xlim(xlim); ax0.set_ylim(ylim)
+    ax0.set_xlabel(r'Impact angle $\theta_{in}$ [$\mu$rad]')
+    ax0.set_ylabel(r'Deflection angle $\Delta\theta_x$ [$\mu$rad]')
+    ax0.set_title('Angular scan')
+
+    # tick: numerici lontani da 0 + ±1/2 theta_L (etichette spostate verso l'esterno per non sovrapporsi)
+    half = 0.5 * thL
+    far = [t for t in ax0.get_xticks() if xlim[0] <= t <= xlim[1] and abs(t) > 5 * half]
+    ticks = sorted(far + [-half, half])
+    ax0.set_xticks(ticks)
+    ax0.set_xticklabels([r'$-\frac{1}{2}\theta_L$' if np.isclose(t, -half) else
+                         r'$\frac{1}{2}\theta_L$' if np.isclose(t, half) else f'{t:g}' for t in ticks])
+    for lbl, t in zip(ax0.get_xticklabels(), ticks):
+        if np.isclose(t, -half): lbl.set_ha('right')
+        if np.isclose(t, half): lbl.set_ha('left')
+
+    # --- destra: proiezioni ---
+    bins = np.linspace(ylim[0], ylim[1], nbins_y + 1)
+    axs[0].hist(dth[am_win], bins=bins, orientation='horizontal', color=c_am)
+    axs[1].hist(dth[is_dch], bins=bins, orientation='horizontal', color=c_dch, label='DCH')
+    axs[1].hist(dth[is_ch], bins=bins, orientation='horizontal', color=c_ch, label='CH')
+    axs[2].hist(dth[vr_win], bins=bins, orientation='horizontal', color=c_vr)
+    for ax, name, c in zip(axs, ['AM', 'CH', 'VR'], [c_am, c_ch, c_vr]):
+        ax.axhline(0, color='gray', lw=0.8, ls='--')
+        ax.axhline(thb, color='gray', lw=0.8, ls='--')
+        ax.set_title(name, color=c, loc='left')
+        ax.set_xlabel('Counts')
+        ax.tick_params(labelleft=False)
+        for sp in ax.spines.values():
+            sp.set_edgecolor(c); sp.set_linewidth(2)
+
+    # # legenda esterna come nella figura di riferimento: colorbar discreta con i nomi delle classi
+    # cb = fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=axs, pad=0.03, fraction=0.06,
+    #                   ticks=np.arange(6))
+    # cb.ax.set_yticklabels(CLASS_NAMES)
+
+    n_tot = len(th)
+    print(f"[{label}] AM: {am_win.sum()} | CH win: {ch_win.sum()} (CH {is_ch.sum()}, DCH {is_dch.sum()}) | VR: {vr_win.sum()}  (tot {n_tot})")
+
+    plt.savefig(f'{output_folder}/angular_scan_regions_{label}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/angular_scan_regions_{label}.pdf', bbox_inches='tight')
+    plt.close(fig)
+
+CLASS_NAMES = ['AM', 'TR', 'DCH', 'CH', 'VC', 'VR']
+CLASS_CODE = {'AM': 0, 'TR': 1, 'DCH': 2, 'CH': 3, 'VC': 4, 'VR': 5}
+
+def _g2d(xy, A, mx, my, sx, sy):
+    x, y = xy
+    return A * np.exp(-0.5 * (((x - mx) / sx) ** 2 + ((y - my) / sy) ** 2))
+
+def fit_gauss2d(x, y, box, nbins=50):
+    """Fit gaussiano 2D (assi allineati) dell'istogramma 2D di (x, y) dentro box=(x0, x1, y0, y1).
+    Fit pesato Poisson, mu vincolati dentro la box. Ritorna [A, mx, my, sx, sy] o None."""
+    x0, x1, y0, y1 = box
+    m = (x >= x0) & (x < x1) & (y >= y0) & (y < y1)
+    if m.sum() < 100:
+        return None
+    H, xe, ye = np.histogram2d(x[m], y[m], bins=nbins, range=[[x0, x1], [y0, y1]])
+    xc, yc = 0.5 * (xe[1:] + xe[:-1]), 0.5 * (ye[1:] + ye[:-1])
+    X, Y = np.meshgrid(xc, yc, indexing='ij')
+    p0 = [H.max(), x[m].mean(), y[m].mean(), x[m].std(), y[m].std()]
+    lo = [0, x0, y0, 1e-3 * (x1 - x0), 1e-3 * (y1 - y0)]
+    hi = [np.inf, x1, y1, 2 * (x1 - x0), 2 * (y1 - y0)]
+    popt, _ = curve_fit(_g2d, (X.ravel(), Y.ravel()), H.ravel(), p0=p0,
+                        sigma=np.sqrt(np.maximum(H.ravel(), 1.0)), bounds=(lo, hi), maxfev=20000)
+    return popt
+
+def fit_region_peaks(th, dth, thL, mu_ch, sig_ch, xlim, ylim, am_dth=40.0, vr_th_min=0.0,
+                     ch_fit_frac=1.0, n_seed=5, nbins=50, ch_use_1d=True):
+    """Trova i 3 picchi (AM, CH, VR) con un fit gaussiano 2D nella loro regione di partenza
+    (il VC non si fitta, vedi classify_peaks). Tutto in µrad. Regioni di partenza:
+      AM: theta_in < 0,            dtheta < am_dth
+      CH: |theta_in| < ch_fit_frac*theta_L,  |dtheta - mu_ch| < n_seed*sig_ch
+      VR: theta_in > vr_th_min,    dtheta < 0
+    """
+    boxes = {'AM': (xlim[0], 0.0, ylim[0], am_dth),
+             'CH': (-ch_fit_frac * thL, ch_fit_frac * thL, mu_ch - n_seed * sig_ch, mu_ch + n_seed * sig_ch),
+             'VR': (vr_th_min, xlim[1], ylim[0], 0.0)}
+    fits = {}
+    for name, box in boxes.items():
+        try:
+            p = fit_gauss2d(th, dth, box, nbins)
+        except (RuntimeError, ValueError) as e:
+            print(f"  fit 2D {name}: fallito ({e})"); continue
+        if p is None:
+            print(f"  fit 2D {name}: statistica insufficiente"); continue
+        fits[name] = dict(A=p[0], mx=p[1], my=p[2], sx=p[3], sy=p[4])
+        print(f"  {name}: mu = ({p[1]:.1f}, {p[2]:.1f}) urad | sigma = ({p[3]:.1f}, {p[4]:.1f}) urad")
+    if ch_use_1d and 'CH' in fits:
+        # il fit 2D gonfia sigma_y perché la coda di dechanneling è dentro la regione: per Δθ si usa il picco del fit 1D
+        fits['CH']['my'], fits['CH']['sy'] = mu_ch, sig_ch
+        print(f"  CH: mu_y, sigma_y sostituiti dal fit 1D -> ({mu_ch:.1f}, {sig_ch:.1f}) urad")
+    return fits
+
+def classify_peaks(th, dth, fits, thL, n_sigma=3, dch_frac=1.0, ch_x_max=None, vc_edge=1.0, vr_frac=0.5):
+    """Tutto in µrad. Ordine di assegnazione (le regole successive sovrascrivono le precedenti):
+    1. AM, CH, VR: entro n_sigma (ellisse) del picco fittato; se in più ellissi vince il picco più vicino (in sigma).
+    2. VR  : anche fuori dall'ellisse, purché theta_in > vr_frac*theta_L e dtheta < 0
+    3. VC  : theta_in > vc_edge*theta_L e dtheta > 0 (nessun fit, taglio semplice)
+    4. DCH : TUTTE le particelle con |theta_in| < dch_frac*theta_L che non sono CH (sovrascrive AM, VR, TR)
+    TR : il resto
+    """
+    cls = np.full(th.shape, CLASS_CODE['TR'], dtype=np.int8)
+    best_r = np.full(th.shape, np.inf)
+    for name in ('AM', 'CH', 'VR'):
+        if name not in fits:
+            continue
+        f = fits[name]
+        r = np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy'])
+        upd = (r < n_sigma) & (r < best_r)
+        if name == 'CH' and ch_x_max is not None:      # il canalizzato vive solo nella finestra di Lindhard
+            upd &= np.abs(th) < ch_x_max
+        cls[upd] = CLASS_CODE[name]
+        best_r[upd] = r[upd]
+    cls[(th > vr_frac * thL) & (dth < 0)] = CLASS_CODE['VR']
+    cls[(th > vc_edge * thL) & (dth > 0)] = CLASS_CODE['VC']
+    cls[(cls != CLASS_CODE['CH']) & (np.abs(th) < dch_frac * thL)] = CLASS_CODE['DCH']
+    return cls
+
+def angular_scan_regions_plot(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
+                              n_sigma=3, ch_frac=0.5, am_edge=1.0, vr_edge=1.0,
+                              am_dth=40e-6, vc_edge=1.0, vr_rule_frac=0.5, dch_frac=1.0,
+                              vr_th_min=0.0, ch_fit_frac=1.0,
+                              xlim=(-100, 100), ylim=(-75, 95), nbins_y=170,
+                              show_ellipses=False, max_points=300000, label='', angle_unit='urad'):
+    """
+    Sinistra: angular scan, particelle colorate per classe. AM/CH/VR = dentro n_sigma del rispettivo picco
+              (fit gaussiano 2D); DCH = tutte le particelle con |theta_in| < dch_frac*theta_L non CH;
+              VR anche fuori ellisse se theta_in > vr_rule_frac*theta_L e dtheta < 0 (fuori dalla fetta DCH);
+              VC = theta_in > vc_edge*theta_L e dtheta > 0 (senza fit). vc_edge, vr_rule_frac, dch_frac in unità di theta_L.
+    Destra: proiezioni di dtheta per le finestre nette in theta_in (AM: < -am_edge*theta_L,
+            CH: |theta_in| < ch_frac*theta_L, VR: > vr_edge*theta_L), colorate per classe.
+    theta_L, theta_b, mu, sigma (picco CH dal fit 1D, usato come centro della regione di partenza), am_dth,
+    vr_th_min in rad; vc_edge in unità di theta_L; xlim e ylim in µrad.
+    ch_fit_frac: la regione di partenza del CH è |theta_in| < ch_fit_frac*theta_L, e il CH è colorato solo lì.
+    """
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    th, dth = theta_x_in * scale, dtheta_x * scale
+    thL, thb = theta_L * scale, theta_b * scale
+
+    print(f"[{label}] fit gaussiani 2D dei picchi:")
+    fits = fit_region_peaks(th, dth, thL, mu * scale, sigma * scale, xlim, ylim,
+                            am_dth * scale, vr_th_min * scale, ch_fit_frac)
+    cls = classify_peaks(th, dth, fits, thL, n_sigma, dch_frac, ch_x_max=ch_fit_frac * thL,
+                         vc_edge=vc_edge, vr_frac=vr_rule_frac)
+
+    colors = plt.cm.viridis(np.linspace(0, 1, 6))
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(-0.5, 6.5, 1), cmap.N)
+
+    win = {'AM': th < -am_edge * thL,
+           'CH': np.abs(th) < ch_frac * thL,
+           'VR': th > vr_edge * thL}
+    win_color = {'AM': 'orange', 'CH': 'red', 'VR': '#800020'}      # colori delle finestre (diversi da quelli delle classi)
+
+    fig = plt.figure(figsize=(15, 6))
+    gs = fig.add_gridspec(1, 4, width_ratios=[3.2, 1, 1, 1], wspace=0.08)
+    ax0 = fig.add_subplot(gs[0])
+    axs = [fig.add_subplot(gs[i], sharey=ax0) for i in (1, 2, 3)]
+
+    # --- sinistra: scatter colorato per classe (sottocampionato, solo per il disegno) ---
+    rng = np.random.default_rng(0)
+    sel = np.arange(len(th)) if len(th) <= max_points else rng.choice(len(th), max_points, replace=False)
+    counts = np.bincount(cls, minlength=6)
+    for k in np.argsort(-counts):                                  # classi grandi sotto, piccole sopra
+        m = sel[cls[sel] == k]
+        ax0.scatter(th[m], dth[m], s=1, color=colors[k], rasterized=True, linewidths=0)
+    if show_ellipses:
+        for name, f in fits.items():
+            ax0.add_patch(Ellipse((f['mx'], f['my']), 2 * n_sigma * f['sx'], 2 * n_sigma * f['sy'],
+                                  fill=False, ec='white', lw=2.5, zorder=4))
+            ax0.add_patch(Ellipse((f['mx'], f['my']), 2 * n_sigma * f['sx'], 2 * n_sigma * f['sy'],
+                                  fill=False, ec=colors[CLASS_CODE[name]], lw=1.2, ls='--', zorder=5))
+    for edge, c in [(-am_edge * thL, win_color['AM']), (-ch_frac * thL, win_color['CH']),
+                    (ch_frac * thL, win_color['CH']), (vr_edge * thL, win_color['VR'])]:
+        ax0.axvline(edge, color=c, lw=1.5)
+    ax0.axhline(0, color='gray', lw=0.8, ls='--')
+    ax0.axhline(thb, color='gray', lw=0.8, ls='--')
+    ax0.set_xlim(xlim); ax0.set_ylim(ylim)
+    ax0.set_xlabel(r'Impact angle $\theta_{in}$ [$\mu$rad]')
+    ax0.set_ylabel(r'Deflection angle $\Delta\theta_x$ [$\mu$rad]')
+    ax0.set_title('Angular scan')
+
+    # tick: numerici lontani da 0 + ±1/2 theta_L (etichette spostate verso l'esterno per non sovrapporsi)
+    half = 0.5 * thL
+    far = [t for t in ax0.get_xticks() if xlim[0] <= t <= xlim[1] and abs(t) > 5 * half]
+    ticks = sorted(far + [-half, half])
+    ax0.set_xticks(ticks)
+    ax0.set_xticklabels([r'$-\frac{1}{2}\theta_L$' if np.isclose(t, -half) else
+                         r'$\frac{1}{2}\theta_L$' if np.isclose(t, half) else f'{t:g}' for t in ticks])
+    for lbl, t in zip(ax0.get_xticklabels(), ticks):
+        if np.isclose(t, -half): lbl.set_ha('right')
+        if np.isclose(t, half): lbl.set_ha('left')
+
+    # legenda esterna come nella figura di riferimento: colorbar discreta con i nomi delle classi
+    cb = fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=axs, pad=0.03, fraction=0.06,
+                      ticks=np.arange(6))
+    cb.ax.set_yticklabels(CLASS_NAMES)
+
+    # --- destra: proiezioni per finestra, colorate per classe ---
+    bins = np.linspace(ylim[0], ylim[1], nbins_y + 1)
+    for ax, name in zip(axs, ['AM', 'CH', 'VR']):
+        w = win[name]
+        for k in np.argsort(-np.bincount(cls[w], minlength=6)):
+            v = dth[w & (cls == k)]
+            if len(v):
+                ax.hist(v, bins=bins, orientation='horizontal', color=colors[k])
+        ax.axhline(0, color='gray', lw=0.8, ls='--')
+        ax.axhline(thb, color='gray', lw=0.8, ls='--')
+        ax.set_title(name, color=win_color[name], loc='left')
+        ax.set_xlabel('Counts')
+        ax.tick_params(labelleft=False)
+        for sp in ax.spines.values():
+            sp.set_edgecolor(win_color[name]); sp.set_linewidth(2)
+
+    print(f"[{label}] classi: " + ', '.join(f"{n} {c}" for n, c in zip(CLASS_NAMES, counts)) +
+          f" | finestre: AM {win['AM'].sum()}, CH {win['CH'].sum()}, VR {win['VR'].sum()}")
+
+    plt.savefig(f'{output_folder}/angular_scan_regions_{label}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/angular_scan_regions_{label}.pdf', bbox_inches='tight')
+    plt.close(fig)
+    return fits
 
 def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='urad'):
 
@@ -273,22 +656,22 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared')
-    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.9, label='original')
+    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=150, range=(-75, 100), color=viridis_blue, label='smeared', rasterized=True)
+    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=150, range=(-75, 100), color=viridis_green, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[0].set_xlim(-250, 250)
-    # graph[0].set_xlim(-750, 6200)
-    graph[0].set_yscale('log')
-    graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
+    # graph[0].set_xlim(-75, 95)
+    # graph[0].set_yscale('log')
+    # graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\Delta\theta_{label_ax}$ [${unit_str}$]')
     graph[0].set_ylabel('Counts')
-    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution {label}')
+    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, label='original')
-    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, alpha=0.9, label='smeared')
+    graph[1].hist(dtheta_x_smeared * scale, bins=100, range=(20, 80), color=viridis_blue, label='smeared', rasterized=True)
+    graph[1].hist(dtheta_x * scale, bins=100, range=(20, 80), color=viridis_green, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[1].set_xlim(-60, 60)
@@ -301,7 +684,7 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     graph[1].legend()
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/smear_comparison_{label}.png')
+    plt.savefig(f'{output_folder}/smear_comparison_{label}.png', dpi=300)
     plt.savefig(f'{output_folder}/smear_comparison_{label}.pdf')
     plt.close(fig)
 
@@ -312,7 +695,7 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
     counts_smeared, _, _ = graph[0].hist(x_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
 
     # graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\theta_{{in,x}}$ [${unit_str}$]')
@@ -322,7 +705,7 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     graph[0].legend()
 
     graph[1].hist(y_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.9, label='original')
+    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
 
     graph[1].set_xlabel(rf'$\theta_{{in,y}}$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
@@ -331,11 +714,11 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     graph[1].legend()
 
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/smear_comparison_angle.png')
+    plt.savefig(f'{output_folder}/smear_comparison_angle.png', dpi=300)
     plt.savefig(f'{output_folder}/smear_comparison_angle.pdf')
     plt.close(fig)
 
-def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, distance_unit='mm'):
+def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, tol_frac=0.2, bending_angle=bending_angle, label = '', distance_unit='mm'):
     distance_scale = 1e3 if distance_unit == 'mm' else 1.0
 
     channeled_mask = np.abs(dtheta_x - bending_angle) < (tol_frac * bending_angle)
@@ -343,6 +726,7 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
     y_in_channeled = y_in[channeled_mask]
     x_out_channeled = x_out[channeled_mask]
     y_out_channeled = y_out[channeled_mask]
+    shift = crystal_length * bending_angle/2 # 0.222 mm
 
     fig = plt.figure(figsize=(20, 11), layout='constrained')
     subfigs = fig.subfigures(2, 1, hspace=0.01)
@@ -352,13 +736,13 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
             'subfig': subfigs[0],
             'title': 'All Particles',
             'data': [x_in, y_in, x_out, y_out],
-            'color': viridis_blue,
+            'color': viridis_teal,
         },
         {
             'subfig': subfigs[1],
             'title': 'Channeled Particles',
             'data': [x_in_channeled, y_in_channeled, x_out_channeled, y_out_channeled],
-            'color': viridis_green,
+            'color': viridis_teal,
         }
     ]
 
@@ -388,12 +772,17 @@ def ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 
             ax.hist(vals * distance_scale, bins=100, color=cfg['color'], histtype='stepfilled')
             ax.axvline(-edge, color='red', ls='--', label='crystal edges')
             ax.axvline(edge, color='red', ls='--')
+            if cfg['title'] == 'Channeled Particles' and xlabel.startswith('outgoing x'):
+                ax.axvline(-edge + shift * distance_scale, color='red', ls='--')
+                ax.axvline(edge + shift * distance_scale, color='red', ls='--')
+                ax.axvline(-edge, color='orange', ls='--', label='crystal edges no bend')
+                ax.axvline(edge, color='orange', ls='--')
             ax.set_xlabel(xlabel)
             ax.set_ylabel('Counts')
             ax.legend(loc='upper right')
 
-    plt.savefig(f'{output_folder}/ch_footprint.png', dpi=200, bbox_inches='tight')
-    plt.savefig(f'{output_folder}/ch_footprint.pdf', bbox_inches='tight')
+    plt.savefig(f'{output_folder}/ch_footprint_{label}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/ch_footprint_{label}.pdf', bbox_inches='tight')
     plt.close(fig)
 
 def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x', n_slices=50, distance_unit='mm', 
@@ -484,8 +873,8 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
-    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.png')
-    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.pdf')
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.png', dpi=300)
+    plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}.pdf', dpi=300)
 
     # --- example: one slice inside, one outside the crystal ---
     inside_recs = [r for r in records if abs(r['center']) <= edge_scaled]
@@ -510,8 +899,8 @@ def mcs_edge_scan(pos_in, dtheta, crystal_edge, plane_label='x', dtheta_label='x
             ax2.grid(alpha=0.3)
         fig2.suptitle(f'Example slice fits {label}')
         fig2.tight_layout()
-        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.png')
-        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.pdf')
+        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.png', dpi=300)
+        plt.savefig(f'{output_folder}/mcs_edge_scan_{plane_label}_example_fits.pdf', dpi=300)
 
     return valid_pos, sigmas, sigma_errs, n_used
 
@@ -522,65 +911,108 @@ def apply_selection(data_dict, cut):
 def gaussian(x, A, mu, sigma):
     return A * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
-def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4, angle_unit='urad'):
+def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4,
+                          angle_unit='urad', weights=None, bins=160, verbose=True):
+    """
+    Come prima, ma:
+      - fit pesato Poisson (sigma = sqrt(counts), absolute_sigma=True)
+      - pcov gonfiata di max(1, chi2/ndf) se il fit è povero
+      - errore su N_ch propagato da pcov con la correlazione A-sigma
+    weights/bins servono solo al bootstrap.
+    Ritorna: n_channeled, n_channeled_err, popt, pcov, bin_width
+    """
     scale = 1e6 if angle_unit == 'urad' else 1.0
-    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
-
-    n_tot = len(theta_x_in)
-
-    counts, edges = np.histogram(dtheta_x, bins=7250)
+ 
+    counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
     centers = 0.5 * (edges[:-1] + edges[1:])
     bin_width = edges[1] - edges[0]
-
+ 
     search_window = 0.5 * abs(bending_angle)
     search_mask = np.abs(centers - bending_angle) < search_window
-
+ 
     if search_mask.sum() > 0:
         peak_x = centers[search_mask][np.argmax(counts[search_mask])]
     else:
         peak_x = bending_angle
-
+ 
     window = 0.5 * abs(bending_angle)
-    # mask = (centers >= (peak_x - 150/scale)) & (centers < (peak_x + window))
-    mask = (centers >= (5990/scale)) & (centers < (peak_x + 50/scale))
+    mask = (centers >= (40 / scale)) & (centers < (peak_x + 50 / scale))
     while mask.sum() < 5 and window < (dtheta_x.max() - dtheta_x.min()):
         window *= 2
         mask = np.abs(centers - bending_angle) < window
  
     x_fit, y_fit = centers[mask], counts[mask]
     A0 = y_fit.max() if len(y_fit) else 1.0
-    sigma0 = 12e-6  # initial guess for sigma in radians
+    sigma0 = 12e-6  # rad
  
-    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0], maxfev=10000)
+    sig_y = np.sqrt(np.maximum(y_fit, 1.0))   # errori Poisson per bin
+    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0],
+                           sigma=sig_y, absolute_sigma=True, maxfev=10000)
  
-    A, mu, sigma = popt
-    sigma = abs(sigma)
+    chi2 = np.sum(((y_fit - gaussian(x_fit, *popt)) / sig_y) ** 2)
+    ndf = len(x_fit) - 3
+    chi2_ndf = chi2 / ndf if ndf > 0 else np.nan
+    if np.isfinite(chi2_ndf) and chi2_ndf > 1:
+        pcov = pcov * chi2_ndf
+ 
+    A, mu, sigma_signed = popt
+    sigma = abs(sigma_signed)
     perr = np.sqrt(np.diag(pcov))
-    mu_err = perr[1]
-    sigma_err = perr[2]
+    mu_err, sigma_err = perr[1], perr[2]
  
     n_channeled = A * sigma * np.sqrt(2 * np.pi) / bin_width
-    efficiency = n_channeled / n_tot if n_tot > 0 else np.nan
+ 
+    # propagazione: N = A |sigma| sqrt(2pi) / bw, con covarianza A-sigma
+    J = np.array([sigma * np.sqrt(2 * np.pi) / bin_width,
+                  np.sign(sigma_signed) * A * np.sqrt(2 * np.pi) / bin_width])
+    C = pcov[np.ix_([0, 2], [0, 2])]
+    n_channeled_err = np.sqrt(J @ C @ J)
+ 
+    if verbose:
+        print('-' * 50)
+        print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | "
+              f"Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f} | "
+              f"chi2/ndf = {chi2_ndf:.2f} ({len(x_fit)} bins)")
+        print(f"N_ch = {n_channeled:.0f} ± {n_channeled_err:.0f} (fit)")
+ 
+    return n_channeled, n_channeled_err, popt, pcov, bin_width
 
-    n_3sigma = np.sum(np.abs(dtheta_x - mu) < 3 * sigma)
-    n_2sigma = np.sum(np.abs(dtheta_x - mu) < 2 * sigma)
-    n_above  = np.sum(dtheta_x > (mu - 2 * sigma))
+def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=True):
+    """
+    Bootstrap Poissoniano: ogni sopravvissuta pesa Poisson(1), le perse contribuiscono
+    solo al denominatore (Poisson(n_tot - n_surv)). Il fit è rifatto ad ogni replica con
+    gli stessi bin del fit nominale. Cattura fit + conteggio + correlazione num/den.
+    dtheta_final : dtheta_x di final_data (o final_data_s)
+    n_tot        : n_tot_correct (o n_tot_correct_s)
+    """
+    rng = np.random.default_rng(seed)
+    _, edges = np.histogram(dtheta_final, bins=160)   # stessi bin del fit nominale
+    n_surv = len(dtheta_final)
+    effs = []
+    for _ in range(n_boot):
+        w = rng.poisson(1.0, n_surv).astype(float)
+        n_tot_b = w.sum() + rng.poisson(max(n_tot - n_surv, 0))
+        try:
+            n_ch_b = channeling_efficiency(dtheta_final, dtheta_final, weights=w,
+                                           bins=edges, verbose=False)[0]
+        except RuntimeError:
+            continue
+        effs.append(n_ch_b / n_tot_b)
+    effs = np.array(effs)
+    if verbose:
+        print(f"bootstrap: {len(effs)}/{n_boot} fit ok | eff = {effs.mean()*100:.2f}% | "
+              f"std = {effs.std(ddof=1)*100:.3f}%")
+    return effs.std(ddof=1), effs
 
-    print('-'*50)
-    # print(f"Channeling efficiency: {n_channeled:.0f}/{n_tot} = {efficiency*100:.1f}%")
-    # print(f"Channeling efficiency (within 3 sigma): {n_3sigma:.0f}/{n_tot} = {n_3sigma/n_tot*100:.1f}%")
-    # print(f"Channeling efficiency (within 2 sigma): {n_2sigma:.0f}/{n_tot} = {n_2sigma/n_tot*100:.1f}%")
-    # print(f"Channeling efficiency (above 2sigma): {n_above:.0f}/{n_tot} = {n_above/n_tot*100:.1f}%")
-    print(f"Channeling peak = {mu * scale:.2f} ± {mu_err * scale:.2f} urad | Sigma = {sigma * scale:.2f} ± {sigma_err * scale:.2f}")
 
-    return n_channeled, popt, pcov, bin_width
 
-# ANALYSIS
+# ANALYSIS ========================================================================================
 
-beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='- all particles')
+beam_distribution_plot(x_in, y_in, theta_x_in, theta_y_in, label='all')
 # beam_distribution_plot(x_in_survived, y_in_survived, theta_x_in_survived, theta_y_in_survived, label='- survived particles')
 
-ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle)
+ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle, label='survived')
+# ch_footprint_plot(x_in, y_in, x_out, y_out, dtheta_x, crystal_x, crystal_y, 0.2, bending_angle, label='all')
 
 # pos_x, sigmas_x, errs_x, n_x = mcs_edge_scan(
 #     pos_in=survived_data['x_in'], dtheta=survived_data['dtheta_y'], crystal_edge=crystal_x,
@@ -626,49 +1058,76 @@ print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_corre
 attempted_mask_s = geometric_hit_all & lindhard_all_s
 n_tot_correct_s  = attempted_mask_s.sum()
 
-# efficiency
-n_channeled, popt, pcov, fit_bin_width = channeling_efficiency(final_data['theta_x_in'], final_data['dtheta_x'])
-n_channeled_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
+# EFFICIENCY ========================================================================================
+n_channeled,   n_ch_err,   popt,   pcov,   fit_bin_width   = channeling_efficiency(final_data['theta_x_in'],   final_data['dtheta_x'])
+n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
 
-efficiency_correct_s = n_channeled_s / n_tot_correct_s
-print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = {efficiency_correct_s*100:.1f}%")
+eff_ns,   eff_s     = n_channeled / n_tot_correct,     n_channeled_s / n_tot_correct_s
+stat_ns,  stat_s    = n_ch_err / n_tot_correct,        n_ch_err_s / n_tot_correct_s       # errore statistico (fit)
+binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1-eff_s)/n_tot_correct_s)  # solo conteggio
 
+print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
+print(f"[smeared]     eff = ({eff_s*100:.2f} ± {stat_s*100:.2f} [fit]) %   (binomiale: ±{binom_s*100:.2f})")
 
-# --- GUARD RAIL: verifica affidabilità del fit ---
-sigma_err = np.sqrt(pcov_s[2, 2]) if pcov_s is not None else np.inf
-sigma = abs(popt_s[2]) if popt_s is not None else 0
-fit_reliable = (
-    pcov_s is not None
-    and np.all(np.isfinite(pcov_s))
-    and sigma_err < sigma          # errore sul sigma minore del sigma stesso
-    and n_channeled_s <= n_tot_correct_s  # non puoi channelare più particelle di quelle disponibili
-)
-if not fit_reliable:
-    print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
-    efficiency_correct = np.nan
-else:
-    efficiency_correct = n_channeled_s / n_tot_correct_s
-    eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct_s)
-    print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
-# --- fine guard rail ---
-
-efficiency_notsmeared = n_channeled / n_tot_correct
-eff_err_binom = np.sqrt(efficiency_notsmeared*(1-efficiency_notsmeared)/n_tot_correct)
-print(f"[not smeared] Channeling efficiency: {n_channeled:.0f}/{n_tot_correct} = ({efficiency_notsmeared*100:.1f}± {eff_err_binom*100:.1f})%")
+# controllo indipendente (opzionale, ~secondi)
+boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
+boot_s,  _ = efficiency_bootstrap(final_data_s['dtheta_x'], n_tot_correct_s)
+ 
 
 
-angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
-angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='(smeared)', popt=popt_s, fit_bin_width=fit_bin_width_s)
+# # --- GUARD RAIL: verifica affidabilità del fit ---
+# sigma_err = np.sqrt(pcov_s[2, 2]) if pcov_s is not None else np.inf
+# sigma = abs(popt_s[2]) if popt_s is not None else 0
+# fit_reliable = (
+#     pcov_s is not None
+#     and np.all(np.isfinite(pcov_s))
+#     and sigma_err < sigma          # errore sul sigma minore del sigma stesso
+#     and n_channeled_s <= n_tot_correct_s  # non puoi channelare più particelle di quelle disponibili
+# )
+# if not fit_reliable:
+#     print("ATTENZIONE: fit inaffidabile (statistica insufficiente) — efficienza non significativa")
+#     efficiency_correct = np.nan
+# else:
+#     efficiency_correct = n_channeled_s / n_tot_correct_s
+#     eff_err_binom = np.sqrt(efficiency_correct*(1-efficiency_correct)/n_tot_correct_s)
+#     print(f"[smeared] Channeling efficiency: {n_channeled_s:.0f}/{n_tot_correct_s} = ({efficiency_correct*100:.1f}± {eff_err_binom*100:.1f})%")
+# # --- fine guard rail ---
+
+
+# angular_scan_plot(final_data['theta_x_in'], final_data['theta_x_out'], theta_L, label='', popt=popt, fit_bin_width=fit_bin_width)
+# angular_scan_plot(survived_data['theta_x_in'], survived_data['theta_x_out'], theta_L, label='(survived particles)', popt=popt, fit_bin_width=fit_bin_width)
+angular_scan_plot(geom_data_s['theta_x_in'], geom_data_s['theta_x_out'], theta_L, label='entered', popt=popt, fit_bin_width=fit_bin_width_s)
+angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta_L, label='smeared', popt=popt_s, fit_bin_width=fit_bin_width_s)
+angular_scan_regions_plot_old(geom_data_s['theta_x_in'], geom_data_s['dtheta_x'], theta_L, bending_angle, popt_s[1], abs(popt_s[2]), label='1')
+angular_scan_regions_plot(geom_data_s['theta_x_in'], geom_data_s['dtheta_x'], theta_L, bending_angle, popt_s[1], abs(popt_s[2]), label='2')
 
 # smear_comparison_plot(geom_data['dtheta_x'], geom_data_s['dtheta_x'], popt=popt, popt_smeared=popt_s, fit_bin_width=fit_bin_width, fit_bin_width_smeared=fit_bin_width_s, label='geometric')
 smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x')
-
 smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta_x_in'], survived_data['theta_y_in'], survived_data_smeared['theta_y_in'])
 
 for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
     print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
           f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
+
+# --- non smeared ---
+mu_ns, sig_ns = popt[1], abs(popt[2])
+efficiency_maps(x_in[attempted_mask], y_in[attempted_mask],
+                final_data['x_in'], final_data['y_in'], final_data['dtheta_x'],
+                mu_ns, sig_ns, crystal_x, crystal_y, nx_bins=5, ny_bins=7, tag='original')
+profiles_plot(x_in[attempted_mask], y_in[attempted_mask], theta_x_in[attempted_mask],
+              final_data, mu_ns, sig_ns, crystal_x, crystal_y, theta_L, tag='original')
+
+# --- smeared (denominatore con lindhard_all_s, già in attempted_mask_s) ---
+mu_s, sig_s = popt_s[1], abs(popt_s[2])
+efficiency_maps(x_in[attempted_mask_s], y_in[attempted_mask_s],
+                final_data_s['x_in'], final_data_s['y_in'], final_data_s['dtheta_x'],
+                mu_s, sig_s, crystal_x, crystal_y, nx_bins=5, ny_bins=7, tag='smeared')
+profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_all[attempted_mask_s],
+              final_data_s, mu_s, sig_s, crystal_x, crystal_y, theta_L, tag='smeared')
+
+
+np.save(f'{output_folder}/dtheta_x_final_smeared_bdsim.npy', final_data_s['dtheta_x'])
+print(f"Salvato array dtheta_x per la routine bdsim")
 
 print('='*50)
 print(f"Plot saved in {output_folder}")
