@@ -912,6 +912,21 @@ def gaussian(x, A, mu, sigma):
 
 def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4,
                           angle_unit='urad', weights=None, bins=160, verbose=True):
+    
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+ 
+    # --- FIX: Limitiamo il range per evitare che gli outlier allarghino i bin ---
+    if isinstance(bins, int):
+        # Range sensato attorno al picco (es. da -100 a +150 urad), misurato in radianti
+        fit_range = (40 / scale, 80 / scale)
+        counts, edges = np.histogram(dtheta_x, bins=bins, range=fit_range, weights=weights)
+    else:
+        # Se bins è già un array (es. passato dal bootstrap), usalo così com'è
+        counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
+ 
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    bin_width = edges[1] - edges[0]
+
     """
     Come prima, ma:
       - fit pesato Poisson (sigma = sqrt(counts), absolute_sigma=True)
@@ -920,11 +935,6 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     weights/bins servono solo al bootstrap.
     Ritorna: n_channeled, n_channeled_err, popt, pcov, bin_width
     """
-    scale = 1e6 if angle_unit == 'urad' else 1.0
- 
-    counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
-    centers = 0.5 * (edges[:-1] + edges[1:])
-    bin_width = edges[1] - edges[0]
  
     search_window = 0.5 * abs(bending_angle)
     search_mask = np.abs(centers - bending_angle) < search_window
@@ -933,22 +943,30 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
         peak_x = centers[search_mask][np.argmax(counts[search_mask])]
     else:
         peak_x = bending_angle
+
  
-    window = 0.5 * abs(bending_angle)
-    mask = (centers >= (40 / scale)) & (centers < (peak_x + 50 / scale))
+    # Creiamo una finestra di fit simmetrica attorno al picco (es. +/- 35 urad)
+    window = 35.0 / scale 
+    mask = (centers >= (peak_x - window)) & (centers < (peak_x + window))
+    
+    # Se per qualche motivo ci sono pochissimi punti, allarghiamo la finestra
     while mask.sum() < 5 and window < (dtheta_x.max() - dtheta_x.min()):
-        window *= 2
-        mask = np.abs(centers - bending_angle) < window
+        window *= 1.5
+        mask = (centers >= (peak_x - window)) & (centers < (peak_x + window))
+    # --- FINE MODIFICA ---
  
     x_fit, y_fit = centers[mask], counts[mask]
     A0 = y_fit.max() if len(y_fit) else 1.0
     sigma0 = 12e-6  # rad
  
     sig_y = np.sqrt(np.maximum(y_fit, 1.0))   # errori Poisson per bin
-    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0],
+    
+    # NOTA: ho cambiato il p0 per far partire il fit da 'peak_x' invece che da 'bending_angle'
+    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, peak_x, sigma0],
                            sigma=sig_y, absolute_sigma=True, maxfev=10000)
  
     chi2 = np.sum(((y_fit - gaussian(x_fit, *popt)) / sig_y) ** 2)
+
     ndf = len(x_fit) - 3
     chi2_ndf = chi2 / ndf if ndf > 0 else np.nan
     if np.isfinite(chi2_ndf) and chi2_ndf > 1:

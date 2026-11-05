@@ -1143,12 +1143,13 @@ Put the shared parts in chapter 3: the efficiency definition, $N_{tot}$, $N_{ch}
     - report same analysis of bdsim
 - xcoll short
 
-| sim         | particles | survived | survived that hit the crystal | $\theta_b$     | $\sigma$     | $\chi^2/ndf$ | $\varepsilon$                               | $\varepsilon$ not smeared                   |
-|-------------|-----------|----------|-------------------------------|----------------|--------------|--------------|---------------------------------------------|---------------------------------------------|
-| bdsim long  | 19050000  | 96.49%   | 34.2%                         | 5999.29 ± 0.05 | 11.03 ± 0.04 | 1.30         | (20.16 ± 0.07 [fit]) %   (binomiale: ±0.03) | (30.30 ± 0.58 [fit]) %   (binomiale: ±0.04) |
-| xcoll long  | 20000000  | 95.44%   | 33.7%                         | 5999.51 ± 0.05 | 11.51 ± 0.03 | 1.71         | (41.23 ± 0.12 [fit]) %   (binomiale: ±0.04) | (48.98 ± 2.65 [fit]) %   (binomiale: ±0.04) |
-| bdsim short |           |          |                               |                |              |              |                                             |                                             |
-| bsdim short |           |          |                               |                |              |              |                                             |                                             |
+| sim         | particles  | survived | survived that hit the crystal | $\theta_b$     | $\sigma$     | $\chi^2/ndf$ | $\varepsilon$                               | $\varepsilon$ not smeared                   |
+|-------------|------------|----------|-------------------------------|----------------|--------------|--------------|---------------------------------------------|---------------------------------------------|
+|bdsim long |19 050 000|96.49%|34.2%|5999.29 ± 0.05|11.03 ± 0.04|1.30|(20.16 ± 0.07 [fit]) % (binomiale: ±0.03)|(30.30 ± 0.58 [fit]) % (binomiale: ±0.04) |
+|xcoll long |20 000 000|95.44%|33.7%|5999.51 ± 0.05|11.51 ± 0.03|1.71|(41.23 ± 0.12 [fit]) % (binomiale: ±0.04)|(48.98 ± 2.65 [fit]) % (binomiale: ±0.04) |
+|bdsim short|1 000 000 |99.99%|37.4%|49.92 ± 0.13  |11.73 ± 0.10|0.81|(62.56 ± 0.50 [fit]) % (binomiale: ±0.18)|(79.25 ± 0.65 [fit]) % (binomiale: ±0.15) |
+|xcoll short|10 000 000|99.75%|37.2%|49.84 ± 0.04  |11.75 ± 0.03|0.99|(64.75 ± 0.16 [fit]) % (binomiale: ±0.06)|(75.14 ± 1.31 [fit]) % (binomiale: ±0.05) |
+
 
 ([UP](#traineeship-al-cern))
 

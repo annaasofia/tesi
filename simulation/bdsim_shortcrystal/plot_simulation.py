@@ -335,7 +335,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].legend()
 
     counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
-    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=300, range=(20, 80), color=viridis_blue, rasterized=True)
     plot_bin_width = bins[1] - bins[0]
     plot_bin_width2 = bins2[1] - bins2[0]
 
@@ -920,7 +920,7 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     # --- FIX: Limitiamo il range per evitare che gli outlier allarghino i bin ---
     if isinstance(bins, int):
         # Range sensato attorno al picco (es. da -100 a +150 urad), misurato in radianti
-        fit_range = (-100 / scale, 150 / scale)
+        fit_range = (40 / scale, 80 / scale)
         counts, edges = np.histogram(dtheta_x, bins=bins, range=fit_range, weights=weights)
     else:
         # Se bins è già un array (es. passato dal bootstrap), usalo così com'è
@@ -945,22 +945,30 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
         peak_x = centers[search_mask][np.argmax(counts[search_mask])]
     else:
         peak_x = bending_angle
+
  
-    window = 0.5 * abs(bending_angle)
-    mask = (centers >= (40 / scale)) & (centers < (peak_x + 50 / scale))
+    # Creiamo una finestra di fit simmetrica attorno al picco (es. +/- 35 urad)
+    window = 35.0 / scale 
+    mask = (centers >= (peak_x - window)) & (centers < (peak_x + window))
+    
+    # Se per qualche motivo ci sono pochissimi punti, allarghiamo la finestra
     while mask.sum() < 5 and window < (dtheta_x.max() - dtheta_x.min()):
-        window *= 2
-        mask = np.abs(centers - bending_angle) < window
+        window *= 1.5
+        mask = (centers >= (peak_x - window)) & (centers < (peak_x + window))
+    # --- FINE MODIFICA ---
  
     x_fit, y_fit = centers[mask], counts[mask]
     A0 = y_fit.max() if len(y_fit) else 1.0
     sigma0 = 12e-6  # rad
  
     sig_y = np.sqrt(np.maximum(y_fit, 1.0))   # errori Poisson per bin
-    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, bending_angle, sigma0],
+    
+    # NOTA: ho cambiato il p0 per far partire il fit da 'peak_x' invece che da 'bending_angle'
+    popt, pcov = curve_fit(gaussian, x_fit, y_fit, p0=[A0, peak_x, sigma0],
                            sigma=sig_y, absolute_sigma=True, maxfev=10000)
  
     chi2 = np.sum(((y_fit - gaussian(x_fit, *popt)) / sig_y) ** 2)
+
     ndf = len(x_fit) - 3
     chi2_ndf = chi2 / ndf if ndf > 0 else np.nan
     if np.isfinite(chi2_ndf) and chi2_ndf > 1:
