@@ -38,9 +38,9 @@ cry1.aper1 = 100
 cry1.aper2 = 100
 l.AddLinkElement(cry1)
 
-
 #correlated gaussian beam
-cov_avg, eigvals, n_list = simfun.cov_matrix()
+SIGMA_DET = 9e-6
+cov_avg, eigvals, n_list = simfun.cov_matrix(sigma_det_x=SIGMA_DET, sigma_det_y=SIGMA_DET)
 assert eigvals.min() > 0, f"cov_avg non è definita positiva! min eigenvalue = {eigvals.min()}"
 
 mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
@@ -109,6 +109,7 @@ np.savez(outfile,
 
     # metadata simulation
     npart=npart,
+    sigma_det_deconv=SIGMA_DET,
     label='cry1',
     cov_avg=cov_avg,
     mu_avg=mu_avg,
