@@ -318,12 +318,11 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     fig, graph = plt.subplots(1, 3, figsize=(18, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm(), rasterized=True)
+    x_range = (-7, 7) if label == '' else (-150, 150)
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, range=[x_range, [-100, 120]], cmap='viridis', norm=LogNorm(), rasterized=True)
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-100, 120)
-    if label=='':
-        graph[0].set_xlim(-7, 7)
     # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
     graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
@@ -333,8 +332,8 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
-    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=300, color=viridis_blue, rasterized=True)
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=300, range=(-100, 120), color=viridis_blue, rasterized=True)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=300, range=(-100, 120), color=viridis_blue, rasterized=True)
     plot_bin_width = bins[1] - bins[0]
     plot_bin_width2 = bins2[1] - bins2[0]
 

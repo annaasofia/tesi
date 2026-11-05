@@ -40,7 +40,7 @@ def routine_comparison_plot(dtheta_1, dtheta_2, label1='Routine 1', label2='Rout
     plt.savefig('short_routine_comparison_dtheta_x.png', dpi=300)
     plt.savefig('short_routine_comparison_dtheta_x.pdf')
     plt.close(fig)
-    print("Plot saved as 'routine_comparison_dtheta_x.png'")
+    print("Plot saved as 'short_routine_comparison_dtheta_x.png'")
 
 
 file1 = './bdsim_shortcrystal/plots/dtheta_x_final_smeared_bdsim.npy'

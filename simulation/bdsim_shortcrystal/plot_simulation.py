@@ -415,9 +415,9 @@ def angular_scan_regions_plot_old(theta_x_in, dtheta_x, theta_L, theta_b, mu, si
     # --- sinistra: angular scan ---
     h = ax0.hist2d(th, dth, bins=300, range=[xlim, ylim], cmap='viridis', norm=LogNorm(), rasterized=True)
     # fig.colorbar(h[3], ax=ax0, pad=0.01, label='Counts')
-    for (a, b, c) in [(xlim[0], -am_edge * thL, c_am),
-                      (-ch_frac * thL, ch_frac * thL, c_ch),
-                      (vr_edge * thL, xlim[1], c_vr)]:
+    for (a, b, c) in [(xlim[0], -am_edge * thL, "orange"),
+                      (-ch_frac * thL, ch_frac * thL, "red"),
+                      (vr_edge * thL, xlim[1], "darkred")]:
         ax0.axvspan(a, b, color=c, alpha=0.12, lw=0)
         ax0.axvline(a, color=c, lw=1.5); ax0.axvline(b, color=c, lw=1.5)
     ax0.axhline(0, color='gray', lw=0.8, ls='--')
@@ -914,6 +914,21 @@ def gaussian(x, A, mu, sigma):
 
 def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol_frac=0.4,
                           angle_unit='urad', weights=None, bins=160, verbose=True):
+    
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+ 
+    # --- FIX: Limitiamo il range per evitare che gli outlier allarghino i bin ---
+    if isinstance(bins, int):
+        # Range sensato attorno al picco (es. da -100 a +150 urad), misurato in radianti
+        fit_range = (-100 / scale, 150 / scale)
+        counts, edges = np.histogram(dtheta_x, bins=bins, range=fit_range, weights=weights)
+    else:
+        # Se bins è già un array (es. passato dal bootstrap), usalo così com'è
+        counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
+ 
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    bin_width = edges[1] - edges[0]
+
     """
     Come prima, ma:
       - fit pesato Poisson (sigma = sqrt(counts), absolute_sigma=True)
@@ -922,11 +937,6 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
     weights/bins servono solo al bootstrap.
     Ritorna: n_channeled, n_channeled_err, popt, pcov, bin_width
     """
-    scale = 1e6 if angle_unit == 'urad' else 1.0
- 
-    counts, edges = np.histogram(dtheta_x, bins=bins, weights=weights)
-    centers = 0.5 * (edges[:-1] + edges[1:])
-    bin_width = edges[1] - edges[0]
  
     search_window = 0.5 * abs(bending_angle)
     search_mask = np.abs(centers - bending_angle) < search_window
