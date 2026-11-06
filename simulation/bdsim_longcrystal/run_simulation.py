@@ -4,7 +4,7 @@ import bdsim
 import xpart as xp
 from datetime import datetime
 from scipy.stats import norm
-import simulation_functions as simfun
+import simulation.bdsim_longcrystal.simulation_functions as simfun
 import time
 import sys
 

@@ -16,6 +16,17 @@ cmap_white_bg = ListedColormap(newcolors)
 ROOT.ROOT.EnableImplicitMT() 
 ROOT.gStyle.SetOptStat(0)
 
+# --- 1. MODIFY FONT MATPLOTLIB ---
+plt.rcParams.update({
+    'font.size': 16,          # Dimensione generale del font
+    'axes.titlesize': 18,     # Dimensione dei titoli dei singoli assi/subplot
+    'axes.labelsize': 16,     # Dimensione delle etichette (x, y)
+    'xtick.labelsize': 14,    # Dimensione dei numeri sull'asse x
+    'ytick.labelsize': 14,    # Dimensione dei numeri sull'asse y
+    'legend.fontsize': 14,    # Dimensione del testo nella legenda
+    'figure.titlesize': 20    # Dimensione del suptitle (titolo globale della figura)
+})
+
 # file = 8430
 file = int(sys.argv[1]) if len(sys.argv) > 1 else 8430
 filename = "data/recoDataSimple_" + str(file) + "_xtalMerging.root"

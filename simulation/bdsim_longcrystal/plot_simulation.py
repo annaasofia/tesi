@@ -763,9 +763,11 @@ ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, 
 #     other_pos_in=survived_data['x_in'], other_edge=crystal_x,
 #     plane_label='y', dtheta_label='y', n_slices=50, fit_window=None, label='- y plane')
 
+
 # geometric cut
-geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
-geometric_hit_all = (np.abs(x_in) < crystal_x/2) & (np.abs(y_in) < crystal_y/2)
+# geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
+geometric_hit = (survived_data['x_in'] < (crystal_x/2)) & (survived_data['x_in'] > -crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
+# geometric_hit_all = (np.abs(x_in) < crystal_x/2) & (np.abs(y_in) < crystal_y/2)
 geom_data = apply_selection(survived_data, geometric_hit)
 geom_data_s = apply_selection(survived_data_smeared, geometric_hit)
 
