@@ -5,5 +5,9 @@ simulation/xcoll_shortcrystal/runs/*.npz
 simulation/xcoll_longcrystal/runs/*.npz
 old_data/ROOT/*.ROOT
 simulation/sim_short
-simulation/twocryst_TCCP
-simulation/twocryst_TCCPA
+simulation/twocryst_TCCP/*.npz
+simulation/twocryst_TCCPA/*.npz
+simulation/twocryst_TCCP/plots_bdsim/*.npy
+simulation/twocryst_TCCP/plots_xcoll/*.npy
+simulation/twocryst_TCCPA/plots_bdsim/*.npy
+simulation/twocryst_TCCPA/plots_xcoll/*.npy
