@@ -462,10 +462,10 @@ def angular_scan_regions_plot_old(theta_x_in, dtheta_x, theta_L, theta_b, mu, si
 
     # --- destra: proiezioni ---
     bins = np.linspace(ylim[0], ylim[1], nbins_y + 1)
-    axs[0].hist(dth[am_win], bins=bins, orientation='horizontal', color=c_am)
-    axs[1].hist(dth[is_dch], bins=bins, orientation='horizontal', color=c_dch, label='DCH')
-    axs[1].hist(dth[is_ch], bins=bins, orientation='horizontal', color=c_ch, label='CH')
-    axs[2].hist(dth[vr_win], bins=bins, orientation='horizontal', color=c_vr)
+    axs[0].hist(dth[am_win], bins=bins, orientation='horizontal', color=c_am, rasterized=True)
+    axs[1].hist(dth[is_dch], bins=bins, orientation='horizontal', color=c_dch, label='DCH', rasterized=True)
+    axs[1].hist(dth[is_ch], bins=bins, orientation='horizontal', color=c_ch, label='CH', rasterized=True)
+    axs[2].hist(dth[vr_win], bins=bins, orientation='horizontal', color=c_vr, rasterized=True)
     for ax, name, c in zip(axs, ['AM', 'CH', 'VR'], [c_am, c_ch, c_vr]):
         ax.axhline(0, color='gray', lw=0.8, ls='--')
         ax.axhline(thb, color='gray', lw=0.8, ls='--')
@@ -538,48 +538,99 @@ def fit_region_peaks(th, dth, thL, mu_ch, sig_ch, xlim, ylim, am_dth=40.0, vr_th
         print(f"  CH: mu_y, sigma_y sostituiti dal fit 1D -> ({mu_ch:.1f}, {sig_ch:.1f}) urad")
     return fits
 
-def classify_peaks(th, dth, fits, thL, n_sigma=3, dch_frac=1.0, ch_x_max=None, vc_edge=1.0, vr_frac=0.5):
-    """Tutto in µrad. Ordine di assegnazione (le regole successive sovrascrivono le precedenti):
-    1. AM, CH, VR: entro n_sigma (ellisse) del picco fittato; se in più ellissi vince il picco più vicino (in sigma).
-    2. VR  : anche fuori dall'ellisse, purché theta_in > vr_frac*theta_L e dtheta < 0
-    3. VC  : theta_in > vc_edge*theta_L e dtheta > 0 (nessun fit, taglio semplice)
-    4. DCH : TUTTE le particelle con |theta_in| < dch_frac*theta_L che non sono CH (sovrascrive AM, VR, TR)
-    TR : il resto
+# def classify_peaks(th, dth, fits, thL, n_sigma=3, dch_frac=1.0, ch_x_max=None, vc_edge=1.0, vr_frac=0.5):
+#     """Tutto in µrad. Ordine di assegnazione (le regole successive sovrascrivono le precedenti):
+#     1. AM, CH, VR: entro n_sigma (ellisse) del picco fittato; se in più ellissi vince il picco più vicino (in sigma).
+#     2. VR  : anche fuori dall'ellisse, purché theta_in > vr_frac*theta_L e dtheta < 0
+#     3. VC  : theta_in > vc_edge*theta_L e dtheta > 0 (nessun fit, taglio semplice)
+#     4. DCH : TUTTE le particelle con |theta_in| < dch_frac*theta_L che non sono CH (sovrascrive AM, VR, TR)
+#     TR : il resto
+#     """
+#     cls = np.full(th.shape, CLASS_CODE['TR'], dtype=np.int8)
+#     best_r = np.full(th.shape, np.inf)
+#     for name in ('AM', 'CH', 'VR'):
+#         if name not in fits:
+#             continue
+#         f = fits[name]
+#         r = np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy'])
+#         upd = (r < n_sigma) & (r < best_r)
+#         if name == 'CH' and ch_x_max is not None:      # il canalizzato vive solo nella finestra di Lindhard
+#             upd &= np.abs(th) < ch_x_max
+#         cls[upd] = CLASS_CODE[name]
+#         best_r[upd] = r[upd]
+#     cls[(th > vr_frac * thL) & (dth < 0)] = CLASS_CODE['VR']
+#     cls[(th > vc_edge * thL) & (dth > 0)] = CLASS_CODE['VC']
+#     cls[(cls != CLASS_CODE['CH']) & (np.abs(th) < dch_frac * thL)] = CLASS_CODE['DCH']
+#     return cls
+
+def classify_peaks(th, dth, fits, thL, n_sigma=2.5, vc_th_min=25.0):
+    """
+    Classificazione particelle (tutto in µrad):
+    - VC: solo th > vc_th_min e dth > 0 (sovrascrive tutto il resto in quell'area)
+    - AM: th < -1/2 theta_L (tutta l'area a sx) + ellisse a n_sigma
+    - VR: (th > 1/2 theta_L e dth < 0) + ellisse a n_sigma
+    - CH: ellisse a n_sigma (limitata rigorosamente a |th| <= 1/2 theta_L)
+    - DCH: area rimanente in |th| <= 1/2 theta_L che non è CH e non è nelle code (ellissi) di AM/VR
     """
     cls = np.full(th.shape, CLASS_CODE['TR'], dtype=np.int8)
-    best_r = np.full(th.shape, np.inf)
-    for name in ('AM', 'CH', 'VR'):
-        if name not in fits:
-            continue
-        f = fits[name]
-        r = np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy'])
-        upd = (r < n_sigma) & (r < best_r)
-        if name == 'CH' and ch_x_max is not None:      # il canalizzato vive solo nella finestra di Lindhard
-            upd &= np.abs(th) < ch_x_max
-        cls[upd] = CLASS_CODE[name]
-        best_r[upd] = r[upd]
-    cls[(th > vr_frac * thL) & (dth < 0)] = CLASS_CODE['VR']
-    cls[(th > vc_edge * thL) & (dth > 0)] = CLASS_CODE['VC']
-    cls[(cls != CLASS_CODE['CH']) & (np.abs(th) < dch_frac * thL)] = CLASS_CODE['DCH']
+    
+    in_am = np.zeros(th.shape, dtype=bool)
+    in_ch = np.zeros(th.shape, dtype=bool)
+    in_vr = np.zeros(th.shape, dtype=bool)
+
+    cx_vc, cy_vc = 42.5, 20.0
+    a_vc = np.hypot(65 - 20, 0 - 40) / 2.0
+    b_vc = 15.0  
+    theta_vc = np.arctan2(0 - 40, 65 - 20) 
+    dx_vc = th - cx_vc
+    dy_vc = dth - cy_vc
+    x_rot = dx_vc * np.cos(theta_vc) + dy_vc * np.sin(theta_vc)
+    y_rot = -dx_vc * np.sin(theta_vc) + dy_vc * np.cos(theta_vc)
+    vc_mask = ((x_rot / a_vc)**2 + (y_rot / b_vc)**2 <= 1.0) #& (th > 20) & (dth > 0)
+    
+    # vc_mask = (th > vc_th_min) & (dth > 0) 
+    cls[vc_mask] = CLASS_CODE['VC']
+    
+    if 'AM' in fits:
+        f = fits['AM']
+        r_am = np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy'])
+        # in_am = (np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy']) < 2.5)
+        in_am = ((th < -0.5 * thL) & (r_am < 3.0)) | ((th >= -0.5 * thL) & (r_am < 2.0))
+    if 'CH' in fits:
+        f = fits['CH']
+        # in_ch = (np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy']) < 2.0) #& (np.abs(th) <= 0.5 * thL)
+        ch_angle_deg = 25.0  
+        alpha = np.radians(ch_angle_deg)
+        dx_ch = th - f['mx']
+        dy_ch = dth - f['my']
+        x_rot_ch = dx_ch * np.cos(alpha) + dy_ch * np.sin(alpha)
+        y_rot_ch = -dx_ch * np.sin(alpha) + dy_ch * np.cos(alpha)
+        r_ch = np.hypot(x_rot_ch / f['sx'], y_rot_ch / f['sy'])
+        in_ch = (r_ch < 2.5) #& (np.abs(th) <= 0.5 * thL)
+    if 'VR' in fits:
+        f = fits['VR']
+        in_vr = (np.hypot((th - f['mx']) / f['sx'], (dth - f['my']) / f['sy']) < 2.0)
+
+    # 2. Assegna AM e VR unendo l'area geometrica "oltre" e la rispettiva ellisse
+    is_am = in_am | (th < 0)# & (dth < 40e-6))  # dth < 500 urad per evitare di prendere le code di CH
+    is_vr = in_vr | ((th > 0) & (dth < -20))
+    
+    cls[is_am] = CLASS_CODE['AM']
+    cls[is_vr] = CLASS_CODE['VR']
+    cls[in_ch] = CLASS_CODE['CH']
+    
+    # 4. Dechanneling: tutto lo spazio residuo dentro Lindhard che non è stato assegnato
+    dch_mask = (np.abs(th) <= thL) & (cls == CLASS_CODE['TR']) & (dth > 0) & (dth < fits['CH']['my'])
+    cls[dch_mask] = CLASS_CODE['DCH']
+    
     return cls
 
+
 def angular_scan_regions_plot(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
-                              n_sigma=3, ch_frac=0.5, am_edge=1.0, vr_edge=1.0,
-                              am_dth=40e-6, vc_edge=1.0, vr_rule_frac=0.5, dch_frac=1.0,
-                              vr_th_min=0.0, ch_fit_frac=1.0,
+                              n_sigma=2.5, vc_th_min=25.0, am_dth=40e-6, vr_th_min=0.0, ch_fit_frac=1.0,
                               xlim=(-100, 100), ylim=(-75, 95), nbins_y=170,
                               show_ellipses=False, max_points=300000, label='', angle_unit='urad'):
-    """
-    Sinistra: angular scan, particelle colorate per classe. AM/CH/VR = dentro n_sigma del rispettivo picco
-              (fit gaussiano 2D); DCH = tutte le particelle con |theta_in| < dch_frac*theta_L non CH;
-              VR anche fuori ellisse se theta_in > vr_rule_frac*theta_L e dtheta < 0 (fuori dalla fetta DCH);
-              VC = theta_in > vc_edge*theta_L e dtheta > 0 (senza fit). vc_edge, vr_rule_frac, dch_frac in unità di theta_L.
-    Destra: proiezioni di dtheta per le finestre nette in theta_in (AM: < -am_edge*theta_L,
-            CH: |theta_in| < ch_frac*theta_L, VR: > vr_edge*theta_L), colorate per classe.
-    theta_L, theta_b, mu, sigma (picco CH dal fit 1D, usato come centro della regione di partenza), am_dth,
-    vr_th_min in rad; vc_edge in unità di theta_L; xlim e ylim in µrad.
-    ch_fit_frac: la regione di partenza del CH è |theta_in| < ch_fit_frac*theta_L, e il CH è colorato solo lì.
-    """
+    
     scale = 1e6 if angle_unit == 'urad' else 1.0
     th, dth = theta_x_in * scale, dtheta_x * scale
     thL, thb = theta_L * scale, theta_b * scale
@@ -587,39 +638,46 @@ def angular_scan_regions_plot(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
     print(f"[{label}] fit gaussiani 2D dei picchi:")
     fits = fit_region_peaks(th, dth, thL, mu * scale, sigma * scale, xlim, ylim,
                             am_dth * scale, vr_th_min * scale, ch_fit_frac)
-    cls = classify_peaks(th, dth, fits, thL, n_sigma, dch_frac, ch_x_max=ch_fit_frac * thL,
-                         vc_edge=vc_edge, vr_frac=vr_rule_frac)
+                            
+    # Chiamata alla nuova funzione di classificazione
+    cls = classify_peaks(th, dth, fits, thL, n_sigma=n_sigma, vc_th_min=vc_th_min)
 
     colors = plt.cm.viridis(np.linspace(0, 1, 6))
     cmap = ListedColormap(colors)
     norm = BoundaryNorm(np.arange(-0.5, 6.5, 1), cmap.N)
 
-    win = {'AM': th < -am_edge * thL,
-           'CH': np.abs(th) < ch_frac * thL,
-           'VR': th > vr_edge * thL}
-    win_color = {'AM': 'orange', 'CH': 'red', 'VR': '#800020'}      # colori delle finestre (diversi da quelli delle classi)
+    # Finestre per gli istogrammi 1D sulla destra
+    win = {'AM': th < -0.5 * thL,
+           'CH': np.abs(th) <= 0.5 * thL,
+           'VR': th > 0.5 * thL}
+    win_color = {'AM': 'orange', 'CH': 'red', 'VR': '#800020'}
 
     fig = plt.figure(figsize=(15, 6))
     gs = fig.add_gridspec(1, 4, width_ratios=[3.2, 1, 1, 1], wspace=0.08)
     ax0 = fig.add_subplot(gs[0])
     axs = [fig.add_subplot(gs[i], sharey=ax0) for i in (1, 2, 3)]
 
-    # --- sinistra: scatter colorato per classe (sottocampionato, solo per il disegno) ---
+    # --- Scatter ---
     rng = np.random.default_rng(0)
     sel = np.arange(len(th)) if len(th) <= max_points else rng.choice(len(th), max_points, replace=False)
     counts = np.bincount(cls, minlength=6)
-    for k in np.argsort(-counts):                                  # classi grandi sotto, piccole sopra
+    
+    for k in np.argsort(-counts):
         m = sel[cls[sel] == k]
         ax0.scatter(th[m], dth[m], s=1, color=colors[k], rasterized=True, linewidths=0)
+        
     if show_ellipses:
         for name, f in fits.items():
             ax0.add_patch(Ellipse((f['mx'], f['my']), 2 * n_sigma * f['sx'], 2 * n_sigma * f['sy'],
                                   fill=False, ec='white', lw=2.5, zorder=4))
             ax0.add_patch(Ellipse((f['mx'], f['my']), 2 * n_sigma * f['sx'], 2 * n_sigma * f['sy'],
                                   fill=False, ec=colors[CLASS_CODE[name]], lw=1.2, ls='--', zorder=5))
-    for edge, c in [(-am_edge * thL, win_color['AM']), (-ch_frac * thL, win_color['CH']),
-                    (ch_frac * thL, win_color['CH']), (vr_edge * thL, win_color['VR'])]:
-        ax0.axvline(edge, color=c, lw=1.5)
+                                  
+    # for edge, c in [(-0.5 * thL, win_color['AM']), (-0.5 * thL, win_color['CH']),
+    #                 (0.5 * thL, win_color['CH']), (0.5 * thL, win_color['VR'])]:
+    #     ax0.axvline(edge, color=c, lw=1.5)
+        
+        
     ax0.axhline(0, color='gray', lw=0.8, ls='--')
     ax0.axhline(thb, color='gray', lw=0.8, ls='--')
     ax0.set_xlim(xlim); ax0.set_ylim(ylim)
@@ -627,7 +685,6 @@ def angular_scan_regions_plot(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
     ax0.set_ylabel(r'Deflection angle $\Delta\theta_x$ [$\mu$rad]')
     ax0.set_title('Angular scan')
 
-    # tick: numerici lontani da 0 + ±1/2 theta_L (etichette spostate verso l'esterno per non sovrapporsi)
     half = 0.5 * thL
     far = [t for t in ax0.get_xticks() if xlim[0] <= t <= xlim[1] and abs(t) > 5 * half]
     ticks = sorted(far + [-half, half])
@@ -638,19 +695,18 @@ def angular_scan_regions_plot(theta_x_in, dtheta_x, theta_L, theta_b, mu, sigma,
         if np.isclose(t, -half): lbl.set_ha('right')
         if np.isclose(t, half): lbl.set_ha('left')
 
-    # legenda esterna come nella figura di riferimento: colorbar discreta con i nomi delle classi
     cb = fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=axs, pad=0.03, fraction=0.06,
                       ticks=np.arange(6))
     cb.ax.set_yticklabels(CLASS_NAMES)
 
-    # --- destra: proiezioni per finestra, colorate per classe ---
+    # --- Istogrammi a barre a destra ---
     bins = np.linspace(ylim[0], ylim[1], nbins_y + 1)
     for ax, name in zip(axs, ['AM', 'CH', 'VR']):
         w = win[name]
         for k in np.argsort(-np.bincount(cls[w], minlength=6)):
             v = dth[w & (cls == k)]
             if len(v):
-                ax.hist(v, bins=bins, orientation='horizontal', color=colors[k])
+                ax.hist(v, bins=bins, orientation='horizontal', color=colors[k], rasterized=True,)
         ax.axhline(0, color='gray', lw=0.8, ls='--')
         ax.axhline(thb, color='gray', lw=0.8, ls='--')
         ax.set_title(name, color=win_color[name], loc='left')
