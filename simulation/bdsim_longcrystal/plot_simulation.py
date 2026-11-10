@@ -23,11 +23,22 @@ viridis_teal = "#21918c"
 viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
-n = sys.argv[1] if len(sys.argv) > 1 else '6'
-filename = f'./runs/cry2_merged{n}_slim.npz'
-data = np.load(filename)
+ROUTINE = sys.argv[1] if len(sys.argv) > 1 else 'bdsim'
 
-output_folder = f'./plots{n}'
+if ROUTINE == 'bdsim':
+    filename = './runs/cry2_merged6_slim.npz'
+    output_folder = 'plots6'
+    dark_color = "#982916"
+    light_color = "#DA7762"
+elif ROUTINE == 'xcoll':
+    filename = '../xcoll_longcrystal/runs/cry2_20261021_16.npz'
+    output_folder = '../xcoll_longcrystal/plots'
+    dark_color = "#68238B"
+    light_color = "#A76ED1"
+else:
+    raise ValueError(f"Unknown routine: {ROUTINE}")
+
+data = np.load(filename)
 os.makedirs(output_folder, exist_ok=True)
 
 # reconstruct the arrays from the saved data
@@ -40,7 +51,7 @@ y_out=data['y_out']; theta_y_out=data['py_out']
 # zeta_out=data['zeta_out']; delta_out=data['delta_out']; ptau_out=data['ptau_out']
 
 particle_id_in = data['particle_id_in']
-# state_in = data['state_in']; pdg_id_in = data['pdg_id_in']
+# state_in = data['state_in']#; pdg_id_in = data['pdg_id_in']
 particle_id_out = data['particle_id_out']; state_out = data['state_out']
 #  pdg_id_out = data['pdg_id_out']; at_element_out = data['at_element_out']
 
@@ -55,6 +66,18 @@ p0c = float(data['p0c'])
 mass0 = float(data['mass0'])
 label = str(data['label'])
 
+theta_L = (1-180/5.7*bending_angle/(crystal_length*100))*np.sqrt(32/(180*10**9))
+print(f"theta_L = {theta_L*1e6:.2f} urad")  # rad Lindhard critical angle for Si(110) at 180 GeV
+
+if ROUTINE == 'bdsim':
+    if 'state_in' in data.files:
+        valid_in = data['state_in'] == 1
+        x_in, y_in = x_in[valid_in], y_in[valid_in]
+        theta_x_in, theta_y_in = theta_x_in[valid_in], theta_y_in[valid_in]
+        particle_id_in = particle_id_in[valid_in]
+    # altrimenti: file slim, già filtrato a monte
+    # print(f"valid in: {particle_id_in.size} / npart = {npart}")
+
 order_in = np.argsort(particle_id_in)
 sorted_ids = particle_id_in[order_in]
 assert np.unique(particle_id_in).size == particle_id_in.size
@@ -67,7 +90,13 @@ x_in_lost, y_in_lost = x_in[src_lost], y_in[src_lost]
 assert np.all(particle_id_in[src_lost] == idx_lost)
 
 # sopravvissute
-survived = state_out == 1
+if ROUTINE == 'bdsim':
+    survived = state_out == 1
+if ROUTINE == 'xcoll':
+    finite_out = (np.isfinite(x_out) & np.isfinite(y_out) &
+              np.isfinite(theta_x_out) & np.isfinite(theta_y_out))
+    # print(f"Non-finite outputs among state==1: {((state_out == 1) & ~finite_out).sum()}")
+    survived = (state_out == 1) & finite_out
 idx_out = particle_id_out[survived]
 idx = np.searchsorted(sorted_ids, idx_out)
 src = order_in[idx]                       # indice diretto, niente copie
@@ -96,9 +125,13 @@ survived_data = {
 }
 
 print(f"Total particles: {len(x_in)}")
-print(f"Survived particles: {np.sum(survived)} = {np.sum(survived)/len(x_in)*100:.2f}%")
 
-theta_L = 12.992e-6  # rad Lindhard critical angle for Si(110) at 180 GeV
+surv_in = np.zeros(particle_id_in.size, dtype=bool)
+surv_in[src] = True
+lost_in = (~surv_in)
+# controllo: le non sopravvissute sono tutte state == -333?
+print("Not survived:", lost_in.sum(), "| state -333:", lost_mask.sum())
+# print(f"Survived particles: {np.sum(survived)} = {np.sum(survived)/len(x_in)*100:.2f}%")
 
 # ---------- DETECTOR SMEAR (dataset parallelo, gli originali restano intatti) ----------
 rng_smear = np.random.default_rng(seed=83)
@@ -139,7 +172,7 @@ survived_data_smeared.update({
     'dtheta_x':    theta_x_out_meas_surv - theta_x_in_meas_surv,
     'dtheta_y':    theta_y_out_meas_surv - theta_y_in_meas_surv,
 })
-print(f"Smear: s_in = {s_in*1e6:.2f} urad, s_out = {s_out*1e6:.2f} urad")
+# print(f"Smear: s_in = {s_in*1e6:.2f} urad, s_out = {s_out*1e6:.2f} urad")
 
 # CHANNELED
 d  = (crystal_x/2 - survived_data['x_in']) * 1e3          # mm, distanza dal bordo destro
@@ -153,11 +186,9 @@ ax.plot([0, 0.6], [0, 0.6], 'w:', label='x_out = +edge')
 ax.set_xlabel('d dal bordo destro [mm]'); ax.set_ylabel('x_out − x_in [mm]')
 ax.legend(); fig.savefig(f'{output_folder}/edge_dx_test.png', dpi=200)
 
-print('x_out max (mm):', survived_data['x_out'].max()*1e3, '| edge:', crystal_x/2*1e3)
-
 def _grid_edges(crystal_x, crystal_y, nx_bins, ny_bins, distance_unit='mm'):
     ds = 1e3 if distance_unit == 'mm' else 1.0
-    xe = np.linspace(-crystal_x / 2, crystal_x / 2, nx_bins + 1) * ds
+    xe = np.linspace(-crystal_x / 2, crystal_x / 2 - EDGE_CUT_RIGHT, nx_bins + 1) * ds
     ye = np.linspace(-crystal_y / 2, crystal_y / 2, ny_bins + 1) * ds
     return xe, ye, ds
 
@@ -238,7 +269,7 @@ def profiles_plot(x_den, y_den, th_den, fd, mu, sigma, crystal_x, crystal_y, the
     """fd = final_data (o final_data_s): dict con x_in, y_in, theta_x_in, dtheta_x"""
     fig, axs = plt.subplots(1, 3, figsize=(16, 4.5))
     specs = [
-        (x_den, fd['x_in'], np.linspace(-crystal_x / 2, crystal_x / 2, n_bins + 1) * 1e3, 1e3, 'impact x [mm]'),
+        (x_den, fd['x_in'], np.linspace(-crystal_x / 2, crystal_x / 2 - EDGE_CUT_RIGHT, n_bins + 1) * 1e3, 1e3, 'impact x [mm]'),
         (y_den, fd['y_in'], np.linspace(-crystal_y / 2, crystal_y / 2, n_bins + 1) * 1e3, 1e3, 'impact y [mm]'),
         (th_den, fd['theta_x_in'], np.linspace(-0.5 * theta_L, 0.5 * theta_L, n_bins + 1) * 1e6, 1e6, r'$\theta_{x,in}$ [$\mu$rad]'),
     ]
@@ -324,12 +355,11 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
 
     fig, graph = plt.subplots(1, 3, figsize=(18, 5))
 
-    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, cmap='viridis', norm=LogNorm(), rasterized=True)
+    x_range = (-7, 7) if label == '' else (-150, 150)
+    h = graph[0].hist2d(theta_x_in * scale, dtheta_x * scale, bins=300, range=[x_range, [-750, 6200]], cmap='viridis', norm=LogNorm(), rasterized=True)
     cb = fig.colorbar(h[3], ax=graph[0])
     cb.set_label('Counts')
     graph[0].set_ylim(-750, 6200)
-    if label=='':
-        graph[0].set_xlim(-7, 7)
     # graph[0].axhline(0, color='gray', lw=0.8, ls='--')
     graph[0].axvline(-0.5 * theta_L * scale, color='red', lw=0.8, ls='--', label=r'$\pm 1/2 \theta_L$')
     graph[0].axvline(0.5 * theta_L * scale, color='red', lw=0.8, ls='--')
@@ -339,8 +369,8 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, color=viridis_green, rasterized=True)
-    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=7250, color=viridis_green, rasterized=True)
+    counts, bins, _ = graph[1].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=dark_color, rasterized=True)
+    counts2, bins2, _ = graph[2].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=dark_color, rasterized=True)
     plot_bin_width = bins[1] - bins[0]
     plot_bin_width2 = bins2[1] - bins2[0]
 
@@ -349,7 +379,7 @@ def angular_scan_plot(theta_x_in, theta_x_out, theta_L, popt=None, fit_bin_width
     graph[1].set_ylim(500, counts.max()*1.2)
     graph[1].set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
-    graph[1].set_title(rf'$\Delta\theta_x$ distribution')
+    graph[1].set_title(rf'$\Delta\theta_x$ distribution - {ROUTINE.upper()}')
     graph[1].grid(alpha=0.3)
 
     graph[2].set_xlim(5950, 6050)
@@ -395,8 +425,8 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=viridis_blue, label='smeared', rasterized=True)
-    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=viridis_green, alpha=0.7, label='original', rasterized=True)
+    counts_smeared, bins_smeared, _ = graph[0].hist(dtheta_x_smeared * scale, bins=200, range=(-750, 6200), color=dark_color, label='smeared', rasterized=True)
+    counts, bins, _ = graph[0].hist(dtheta_x * scale, bins=200, range=(-750, 6200), color=light_color, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[0].set_xlim(-250, 250)
@@ -405,12 +435,12 @@ def smear_comparison_plot(dtheta_x, dtheta_x_smeared, label=None, angle_unit='ur
     graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\Delta\theta_{label_ax}$ [${unit_str}$]')
     graph[0].set_ylabel('Counts')
-    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution')
+    graph[0].set_title(rf'$\Delta\theta_{label_ax}$ distribution - {ROUTINE.upper()}')
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=viridis_blue, label='smeared', rasterized=True)
-    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=viridis_green, alpha=0.7, label='original', rasterized=True)
+    graph[1].hist(dtheta_x_smeared * scale, bins=200, range=(5950, 6050), color=dark_color, label='smeared', rasterized=True)
+    graph[1].hist(dtheta_x * scale, bins=200, range=(5950, 6050), color=light_color, alpha=0.7, label='original', rasterized=True)
 
     if label[-1] == 'y':
         graph[1].set_xlim(-60, 60)
@@ -433,8 +463,8 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
 
     fig, graph = plt.subplots(1, 2, figsize=(12, 5))
 
-    counts_smeared, _, _ = graph[0].hist(x_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
+    counts_smeared, _, _ = graph[0].hist(x_smeared * scale, bins=200, range=(-150, 150), color=dark_color, label='smeared')
+    counts, _, _ = graph[0].hist(x * scale, bins=200, range=(-150, 150), color=light_color, alpha=0.7, label='original')
 
     # graph[0].set_ylim(500, max(counts.max(), counts_smeared.max())*1.2)
     graph[0].set_xlabel(rf'$\theta_{{in,x}}$ [${unit_str}$]')
@@ -443,8 +473,8 @@ def smear_comparison_plot2(x, x_smeared, y, y_smeared, angle_unit='urad'):
     graph[0].grid(alpha=0.3)
     graph[0].legend()
 
-    graph[1].hist(y_smeared * scale, bins=200, range=(-150, 150), color=viridis_blue, label='smeared')
-    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=viridis_green, alpha=0.7, label='original')
+    graph[1].hist(y_smeared * scale, bins=200, range=(-150, 150), color=dark_color, label='smeared')
+    graph[1].hist(y * scale, bins=200, range=(-150, 150), color=light_color, alpha=0.7, label='original')
 
     graph[1].set_xlabel(rf'$\theta_{{in,y}}$ [${unit_str}$]')
     graph[1].set_ylabel('Counts')
@@ -716,7 +746,13 @@ def channeling_efficiency(theta_x_in, dtheta_x, bending_angle=bending_angle, tol
  
     return n_channeled, n_channeled_err, popt, pcov, bin_width
 
-def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=True):
+def eff_3sigma(fd, popt, n_tot, n_sigma=3):
+    mu, sig = popt[1], abs(popt[2])
+    n = np.sum(np.abs(fd['dtheta_x'] - mu) < n_sigma * sig)
+    eff = n / n_tot
+    return eff, np.sqrt(eff * (1 - eff) / n_tot)
+
+def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=False):
     """
     Bootstrap Poissoniano: ogni sopravvissuta pesa Poisson(1), le perse contribuiscono
     solo al denominatore (Poisson(n_tot - n_surv)). Il fit è rifatto ad ogni replica con
@@ -765,9 +801,14 @@ ch_footprint_plot(x_in_survived, y_in_survived, x_out_survived, y_out_survived, 
 
 
 # geometric cut
-# geometric_hit = (np.abs(survived_data['x_in']) < crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
-geometric_hit = (survived_data['x_in'] < (crystal_x/2)) & (survived_data['x_in'] > -crystal_x/2) & (np.abs(survived_data['y_in']) < crystal_y/2)
-# geometric_hit_all = (np.abs(x_in) < crystal_x/2) & (np.abs(y_in) < crystal_y/2)
+EDGE_CUT_RIGHT = 0.22e-3 if ROUTINE == 'bdsim' else 0.0   # m
+def geometric_mask(x, y):
+    return ((x > -crystal_x/2) &
+            (x <  crystal_x/2 - EDGE_CUT_RIGHT) &
+            (np.abs(y) < crystal_y/2))
+
+geometric_hit     = geometric_mask(survived_data['x_in'], survived_data['y_in'])
+geometric_hit_all = geometric_mask(x_in, y_in)
 geom_data = apply_selection(survived_data, geometric_hit)
 geom_data_s = apply_selection(survived_data_smeared, geometric_hit)
 
@@ -778,7 +819,7 @@ print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()} =
 
 vr_mask = (dtheta_x < -0.3*theta_L) & (dtheta_x > -3*theta_L)
 n_vr = vr_mask.sum()
-print(f"Volume reflection: {n_vr}/{len(survived_data['x_in'])} = {n_vr/len(survived_data['x_in'])*100:.1f}%")
+# print(f"Volume reflection: {n_vr}/{len(survived_data['x_in'])} = {n_vr/len(survived_data['x_in'])*100:.1f}%")
 
 # lindhard selection
 lindhard_cut = np.abs(geom_data['theta_x_in']) < (0.5 * theta_L); lindhard_all = np.abs(theta_x_in) < (0.5 * theta_L)
@@ -794,10 +835,26 @@ n_tot_correct = attempted_mask.sum()
 
 lost_mask = ~np.isin(attempted_ids, idx_out)
 n_lost_attempted = lost_mask.sum()
-print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_correct} = {n_lost_attempted/n_tot_correct*100:.1f}%")
+# print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_correct} = {n_lost_attempted/n_tot_correct*100:.1f}%")
 
 attempted_mask_s = geometric_hit_all & lindhard_all_s
 n_tot_correct_s  = attempted_mask_s.sum()
+
+n_geom = geometric_hit_all.sum()
+
+# f: frazione di fascio nella finestra di Lindhard (angoli veri, non smeared)
+f = attempted_mask.sum() / n_geom
+print(f"f = {attempted_mask.sum()}/{n_geom} = {f*100:.1f}%")
+
+# P_inel: frazione persa, sulle geometriche
+out_win = geometric_hit_all & ~lindhard_all
+P_inel_all = lost_in[geometric_hit_all].sum() / n_geom
+P_inel_out = lost_in[out_win].sum() / out_win.sum()
+P_inel_in  = lost_in[attempted_mask].sum() / attempted_mask.sum()
+
+print(f"P_inel (tutte le geometriche)   = {P_inel_all*100:.1f}%")
+print(f"P_inel (fuori finestra Lindhard) = {P_inel_out*100:.1f}%")
+print(f"P_inel (dentro finestra)         = {P_inel_in*100:.1f}%")
 
 # EFFICIENCY ========================================================================================
 n_channeled,   n_ch_err,   popt,   pcov,   fit_bin_width   = channeling_efficiency(final_data['theta_x_in'],   final_data['dtheta_x'])
@@ -806,9 +863,14 @@ n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficien
 eff_ns,   eff_s     = n_channeled / n_tot_correct,     n_channeled_s / n_tot_correct_s
 stat_ns,  stat_s    = n_ch_err / n_tot_correct,        n_ch_err_s / n_tot_correct_s       # errore statistico (fit)
 binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1-eff_s)/n_tot_correct_s)  # solo conteggio
-
 print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
 print(f"[smeared]     eff = ({eff_s*100:.2f} ± {stat_s*100:.2f} [fit]) %   (binomiale: ±{binom_s*100:.2f})")
+
+eff3_ns, err3_ns = eff_3sigma(final_data,   popt,   n_tot_correct)
+eff3_s,  err3_s  = eff_3sigma(final_data_s, popt_s, n_tot_correct_s)
+print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.2f} ± {err3_ns*100:.2f}) %")
+print(f"[smeared]     eff(3σ) = ({eff3_s*100:.2f} ± {err3_s*100:.2f}) %")
+
 
 # controllo indipendente (opzionale, ~secondi)
 boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
@@ -865,8 +927,8 @@ profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_al
               final_data_s, mu_s, sig_s, crystal_x, crystal_y, theta_L, tag='smeared')
 
 
-np.save(f'{output_folder}/dtheta_x_final_smeared_bdsim.npy', final_data_s['dtheta_x'])
-print(f"Salvato array dtheta_x per la routine bdsim")
+np.save(f'{output_folder}/dtheta_x_final_smeared_{ROUTINE}.npy', final_data_s['dtheta_x'])
+print(f"Salvato array dtheta_x per la routine {ROUTINE}")
 
 print('='*50)
 print(f"Plot saved in {output_folder}")
