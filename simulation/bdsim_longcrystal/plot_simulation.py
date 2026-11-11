@@ -787,6 +787,119 @@ def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=Fal
               f"std = {effs.std(ddof=1)*100:.3f}%")
     return effs.std(ddof=1), effs
 
+def dechanneling_length(dtheta_x, popt_ch, mu0=None, sigma0=None, L=None, bins=200,
+                        hist_range=None, angle_unit='urad', tag='', min_counts=1,
+                        peak0_window=(-150e-6, 150e-6), verbose=True):
+    """
+    Dechannelling length da fit lineare di ln N vs dtheta_x.
+
+    Il fit è fatto con retta (pesi Poisson sui bin) nell'intervallo
+    [mu0 + 3 sigma0 , mu_ch - 3 sigma_ch], dove
+      - (mu0, sigma0)   = picco a zero (particelle non canalizzate/amorfe),
+      - (mu_ch, sigma_ch) = picco di channelling (popt_ch = [A, mu, sigma]).
+
+    Modello: N(Δθ) = N0 exp(-(Δθ)/(θ_b * L_D))  ->  ln N = a + b Δθ,
+    con b = -1/(θ_b L_D)  =>  L_D = -1/(b θ_b)   (θ_b = bending_angle / L, rad/m).
+    Qui Δθ = θ_out - θ_in è proporzionale alla lunghezza percorsa in channelling
+    prima del dechannelling: Δθ = θ_b * z.
+
+    Parametri
+    ---------
+    dtheta_x   : array dtheta_x (rad) della selezione finale (final_data / final_data_s)
+    popt_ch    : popt del fit gaussiano del picco di channelling [A, mu, sigma] (rad)
+    mu0, sigma0: media e sigma del picco a zero (rad). Se None, vengono stimati con
+                 un fit gaussiano nella finestra peak0_window.
+    L          : lunghezza del cristallo [m] (default: crystal_length globale)
+    """
+    scale = 1e6 if angle_unit == 'urad' else 1.0
+    unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
+    if L is None:
+        L = crystal_length
+                     # rad/m (curvatura)
+
+    mu_ch, sigma_ch = popt_ch[1], abs(popt_ch[2])
+
+    # --- picco a zero: stima (mu0, sigma0) se non forniti ---
+    if mu0 is None or sigma0 is None:
+        sel = dtheta_x[(dtheta_x > peak0_window[0]) & (dtheta_x < peak0_window[1])]
+        c0, e0 = np.histogram(sel, bins=200)
+        x0 = 0.5 * (e0[:-1] + e0[1:])
+        p0, _ = curve_fit(gaussian, x0, c0,
+                          p0=[c0.max(), np.mean(sel), np.std(sel)],
+                          sigma=np.sqrt(np.maximum(c0, 1.0)), absolute_sigma=True,
+                          maxfev=10000)
+        mu0, sigma0 = p0[1], abs(p0[2])
+
+    lo = mu0 + 3 * sigma0
+    hi = mu_ch - 3 * sigma_ch
+    if hi <= lo:
+        raise ValueError(f"Intervallo di fit vuoto: lo={lo*scale:.1f}, hi={hi*scale:.1f} {angle_unit}")
+
+    # --- istogramma ---
+    if hist_range is None:
+        hist_range = (dtheta_x.min(), dtheta_x.max())
+    else:
+        hist_range = (hist_range[0] / scale, hist_range[1] / scale)
+    counts, edges = np.histogram(dtheta_x, bins=bins, range=hist_range)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+
+    fit_mask = (centers >= lo) & (centers <= hi) & (counts >= min_counts)
+    if fit_mask.sum() < 3:
+        raise ValueError(f"Troppi pochi bin nel fit ({fit_mask.sum()}): cambia bins/min_counts")
+
+    xf = centers[fit_mask]
+    yf = np.log(counts[fit_mask])
+    sig_lnN = 1.0 / np.sqrt(counts[fit_mask])        # Poisson: σ(ln N) = 1/√N
+
+    # --- fit lineare pesato: ln N = a + b x ---
+    line = lambda x, a, b: a + b * x
+    popt_l, pcov_l = curve_fit(line, xf, yf, sigma=sig_lnN, absolute_sigma=True)
+    a, b = popt_l
+    a_err, b_err = np.sqrt(np.diag(pcov_l))
+
+    chi2 = np.sum(((yf - line(xf, *popt_l)) / sig_lnN) ** 2)
+    ndf = len(xf) - 2
+    chi2_ndf = chi2 / ndf if ndf > 0 else np.nan
+
+    # --- dechannelling length: L_D = -1/(b θ_b) ---
+    L_D = - L / (b * bending_angle)
+    L_D_err = L_D * (b_err / abs(b))
+
+    if verbose:
+        print('-' * 50)
+        print(f"Dechannelling fit [{tag}]: range = [{lo*scale:.1f}, {hi*scale:.1f}] {angle_unit} "
+              f"({fit_mask.sum()} bins)")
+        print(f"  peak0: mu0 = {mu0*scale:.2f}, sigma0 = {sigma0*scale:.2f} {angle_unit} | "
+              f"peak_ch: mu = {mu_ch*scale:.2f}, sigma = {sigma_ch*scale:.2f} {angle_unit}")
+        print(f"  slope b = {b/scale:.4e} ± {b_err/scale:.1e} per {angle_unit} | chi2/ndf = {chi2_ndf:.2f}")
+        print(f"  L_D = {L_D*1e2:.2f} ± {L_D_err*1e2:.2f} cm")
+
+    # --- grafico ---
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    good = counts > 0
+    ax.errorbar(centers[good] * scale, np.log(counts[good]),
+                yerr=1.0 / np.sqrt(counts[good]), fmt='o', ms=3, color='gray',
+                alpha=0.5, label='data (all bins)')
+    ax.errorbar(xf * scale, yf, yerr=sig_lnN, fmt='o', ms=3, color=dark_color,
+                capsize=2, label='bins used in fit')
+    xl = np.linspace(lo, hi, 200)
+    ax.plot(xl * scale, line(xl, *popt_l), color='red', lw=2, ls='--', zorder=10,
+            label=rf'linear fit: $L_D$ = {L_D*1e2:.1f} ± {L_D_err*1e2:.1f} cm')
+    for v in (lo, hi):
+        ax.axvline(v * scale, color='k', ls=':', lw=1)
+    ax.axvline(mu0 * scale, color='blue', ls='--', lw=0.8, label=r'$\mu_0$')
+    ax.axvline(mu_ch * scale, color='green', ls='--', lw=0.8, label=r'$\mu_{ch}$')
+    ax.set_xlabel(rf'$\Delta\theta_x$ [${unit_str}$]')
+    ax.set_ylabel(r'$\ln N$')
+    ax.set_title(rf'Dechannelling length fit - {ROUTINE.upper()}')
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=11)
+    fig.tight_layout()
+    plt.savefig(f'{output_folder}/dechanneling_fit_{tag}.png', dpi=300)
+    plt.savefig(f'{output_folder}/dechanneling_fit_{tag}.pdf')
+    plt.close(fig)
+
+    return L_D, L_D_err, popt_l, pcov_l, chi2_ndf
 
 
 # ANALYSIS ========================================================================================
@@ -883,6 +996,9 @@ print(f"[smeared]     eff(3σ) = ({eff3_s*100:.2f} ± {err3_s*100:.2f}) %")
 # controllo indipendente (opzionale, ~secondi)
 boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
 boot_s,  _ = efficiency_bootstrap(final_data_s['dtheta_x'], n_tot_correct_s)
+
+L_D_s, L_D_err_s, *_ = dechanneling_length(final_data_s['dtheta_x'], popt_s, hist_range=(-750,6200), tag='smeared')
+# L_D_ns, L_D_err_ns, *_ = dechanneling_length(final_data['dtheta_x'], popt, hist_range=(-750,6200), tag='original')
  
 
 

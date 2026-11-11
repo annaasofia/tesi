@@ -21,18 +21,22 @@ if CRYSTAL == 'long':
     range = (-750, 6200)
     range_zoom = (5950, 6050)
     bin_num = 6950
+    eff1 = (0.224, 0.001)
+    eff2 = (0.414, 0.001)
     color1 = "#982916"
     color2 = "#68238B"
 elif CRYSTAL == 'short':
-    file1 = '../bdsim_shortcrystal/plots/dtheta_x_final_smeared_bdsim.npy'
-    file2 = '../xcoll_shortcrystal/plots/dtheta_x_final_smeared_xcoll.npy' 
+    file1 = '../bdsim_shortcrystal/plots_old/dtheta_x_final_smeared_bdsim.npy'
+    file2 = '../xcoll_shortcrystal/plots_old/dtheta_x_final_smeared_xcoll.npy' 
     range = (-100, 120)
     range_zoom = (20, 80)
     bin_num = 440
+    eff1 = (0.633, 0.005)
+    eff2 = (0.648, 0.002)
     color1 = "#0072B2"
     color2 = "#228833"
 
-def comparison_plot(dtheta_1, dtheta_2, range, range_zoom, label1='Long 1', label2='Long 2', angle_unit='urad'):
+def comparison_plot(dtheta_1, dtheta_2, range, range_zoom, label1='Long 1', label2='Long 2', angle_unit='urad', eff1=None, eff2=None):
     scale = 1e6 if angle_unit == 'urad' else 1.0
     unit_str = r'\mu rad' if angle_unit == 'urad' else 'rad'
 
@@ -61,7 +65,12 @@ def comparison_plot(dtheta_1, dtheta_2, range, range_zoom, label1='Long 1', labe
     graph[1].set_xlim(range_zoom[0], range_zoom[1])
     graph[1].set_title(rf'$\Delta\theta_x$ distribution (zoom)')
     graph[1].grid(alpha=0.3)
-    # graph[1].legend()
+    if eff1 is not None and eff2 is not None:
+            txt = (rf'$\epsilon$ ({label1[-5:]}) = ({eff1[0]*100:.1f} ± {eff1[1]*100:.1f}) %' '\n'
+                   rf'$\epsilon$ ({label2[-5:]}) = ({eff2[0]*100:.1f} ± {eff2[1]*100:.1f}) %')
+            graph[1].text(0.97, 0.95, txt, transform=graph[1].transAxes,
+                          ha='right', va='top', fontsize=12,
+                          bbox=dict(boxstyle='round', facecolor='white', edgecolor='gray', alpha=0.85))
 
     fig.tight_layout()
     plt.savefig(f'{CRYSTAL}_comparison_dtheta_x.png', dpi=300)
@@ -73,7 +82,7 @@ def comparison_plot(dtheta_1, dtheta_2, range, range_zoom, label1='Long 1', labe
 dtheta_x_1 = np.load(file1)
 dtheta_x_2 = np.load(file2)
 
-comparison_plot(dtheta_x_1, dtheta_x_2, range, range_zoom, label1='Geant4/BDSIM', label2='Xsuite/XColl')
+comparison_plot(dtheta_x_1, dtheta_x_2, range, range_zoom, label1='Geant4/BDSIM', label2='Xsuite/XColl', eff1=eff1, eff2=eff2)
 
 
 
