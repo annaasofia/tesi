@@ -147,6 +147,7 @@ L_up        = 0.0        # m aria tra ultimo piano a monte e cristallo
 L_down      = 0.0        # m aria tra cristallo e primo piano a valle   
 sigma_track = 9e-6       # rad                                          
 p_GeV       = p0c / 1e9
+sigma_position = 1e-4  # m, smearing posizione (x,y) dei piani di tracking
 
 s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
 s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
@@ -155,9 +156,14 @@ s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
 theta_x_in_meas_all = theta_x_in + rng_smear.standard_normal(theta_x_in.size, dtype=np.float32) * s_in
 theta_y_in_meas_all = theta_y_in + rng_smear.standard_normal(theta_y_in.size, dtype=np.float32) * s_in
 
+x_in_meas_all = x_in + rng_smear.standard_normal(x_in.size, dtype=np.float32) * sigma_position
+y_in_meas_all = y_in + rng_smear.standard_normal(y_in.size, dtype=np.float32) * sigma_position
+
 # 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
 theta_x_in_meas_surv = theta_x_in_meas_all[src]
 theta_y_in_meas_surv = theta_y_in_meas_all[src]
+x_in_meas_surv = x_in_meas_all[src]
+y_in_meas_surv = y_in_meas_all[src]
 
 # 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
 theta_x_out_meas_surv = theta_x_out_survived + rng_smear.standard_normal(theta_x_out_survived.size, dtype=np.float32) * s_out
@@ -165,6 +171,8 @@ theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
+    'x_in':        x_in_meas_surv,
+    'y_in':        y_in_meas_surv,
     'theta_x_in':  theta_x_in_meas_surv,
     'theta_y_in':  theta_y_in_meas_surv,
     'theta_x_out': theta_x_out_meas_surv,

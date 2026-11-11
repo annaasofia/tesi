@@ -147,6 +147,7 @@ L_up        = 0.0        # m aria tra ultimo piano a monte e cristallo
 L_down      = 0.0        # m aria tra cristallo e primo piano a valle   
 sigma_track = 9e-6       # rad                                          
 p_GeV       = p0c / 1e9
+sigma_position = 1e-4  # m, smearing posizione (x,y) dei piani di tracking
 
 s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
 s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
@@ -155,9 +156,14 @@ s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
 theta_x_in_meas_all = theta_x_in + rng_smear.standard_normal(theta_x_in.size, dtype=np.float32) * s_in
 theta_y_in_meas_all = theta_y_in + rng_smear.standard_normal(theta_y_in.size, dtype=np.float32) * s_in
 
+x_in_meas_all = x_in + rng_smear.standard_normal(x_in.size, dtype=np.float32) * sigma_position
+y_in_meas_all = y_in + rng_smear.standard_normal(y_in.size, dtype=np.float32) * sigma_position
+
 # 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
 theta_x_in_meas_surv = theta_x_in_meas_all[src]
 theta_y_in_meas_surv = theta_y_in_meas_all[src]
+x_in_meas_surv = x_in_meas_all[src]
+y_in_meas_surv = y_in_meas_all[src]
 
 # 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
 theta_x_out_meas_surv = theta_x_out_survived + rng_smear.standard_normal(theta_x_out_survived.size, dtype=np.float32) * s_out
@@ -165,6 +171,8 @@ theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
+    'x_in':        x_in_meas_surv,
+    'y_in':        y_in_meas_surv,
     'theta_x_in':  theta_x_in_meas_surv,
     'theta_y_in':  theta_y_in_meas_surv,
     'theta_x_out': theta_x_out_meas_surv,
@@ -1099,6 +1107,12 @@ def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=Tru
               f"std = {effs.std(ddof=1)*100:.3f}%")
     return effs.std(ddof=1), effs
 
+def eff_3sigma(fd, popt, n_tot, n_sigma=3):
+    mu, sig = popt[1], abs(popt[2])
+    n = np.sum(np.abs(fd['dtheta_x'] - mu) < n_sigma * sig)
+    eff = n / n_tot
+    return eff, np.sqrt(eff * (1 - eff) / n_tot)
+
 
 
 # ANALYSIS ========================================================================================
@@ -1163,6 +1177,11 @@ binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1
 
 print(f"[not smeared] eff = {n_channeled}/{n_tot_correct} = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
 print(f"[smeared]     eff = {n_channeled_s}/{n_tot_correct_s} = ({eff_s*100:.2f} ± {stat_s*100:.2f} [fit]) %   (binomiale: ±{binom_s*100:.2f})")
+
+eff3_ns, err3_ns = eff_3sigma(final_data,   popt,   n_tot_correct)
+eff3_s,  err3_s  = eff_3sigma(final_data_s, popt_s, n_tot_correct_s)
+print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.2f} ± {err3_ns*100:.2f}) %")
+print(f"[smeared]     eff(3σ) = ({eff3_s*100:.2f} ± {err3_s*100:.2f}) %")
 
 # controllo indipendente (opzionale, ~secondi)
 # boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
