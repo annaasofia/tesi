@@ -171,8 +171,8 @@ theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
-    'x_in':        x_in_meas_surv,
-    'y_in':        y_in_meas_surv,
+    # 'x_in':        x_in_meas_surv,
+    # 'y_in':        y_in_meas_surv,
     'theta_x_in':  theta_x_in_meas_surv,
     'theta_y_in':  theta_y_in_meas_surv,
     'theta_x_out': theta_x_out_meas_surv,
@@ -238,7 +238,7 @@ def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x
     # --- figura 2x1: efficiency | deflection peak ---
     fig, axs = plt.subplots(1, 2, figsize=(13, 6))
     panels = [
-        (eff * 100, 'Channeling efficiency [%]', axs[0]),
+        (eff * 100, f'Channelling efficiency [%] - {ROUTINE.upper()}', axs[0]),
         (peak, rf'Deflection peak [${unit_str}$]', axs[1]),
     ]
     for M, title, ax in panels:
@@ -252,7 +252,7 @@ def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x
                 if np.isfinite(M[i, j]):
                     txt_color = 'black' if pc.norm(M[i, j]) > 0.5 else 'white'
                     ax.text(0.5 * (xe[i] + xe[i + 1]), 0.5 * (ye[j] + ye[j + 1]),
-                            f'{M[i, j]:.1f}', ha='center', va='center', fontsize=8, color=txt_color)
+                            f'{M[i, j]:.1f}', ha='center', va='center', fontsize=14, color=txt_color)
     fig.tight_layout()
     plt.savefig(f'{output_folder}/efficiency_maps_{tag}.png', dpi=200)
     plt.savefig(f'{output_folder}/efficiency_maps_{tag}.pdf')
@@ -830,7 +830,7 @@ def dechanneling_length(dtheta_x, popt_ch, mu0=None, sigma0=None, L=None, bins=2
                           maxfev=10000)
         mu0, sigma0 = p0[1], abs(p0[2])
 
-    lo = mu0 + 3 * sigma0
+    lo = mu0 + 6 * sigma0
     hi = mu_ch - 3 * sigma_ch
     if hi <= lo:
         raise ValueError(f"Intervallo di fit vuoto: lo={lo*scale:.1f}, hi={hi*scale:.1f} {angle_unit}")
