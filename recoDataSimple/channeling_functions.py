@@ -20,6 +20,7 @@ plt.rcParams.update({
     'figure.titlesize': 20    # Dimensione del suptitle (titolo globale della figura)
 })
 
+
 # --- 2. MODIFY FONT ROOT (for TCanvas "c_eff_curve") ---
 ROOT.gStyle.SetTitleSize(0.05, "xyz")  # Etichette assi
 ROOT.gStyle.SetLabelSize(0.04, "xyz")  # Numeri assi
@@ -848,7 +849,6 @@ def compute_efficiency_systematics(df_singletrack, df_phys, parameters, fit_para
 
     return systematics
 
-
 def compute_margin_systematic(df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
                                nx_slices, ny_slices, eff_nominal,
                                margin_up=(0.35, 0.8), margin_down=(0.1, 0.25)):
@@ -868,7 +868,6 @@ def compute_margin_systematic(df_phys, parameters, x_min, x_max, y_min_grid, y_m
     syst_margin = abs(effs[0] - effs[1]) / 2.0
     print(f"\tsyst (torsion-fit margins): +/-{syst_margin:.3f}%  (nominal = {eff_nominal:.3f}%)")
     return syst_margin
-
 
 def compute_torsion_variant_systematic(name, df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
                                         x_cut_margin, y_cut_margin, variant_a_kwargs, variant_b_kwargs):
@@ -890,7 +889,6 @@ def compute_torsion_variant_systematic(name, df_phys, parameters, x_min, x_max, 
     syst = abs(effs[0] - effs[1]) / 2.0
     print(f"\tsyst ({name}): {effs[0]:.3f}% vs {effs[1]:.3f}%  -> +/-{syst:.3f}%")
     return syst
-
 
 def compute_preliminary_cut_systematic(df_phys, parameters, nx_slices, ny_slices,
                                         x_cut_margin, y_cut_margin,

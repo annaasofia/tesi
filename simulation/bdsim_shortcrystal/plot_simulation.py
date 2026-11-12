@@ -36,7 +36,7 @@ if ROUTINE == 'bdsim':
     dark_color = "#0072B2"
     light_color = "#56B4E9"
 elif ROUTINE == 'xcoll':
-    filename = '../xcoll_shortcrystal/runs/cry1_20261021_16.npz'
+    filename = '../xcoll_shortcrystal/runs/cry2_20261112_10.npz'
     output_folder = '../xcoll_shortcrystal/plots'
     dark_color = "#228833"
     light_color = "#6FC87E"
@@ -128,10 +128,16 @@ survived_data = {
 }
 
 print(f"Total particles: {len(x_in)}")
-print(f"Survived particles: {np.sum(survived)}")
 
 theta_L = (1-180/5.7*bending_angle/(crystal_length*100))*np.sqrt(32/(180*10**9))
 print(f"Theta_L = {theta_L*1e6:.2f} urad")  # rad Lindhard critical angle for Si(110) at 180 GeV - short
+
+surv_in = np.zeros(particle_id_in.size, dtype=bool)
+surv_in[src] = True
+lost_in = (~surv_in)
+# controllo: le non sopravvissute sono tutte state == -333?
+print("Not survived:", lost_in.sum(), "| state -333:", lost_mask.sum())
+# print(f"Survived particles: {np.sum(survived)} = {np.sum(survived)/len(x_in)*100:.2f}%")
 
 # ---------- DETECTOR SMEAR (dataset parallelo, gli originali restano intatti) ----------
 rng_smear = np.random.default_rng(seed=17)
@@ -1167,6 +1173,22 @@ print(f"Persi tra i tagli geometrici + Lindhard: {n_lost_attempted}/{n_tot_corre
 attempted_mask_s = geometric_hit_all & lindhard_all_s
 n_tot_correct_s  = attempted_mask_s.sum()
 
+n_geom = geometric_hit_all.sum()
+
+# f: frazione di fascio nella finestra di Lindhard (angoli veri, non smeared)
+f = attempted_mask.sum() / n_geom
+print(f"f = {attempted_mask.sum()}/{n_geom} = {f*100:.1f}%")
+
+# P_inel: frazione persa, sulle geometriche
+out_win = geometric_hit_all & ~lindhard_all
+P_inel_all = lost_in[geometric_hit_all].sum() / n_geom
+P_inel_out = lost_in[out_win].sum() / out_win.sum()
+P_inel_in  = lost_in[attempted_mask].sum() / attempted_mask.sum()
+
+print(f"P_inel (tutte le geometriche)   = {P_inel_all*100:.1f}%")
+print(f"P_inel (fuori finestra Lindhard) = {P_inel_out*100:.1f}%")
+print(f"P_inel (dentro finestra)         = {P_inel_in*100:.1f}%")
+
 # EFFICIENCY ========================================================================================
 n_channeled,   n_ch_err,   popt,   pcov,   fit_bin_width   = channeling_efficiency(final_data['theta_x_in'],   final_data['dtheta_x'])
 n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficiency(final_data_s['theta_x_in'], final_data_s['dtheta_x'])
@@ -1217,7 +1239,7 @@ profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_al
               final_data_s, mu_s, sig_s, crystal_x, crystal_y, theta_L, tag='smeared')
 
 
-# np.save(f'{output_folder}/dtheta_x_final_smeared_bdsim.npy', final_data_s['dtheta_x'])
+np.save(f'{output_folder}/dtheta_x_final_smeared_{ROUTINE}.npy', final_data_s['dtheta_x'])
 # print(f"Salvato array dtheta_x per la routine bdsim")
 
 print('='*50)

@@ -31,7 +31,8 @@ if ROUTINE == 'bdsim':
     dark_color = "#982916"
     light_color = "#DA7762"
 elif ROUTINE == 'xcoll':
-    filename = '../xcoll_longcrystal/runs/cry2_20261021_16.npz'
+    # filename = '../xcoll_longcrystal/runs/cry2_20261021_16.npz'
+    filename = '../xcoll_longcrystal/runs/cry2_20261112_10.npz'
     output_folder = '../xcoll_longcrystal/plots'
     dark_color = "#68238B"
     light_color = "#A76ED1"
@@ -171,8 +172,8 @@ theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
-    # 'x_in':        x_in_meas_surv,
-    # 'y_in':        y_in_meas_surv,
+    'x_in':        x_in_meas_surv,
+    'y_in':        y_in_meas_surv,
     'theta_x_in':  theta_x_in_meas_surv,
     'theta_y_in':  theta_y_in_meas_surv,
     'theta_x_out': theta_x_out_meas_surv,

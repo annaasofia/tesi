@@ -50,6 +50,7 @@
 17. [WEEK 17 (OCT 26)](#week-17)
 18. [WEEK 18 (NOV 02)](#week-18)
 19. [WEEK 19 (NOV 09)](#week-19)
+20. [WEEK 20 (NOV 16)](#week-20)
 
 ## WEEK 1  
 
@@ -1154,5 +1155,10 @@ Put the shared parts in chapter 3: the efficiency definition, $N_{tot}$, $N_{ch}
 ([UP](#traineeship-al-cern))
 
 ## WEEK 19
+
+([UP](#traineeship-al-cern))
+
+
+## WEEK 20
 
 ([UP](#traineeship-al-cern))

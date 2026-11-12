@@ -36,7 +36,7 @@ def main():
     count_1 = df_phys.Count()
     df_singletrack = df_phys  # kept for systematic variants (pre-spatial-cut)
 
-    # ==========================================
+    # BEAM DISTRIBUTION ==========================================
     data_dict = df_singletrack.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
     x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
     thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
@@ -62,20 +62,12 @@ def main():
     print("\nCorrelation matrix after cut:\n", np.corrcoef(data_cut))
     print("\nCovariance matrix after cut:\n", cov_i)
 
-    # check correlation
-    # corr_i = np.corrcoef(data_matrix)
-    # print("\nCorrelation matrix:\n", corr_i)
-    # check covariance
-    # cov_i = np.cov(data_matrix)
-    # n_i = data_matrix.shape[1]  # numero di eventi in questo run
-    # np.set_printoptions(precision=8, suppress=True)
-    # print("Covariance matrix:\n", cov_i)
     print(f"Number of events in this run: {n_i}")
     chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
     chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", tag2="all")
-    # ==========================================
+    # ===============================================================
 
-    # FILTER 2: nominal spatial cut
+    # FILTER 2: nominal spatial cut ==========================================
     x_cut_margin = 0.2
     y_cut_margin = 0.5
     x_min, x_max, y_min, y_max = chfun.compute_spatial_cut_bounds(df_phys, parameters, tag="nominal")
@@ -83,7 +75,7 @@ def main():
                                    x_cut_margin, y_cut_margin, restricted=False)
     count_2 = df_phys.Count()
 
-    # FILTER 3: torsion map + dynamic Lindhard cut (nominal)
+    # FILTER 3: torsion map + dynamic Lindhard cut ==========================================
     y_min_grid, y_max_grid = chfun.compute_torsion_grid_bounds(df_phys, parameters, sigma_mult=2.0, tag="nominal")
     nx_slices, ny_slices = 10, 65
     fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = chfun.torsion_map(
@@ -104,7 +96,7 @@ def main():
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)
     count_3 = df_phys.Count()
 
-    # NOMINAL CHANNELING EFFICIENCY
+    # NOMINAL CHANNELING EFFICIENCY ==========================================
     eff_ch, eff_err_stat_binomial, fit_efficiency, histo_final = chfun.channeling_efficiency(df_phys, parameters, best_theta_0=fit_params[0], tag="nominal")
 
     # ===================== STATISTICAL ERROR BUDGET =====================
