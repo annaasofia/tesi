@@ -37,51 +37,52 @@ def main():
     df_singletrack = df_phys  # kept for systematic variants (pre-spatial-cut)
 
     # BEAM DISTRIBUTION ==========================================
-    data_dict = df_singletrack.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
-    x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
-    thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
-    data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
+    # data_dict = df_singletrack.AsNumpy(columns=["Tracks.d0_x", "Tracks.d0_y", "thetaIn_x", "thetaIn_y"])
+    # x_meas    = np.asarray(data_dict["Tracks.d0_x"]); y_meas    = np.asarray(data_dict["Tracks.d0_y"])
+    # thetax    = np.asarray(data_dict["thetaIn_x"]);   thetay    = np.asarray(data_dict["thetaIn_y"])
+    # data_matrix = np.vstack([x_meas, y_meas, thetax, thetay])
 
-    FIT = {
-    8430: (np.array([-0.21,  0.60, -0.93,  6.56]), np.array([2.32, 2.40, 26.97, 41.09])),
-    8431: (np.array([-0.35,  0.66, -1.60,  7.95]), np.array([2.37, 2.40, 27.08, 41.02])),
-    8650: (np.array([-0.60,  0.55, -2.79,  5.64]), np.array([2.51, 2.62, 29.82, 44.30])),
-    8655: (np.array([-0.42, -0.02, -1.73, -1.51]), np.array([2.22, 2.53, 29.63, 43.59])),
-    8656: (np.array([-0.38, -0.04, -1.37, -1.24]), np.array([2.23, 2.53, 29.66, 43.58])),
-    }
-    mu_fit, sig_fit = FIT[file]
+    # FIT = {
+    # 8430: (np.array([-0.21,  0.60, -0.93,  6.56]), np.array([2.32, 2.40, 26.97, 41.09])),
+    # 8431: (np.array([-0.35,  0.66, -1.60,  7.95]), np.array([2.37, 2.40, 27.08, 41.02])),
+    # 8650: (np.array([-0.60,  0.55, -2.79,  5.64]), np.array([2.51, 2.62, 29.82, 44.30])),
+    # 8655: (np.array([-0.42, -0.02, -1.73, -1.51]), np.array([2.22, 2.53, 29.63, 43.59])),
+    # 8656: (np.array([-0.38, -0.04, -1.37, -1.24]), np.array([2.23, 2.53, 29.66, 43.58])),
+    # }
+    # mu_fit, sig_fit = FIT[file]
 
-    mask = np.all(np.abs(data_matrix.T - mu_fit) < 5 * sig_fit, axis=1)
-    print("fraction kept:", mask.mean(), " n =", mask.sum())
+    # mask = np.all(np.abs(data_matrix.T - mu_fit) < 5 * sig_fit, axis=1)
+    # print("fraction kept:", mask.mean(), " n =", mask.sum())
 
-    n_i = mask.sum()       
+    # n_i = mask.sum()       
 
-    data_cut = data_matrix[:, mask]     
-    cov_i = np.cov(data_cut)
-    print("sigma after cut:", np.sqrt(np.diag(cov_i)))
-    print("\nCorrelation matrix after cut:\n", np.corrcoef(data_cut))
-    print("\nCovariance matrix after cut:\n", cov_i)
+    # data_cut = data_matrix[:, mask]     
+    # cov_i = np.cov(data_cut)
+    # print("sigma after cut:", np.sqrt(np.diag(cov_i)))
+    # print("\nCorrelation matrix after cut:\n", np.corrcoef(data_cut))
+    # print("\nCovariance matrix after cut:\n", cov_i)
 
-    print(f"Number of events in this run: {n_i}")
-    chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
-    chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", tag2="all")
+    # print(f"Number of events in this run: {n_i}")
+    # chfun.plot_impact(df_singletrack, parameters, variable="angles", tag="nominal", tag2="all")
+    # chfun.plot_impact(df_singletrack, parameters, variable="positions", tag="nominal", tag2="all")
     # ===============================================================
 
     # FILTER 2: nominal spatial cut ==========================================
-    x_cut_margin = 0.2
-    y_cut_margin = 0.5
+    x_cut_margin = 0.25
+    y_cut_margin = 0
     x_min, x_max, y_min, y_max = chfun.compute_spatial_cut_bounds(df_phys, parameters, tag="nominal")
     df_phys = chfun.filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max,
                                    x_cut_margin, y_cut_margin, restricted=False)
     count_2 = df_phys.Count()
 
     # FILTER 3: torsion map + dynamic Lindhard cut ==========================================
-    y_min_grid, y_max_grid = chfun.compute_torsion_grid_bounds(df_phys, parameters, sigma_mult=2.0, tag="nominal")
-    nx_slices, ny_slices = 10, 65
+    y_min_grid, y_max_grid = chfun.compute_torsion_grid_bounds(df_phys, parameters, sigma_mult=2, tag="nominal")
+    # nx_slices, ny_slices = 10, 65
+    nx_slices, ny_slices = 5, 10
     fit_params, fit_errors, h2_torsion_map, h2_eff_map, rdf_surface_expr = chfun.torsion_map(
-        df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
+        df_phys, parameters, x_min+x_cut_margin, x_max-x_cut_margin, y_min_grid, y_max_grid,
         x_cut_margin, y_cut_margin, nx_slices=nx_slices, ny_slices=ny_slices,
-        restricted=True, linear=False, chosen_model="parabolic_y", tag="nominal")
+        restricted=False, linear=False, chosen_model="parabolic_y", tag="nominal")
 
     _, _ = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
     # chfun.plot_impact_vs_angle(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
@@ -90,7 +91,7 @@ def main():
     # chfun.plot_impact(df_phys, parameters, variable="positions", tag="nominal", xlim=(x_min, x_max), ylim=(y_min, y_max))
     # chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     # chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
-    chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal")
+    chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=5, ny_slices=7, tag="nominal")
     chfun.plot_angularscan(df_phys)
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)

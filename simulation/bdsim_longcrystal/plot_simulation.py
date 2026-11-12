@@ -831,7 +831,8 @@ def dechanneling_length(dtheta_x, popt_ch, mu0=None, sigma0=None, L=None, bins=2
                           maxfev=10000)
         mu0, sigma0 = p0[1], abs(p0[2])
 
-    lo = mu0 + 6 * sigma0
+    # lo = mu0 + 6 * sigma0
+    lo = 1000e-6  # rad
     hi = mu_ch - 3 * sigma_ch
     if hi <= lo:
         raise ValueError(f"Intervallo di fit vuoto: lo={lo*scale:.1f}, hi={hi*scale:.1f} {angle_unit}")

@@ -339,7 +339,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
             ys = np.linspace(current_y_min, current_y_max, 150)
             zz = np.array([[torsion_fit_2d.Eval(xv, yv) for xv in xs] for yv in ys])
             fig, ax = plt.subplots(figsize=(7, 6))
-            mesh = ax.pcolormesh(xs, ys, zz, cmap='viridis', shading='auto')
+            mesh = ax.pcolormesh(xs, ys, zz, cmap='viridis', shading='auto',rasterized=True)
             ax.set_xlabel("x [mm]")
             ax.set_ylabel("y [mm]")  
             ax.set_title(f"Continuous Torsion Map ({chosen_model} fit)")
@@ -366,7 +366,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     if tag == "nominal":
         pu.plot_histo2d(h2_eff_map, xlabel="x [mm]", ylabel="y [mm]",
             zlabel="Local Efficiency [%]", title="Efficiency Map",
-            save=f"{PLOT_DIR}/eff_map.pdf")
+            save=f"{PLOT_DIR}/eff_map.pdf", show_values=True, value_fmt=".1f", value_fontsize=14)
  
         pu.plot_histo2d(h2_residuals, xlabel="x [mm]", ylabel="y [mm]",
             zlabel=r"$\Delta\theta_0$ [$\mu$rad]",
@@ -389,7 +389,8 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         print("WARNING: channeling_efficiency called on an empty dataframe, returning zeros.")
         return 0.0, 0.0, fit_parameters, None
 
-    h_defl_cut = df.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; Events", 5000, -2000, parameters["max_value"]), "Deltatheta_x")
+
+    h_defl_cut = df.Histo1D((f"h_defl_cut_{tag}", "Angular Deflection cut at #pm #theta_{L}/2; #Delta#theta_{x} [#murad]; Events", 5000, -1000, 6150), "Deltatheta_x")
     h_cut_value = h_defl_cut.GetValue().Clone(f"h_cut_value_cloned_{tag}")
 
     eff_ch = 0.0
@@ -414,53 +415,93 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         fit_parameters = [fit_mean, fit_mean_error, fit_sigma, fit_sigma_error]
         
         bin_min = h_cut_value.FindBin(fit_mean - n_sigma_low * fit_sigma)
-        bin_max = h_cut_value.FindBin(parameters["max_value"])
+        # bin_max = h_cut_value.FindBin(parameters["max_value"])
+        bin_max = h_cut_value.FindBin(fit_mean + n_sigma_low * fit_sigma)
         N_ch = h_cut_value.Integral(bin_min, bin_max)
         
         eff_ch = (N_ch / N_tot) * 100.0
         eff_err = math.sqrt(eff_ch/100.0 * (1.0 - eff_ch/100.0) / N_tot) * 100.0
 
     if tag == "nominal":
-        x_split_1 = 200
-        x_split_2 = 5945.4
-        h_left = h_cut_value.Clone(f"h_left_{tag}")
-        h_center = h_cut_value.Clone(f"h_center_{tag}")
-        h_right = h_cut_value.Clone(f"h_right_{tag}")
-        for i in range(1, h_cut_value.GetNbinsX() + 1):
-            x_val = h_cut_value.GetBinCenter(i)
-            if x_val < x_split_1:
-                h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
-                h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
-            elif x_val <= x_split_2:
-                h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
-                h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
-            else:
-                h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
-                h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
+        d_theta = df.AsNumpy(["Deltatheta_x"])["Deltatheta_x"]
+        np.save(f"{PLOT_DIR}/dtheta_data.npy", d_theta)
 
-        ax = pu.plot_histo1d(h_left, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
-            ylabel="Events", logy=True, style="fill", color="#3b528b", alpha=1.0, 
-            title="Angular Deflection", data_label="Not channelled peak")
-        pu.plot_histo1d(h_center, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#5ec962", alpha=1.0, data_label="De-channelled plateau")
-        pu.plot_histo1d(h_right, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#cc4678", alpha=1.0, data_label="Channelled peak")
-        ax.legend(loc='upper center', frameon=True)
-        plt.savefig(f"{PLOT_DIR}/defl_logy_coloured.pdf", bbox_inches='tight')
+        # x_split_1 = 200
+        # x_split_2 = 5945.4
+        # h_left = h_cut_value.Clone(f"h_left_{tag}")
+        # h_center = h_cut_value.Clone(f"h_center_{tag}")
+        # h_right = h_cut_value.Clone(f"h_right_{tag}")
+        # for i in range(1, h_cut_value.GetNbinsX() + 1):
+        #     x_val = h_cut_value.GetBinCenter(i)
+        #     if x_val < x_split_1:
+        #         h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
+        #         h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
+        #     elif x_val <= x_split_2:
+        #         h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
+        #         h_right.SetBinContent(i, 0); h_right.SetBinError(i, 0)
+        #     else:
+        #         h_left.SetBinContent(i, 0); h_left.SetBinError(i, 0)
+        #         h_center.SetBinContent(i, 0); h_center.SetBinError(i, 0)
+
+        # ax = pu.plot_histo1d(h_left, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+        #     ylabel="Events", logy=True, style="fill", color="#3b528b", alpha=1.0, 
+        #     title="Angular Deflection", data_label="Not channelled peak")
+        # pu.plot_histo1d(h_center, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#5ec962", alpha=1.0, data_label="De-channelled plateau")
+        # pu.plot_histo1d(h_right, xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ax=ax, style="fill", color="#cc4678", alpha=1.0, data_label="Channelled peak")
+        # ax.legend(loc='upper center', frameon=True)
+        # plt.savefig(f"{PLOT_DIR}/defl_logy_coloured.pdf", bbox_inches='tight')
 
         # pu.plot_histo1d(h_cut_value, xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
         #     ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
         #     title="Angular Deflection",
         #     save=f"{PLOT_DIR}/defl_logy.pdf")
     
-        ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
+        # ax = pu.plot_histo1d(h_cut_value, fit_func=gaus_fit,
+        #     fit_range=(fit_min, fit_max) if N_tot > 0 else None,
+        #     xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ylabel="Events", style="fill", color="#5ec962",
+        #     title="Angular Deflection (zoom)", alpha=1.0,
+        #     info_text=[f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
+        #                 f"Fit mean: {fit_mean:.1f} $\\mu$rad"],
+        #     info_loc="upper right")
+        # ax.set_xlim(5900, 6150)
+        # plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.pdf", bbox_inches='tight')
+        # plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.png", bbox_inches='tight')
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15,5))
+
+        ax2.set_xlim(5900, 6150)
+        pu.plot_histo1d(
+            h_cut_value, ax=ax2,
+            fit_func=gaus_fit,
             fit_range=(fit_min, fit_max) if N_tot > 0 else None,
-            xlabel=r"$\Delta\theta_x$ [$\mu$rad]", ylabel="Events", style="fill", color="#5ec962",
-            title="Angular Deflection (zoom)", alpha=1.0,
-            info_text=[f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
-                        f"Fit mean: {fit_mean:.1f} $\\mu$rad"],
-            info_loc="upper right")
-        ax.set_xlim(5900, 6150)
-        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.pdf", bbox_inches='tight')
-        plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.png", bbox_inches='tight')
+            xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+            ylabel="Events", style="fill", color="#5ec962", alpha=1.0,
+            title="Angular Deflection (zoom)",
+            info_text=[
+                f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
+                f"Fit mean: {fit_mean:.1f} $\\mu$rad"
+            ],
+            info_loc="upper right", save=None
+        )
+
+        if N_tot > 0:
+            fx_3s, fy_3s = pu.tf1_to_curve(gaus_fit, fit_mean - 3 * fit_sigma, fit_mean + 3 * fit_sigma)
+            ax2.plot(fx_3s, fy_3s, color='red', lw=1.8, ls='--')
+
+        h_cut_value.Rebin(10)
+        pu.plot_histo1d(
+            h_cut_value, ax=ax1,
+            xlabel=r"$\Delta\theta_x$ [$\mu$rad]",
+            ylabel="Events", logy=True, style="fill", color="#5ec962", alpha=1.0,
+            title="Angular Deflection", save=None
+        )
+
+        ax1.axvspan(5900, 6150, color="red", alpha=0.15, lw=1.5, ls="--")
+
+        fig.tight_layout()
+        fig.savefig(f"{PLOT_DIR}/theta_x_final.pdf", bbox_inches="tight", dpi=300)
+        fig.savefig(f"{PLOT_DIR}/theta_x_final.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
 
     return eff_ch, eff_err, fit_parameters, h_cut_value
 
@@ -527,6 +568,7 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
         #            f"Mean = {mean:.3f} $\\pm$ {mean_err:.3f}"],
         info_loc="upper right")
     ax.set_xlim(-80, 80)
+    ax.axvspan(-0.5*parameters["theta_L"], 0.5*parameters["theta_L"], color="red", alpha=0.2, lw=1.5, ls="--")
     plt.savefig(f"{PLOT_DIR}/global_eff_curve.pdf", bbox_inches='tight')
     plt.savefig(f"{PLOT_DIR}/global_eff_curve.png", bbox_inches='tight')
 
@@ -687,7 +729,7 @@ def plot_impact_vs_deltatheta(df, parameters, axis="x", tag="nominal", xlim=None
     
     return h2
 
-def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10, ny_slices=65, tag="nominal"):
+def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=5, ny_slices=7, tag="nominal"):
     # 1. Istogramma 3D base per isolare le distribuzioni spaziali
     h3_defl = df.Histo3D((
         f"h3_xy_deltatheta_{tag}", "", 
@@ -709,7 +751,7 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
             
             if h1_slice.GetEntries() > 20:  # Soglia minima di statistica
                 gaus_fit = ROOT.TF1(f"gaus_fit_defl_{ix}_{iy}", "gaus", 
-                                    parameters["deflection_peak"] - 150, 
+                                    parameters["deflection_peak"] - 30, 
                                     parameters["deflection_peak"] + 150)
                 h1_slice.Fit(gaus_fit, "RQ0")
                 
@@ -723,9 +765,8 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=10
         xlabel="x [mm]", 
         ylabel="y [mm]", 
         zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
-        title="Deflection Angle Map", cmap=cmap_white_bg,
-        save=f"{PLOT_DIR}/deflection_map.pdf",
-        vmin=5900,vmax=6200)
+        title="Deflection Angle Map", cmap="viridis",
+        save=f"{PLOT_DIR}/deflection_map.pdf")
     
     return h2_deflection_map
 
@@ -733,7 +774,7 @@ def plot_angularscan(df):
     h2 = df.Histo2D(
         ("h2_angularscan", 
         "Angular Scan; #theta_{in,x} [#murad]; #Delta#theta_x [#murad]", 
-        400, -150, 150, 400, -1500, 7000), "thetaIn_x", "Deltatheta_x"
+        200, -150, 150, 200, -1500, 7000), "thetaIn_x", "Deltatheta_x"
     ).GetValue()
     h1x = h2.ProjectionX("h1_x")
     xmin, xmax = -37, -37+13
@@ -741,8 +782,8 @@ def plot_angularscan(df):
     x_bin_max = h2.GetXaxis().FindBin(xmax)
     h1y = h2.ProjectionY("h1_y", x_bin_min, x_bin_max)
 
-    fig1 = plt.figure(figsize=(16, 10))
-    gs1 = gridspec.GridSpec(2, 2, width_ratios=(3, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
+    fig1 = plt.figure(figsize=(12, 6))
+    gs1 = gridspec.GridSpec(2, 2, width_ratios=(4, 1), height_ratios=(1, 3), wspace=0.1, hspace=0.1)
 
     ax_main = fig1.add_subplot(gs1[1, 0])
     ax_top = fig1.add_subplot(gs1[0, 0], sharex=ax_main)
@@ -750,8 +791,12 @@ def plot_angularscan(df):
 
     pu.plot_histo2d(h2, ax=ax_main, xlabel=r"$\theta_{in,x}$ [$\mu$rad]", ylabel=r"$\Delta\theta_x$ [$\mu$rad]", cmap=cmap_white_bg, colorbar=False, save=None)
     pu.plot_histo1d(h1x, ax=ax_top, style="fill", color=viridis_purple, ylabel="Events", alpha=0.9)
+    ax_main.axvspan(xmin, xmax, color="red", alpha=0.2, lw=1.5, ls="--")
     ax_main.axvline(xmin, color='red', ls='--', lw=2)
     ax_main.axvline(xmax, color='red', ls='--', lw=2)
+    ax_top.axvspan(xmin, xmax, color="red", alpha=0.2, lw=1.5, ls="--")
+    ax_top.axvline(xmin, color='red', ls='--', lw=2)
+    ax_top.axvline(xmax, color='red', ls='--', lw=2)
     ax_top.tick_params(labelbottom=False); ax_top.set_xlabel("")
 
     centers_y1, contents_y1, yerr_y1, edges_y1 = pu.th1_to_arrays(h1y)
@@ -761,7 +806,24 @@ def plot_angularscan(df):
     pu._style_axes(ax_top)
     pu._style_axes(ax_right)
 
-    fig1.suptitle("Angular scan", fontsize=24, y=0.92)
+    fig1.canvas.draw()
+    xticks = [x for x in ax_main.get_xticks() if not np.isclose(x, -50)]
+    xticks.extend([xmin, xmax])
+    ax_main.set_xticks(xticks)
+
+    fig1.canvas.draw()
+    xticklabels = [t.get_text() for t in ax_main.get_xticklabels()]
+    xticklabels[-2] = r"$-\theta_L/2$"
+    xticklabels[-1] = r"$+\theta_L/2$"
+    ax_main.set_xticklabels(xticklabels)
+    
+    labels = ax_main.get_xticklabels()
+    labels[-2].set_color('red')
+    labels[-1].set_color('red')
+    labels[-2].set_ha('right') 
+    labels[-1].set_ha('left')
+
+    fig1.suptitle("Angular scan", fontsize=20, y=0.95)
 
     fig1.savefig(f"{PLOT_DIR}/angularscan.pdf", dpi=300)
     fig1.savefig(f"{PLOT_DIR}/angularscan.png", dpi=300)

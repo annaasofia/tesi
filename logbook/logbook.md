@@ -1156,6 +1156,13 @@ Put the shared parts in chapter 3: the efficiency definition, $N_{tot}$, $N_{ch}
 
 ## WEEK 19
 
+possible backup slides:
+- how spin precession is measured
+- pixel detectors
+- are crystals baked out from radiation
+- 
+
+
 ([UP](#traineeship-al-cern))
 
 

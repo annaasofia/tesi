@@ -276,8 +276,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
 
 def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
                  title="", cmap='viridis', save=None, colorbar=True,
-                 vmin=None, vmax=None):
-    """Plot a TH2 (e.g. torsion map, efficiency map) as a pcolormesh."""
+                 vmin=None, vmax=None, show_values=False, value_fmt=".1f", value_fontsize=10):
     xedges, yedges, z = th2_to_arrays(h2)
 
     owns_axes = False
@@ -287,8 +286,7 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     else:
         fig = ax.figure
 
-    # mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', vmin=vmin, vmax=vmax)
-    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', rasterized=True)
+    mesh = ax.pcolormesh(xedges, yedges, z, cmap=cmap, shading='flat', vmin=vmin, vmax=vmax, rasterized=True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if title:
@@ -296,6 +294,20 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
     if colorbar:
         cb = plt.colorbar(mesh, ax=ax)
         cb.set_label(zlabel)
+
+    if show_values:
+        for i in range(len(xedges) - 1):
+            for j in range(len(yedges) - 1):
+                val = z[j, i]
+                if np.isfinite(val) and val != 0:
+                    txt_color = 'black' if mesh.norm(val) > 0.5 else 'white'
+                    ax.text(
+                        0.5 * (xedges[i] + xedges[i + 1]),
+                        0.5 * (yedges[j] + yedges[j + 1]),
+                        f"{val:{value_fmt}}",
+                        ha="center", va="center",
+                        fontsize=value_fontsize, color=txt_color
+                    )
 
     _style_axes(ax)
 
