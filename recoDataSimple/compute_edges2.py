@@ -19,7 +19,7 @@ ROOT.gStyle.SetOptStat(0)
 # --- 1. MODIFY FONT MATPLOTLIB ---
 plt.rcParams.update({
     'font.size': 16,          # Dimensione generale del font
-    'axes.titlesize': 18,     # Dimensione dei titoli dei singoli assi/subplot
+    'axes.titlesize': 16,     # Dimensione dei titoli dei singoli assi/subplot
     'axes.labelsize': 16,     # Dimensione delle etichette (x, y)
     'xtick.labelsize': 14,    # Dimensione dei numeri sull'asse x
     'ytick.labelsize': 14,    # Dimensione dei numeri sull'asse y
@@ -585,7 +585,7 @@ fig_in = plot_histo1d(
 
 fig_clamp = plot_histo1d(
     h1_clamp, f_clamp, xlabel=r"$\Delta\theta_y$ [$\mu$rad]",
-    title=(f"Crystal slice - clamp (y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)  "
+    title=(f"Clamp slice (y = {h2_y_val.GetXaxis().GetBinCenter(bin_clamp):.2f} mm)  "
            f"$\\sigma$ = {f_clamp.GetParameter(2):.1f} $\\mu$rad"),
     save=f"plots_{file}_edges2/slice_clamp_y.pdf", color='tab:green', style='fill'
 )

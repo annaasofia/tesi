@@ -38,7 +38,7 @@ from matplotlib.ticker import AutoMinorLocator, LogLocator
 plt.rcParams.update({
     'font.size': 14,          # Dimensione generale del testo
     'axes.labelsize': 16,     # Etichette degli assi (es. "d0_y [mm]")
-    'axes.titlesize': 16,     # Titolo del grafico
+    'axes.titlesize': 12,     # Titolo del grafico
     'xtick.labelsize': 14,    # Numeri sull'asse X
     'ytick.labelsize': 14,    # Numeri sull'asse Y
     'legend.fontsize': 12,    # Testo all'interno della legenda
@@ -223,7 +223,7 @@ def plot_histo1d(h, fit_func=None, fit_range=None, ax=None,
     
     owns_axes = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(16, 6))
+        fig, ax = plt.subplots(figsize=(8, 6))
         owns_axes = True
     else:
         fig = ax.figure
@@ -281,7 +281,7 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
 
     owns_axes = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(5,5))
+        fig, ax = plt.subplots(figsize=(7, 6))
         owns_axes = True
     else:
         fig = ax.figure
@@ -334,7 +334,7 @@ def plot_graph_with_fit(g, fit_func=None, fit_range=None, ax=None,
 
     owns_axes = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=(6,6))
         owns_axes = True
     else:
         fig = ax.figure
