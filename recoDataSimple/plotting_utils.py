@@ -281,7 +281,7 @@ def plot_histo2d(h2, ax=None, xlabel="", ylabel="", zlabel="",
 
     owns_axes = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(7, 6))
+        fig, ax = plt.subplots(figsize=(5,5))
         owns_axes = True
     else:
         fig = ax.figure

@@ -73,6 +73,7 @@ def main():
     x_min, x_max, y_min, y_max = chfun.compute_spatial_cut_bounds(df_phys, parameters, tag="nominal")
     df_phys = chfun.filter2_spatial_cut(df_phys, x_min, x_max, y_min, y_max,
                                    x_cut_margin, y_cut_margin, restricted=False)
+    # chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params=None, rdf_surface_expr=None, tag="nominal", label="before")
     count_2 = df_phys.Count()
 
     # FILTER 3: torsion map + dynamic Lindhard cut ==========================================
@@ -84,7 +85,7 @@ def main():
         x_cut_margin, y_cut_margin, nx_slices=nx_slices, ny_slices=ny_slices,
         restricted=False, linear=False, chosen_model="parabolic_y", tag="nominal")
 
-    _, _ = chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
+    chfun.plot_global_efficiency_curve(df_phys, parameters, fit_params, rdf_surface_expr, tag="nominal")
     # chfun.plot_impact_vs_angle(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     # chfun.plot_impact_vs_angle(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
     # chfun.plot_impact(df_phys, parameters, variable="angles", tag="nominal")
@@ -112,6 +113,7 @@ def main():
     print(f"\tcombined statistical  = {eff_err_stat:.3f} %")
 
     # rms_blocks, mean_stat_err_blocks = chfun.compute_block_stability_check(df_phys, parameters, fit_params, n_blocks=10)
+    # print(f"\tblock stability check = {mean_stat_err_blocks:.3f} % (RMS = {rms_blocks:.3f} %)")
 
     # ===================== SAVE FINAL HISTO =====================
 
@@ -127,23 +129,23 @@ def main():
     #     df_singletrack, df_phys, parameters, fit_params, fit_errors,
     #     x_min, x_max, y_min, y_max, rdf_surface_expr)
 
-    # systematics["fit_model"] = compute_torsion_variant_systematic(
+    # systematics["fit_model"] = chfun.compute_torsion_variant_systematic(
     #     "fit model choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
     #     x_cut_margin, y_cut_margin,
     #     variant_a_kwargs=dict(chosen_model="parabolic_y"),
     #     variant_b_kwargs=dict(chosen_model="full_quadratic"))
 
-    # systematics["grid_binning"] = compute_torsion_variant_systematic(
+    # systematics["grid_binning"] = chfun.compute_torsion_variant_systematic(
     #     "grid bin choice", df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
     #     x_cut_margin, y_cut_margin,
-    #     variant_a_kwargs=dict(nx_slices=5, ny_slices=40),
-    #     variant_b_kwargs=dict(nx_slices=15, ny_slices=90))
+    #     variant_a_kwargs=dict(nx_slices=2, ny_slices=5),
+    #     variant_b_kwargs=dict(nx_slices=10, ny_slices=20))
 
-    # systematics["torsion_margins"] = compute_margin_systematic(
+    # systematics["torsion_margins"] = chfun.compute_margin_systematic(
     #      df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid,
     #      nx_slices, ny_slices, eff_nominal=eff_ch)
 
-    # systematics["preliminary_cut"] = compute_preliminary_cut_systematic(
+    # systematics["preliminary_cut"] = chfun.compute_preliminary_cut_systematic(
     #     df_phys, parameters, nx_slices, ny_slices, x_cut_margin, y_cut_margin)
 
     eff_err_syst, eff_err_total = 0.0, 0.0

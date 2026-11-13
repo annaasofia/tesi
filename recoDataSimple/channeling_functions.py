@@ -366,7 +366,7 @@ def torsion_map(df, parameters, x_min, x_max, y_min, y_max, x_cut_margin, y_cut_
     if tag == "nominal":
         pu.plot_histo2d(h2_eff_map, xlabel="x [mm]", ylabel="y [mm]",
             zlabel="Local Efficiency [%]", title="Efficiency Map",
-            save=f"{PLOT_DIR}/eff_map.pdf", show_values=True, value_fmt=".1f", value_fontsize=14)
+            save=f"{PLOT_DIR}/eff_map.pdf", show_values=True, value_fmt=".1f", value_fontsize=11)
  
         pu.plot_histo2d(h2_residuals, xlabel="x [mm]", ylabel="y [mm]",
             zlabel=r"$\Delta\theta_0$ [$\mu$rad]",
@@ -467,9 +467,10 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
         # plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.pdf", bbox_inches='tight')
         # plt.savefig(f"{PLOT_DIR}/defl_fit_zoom.png", bbox_inches='tight')
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15,5))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
 
         ax2.set_xlim(5900, 6150)
+        ax2.axvspan(fit_mean-3*fit_sigma, fit_mean+3*fit_sigma, color="#5ec962", alpha=0.15, lw=1.5, ls="--")
         pu.plot_histo1d(
             h_cut_value, ax=ax2,
             fit_func=gaus_fit,
@@ -479,7 +480,7 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
             title="Angular Deflection (zoom)",
             info_text=[
                 f"$\\epsilon_{{ch}}$ = {eff_ch:.1f} $\\pm$ {eff_err:.1f} %",
-                f"Fit mean: {fit_mean:.1f} $\\mu$rad"
+                f"Fit mean: {fit_mean:.0f} $\\mu$rad"
             ],
             info_loc="upper right", save=None
         )
@@ -505,9 +506,12 @@ def channeling_efficiency(df, parameters, best_theta_0, n_sigma_low=3.0, tag="no
 
     return eff_ch, eff_err, fit_parameters, h_cut_value
 
-def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, tag="global_curve"):
+def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, tag="global_curve", label="final"):
 
-    corr_expr = f"thetaIn_x - ({rdf_surface_expr})"
+    if rdf_surface_expr is None:
+        corr_expr = "thetaIn_x"
+    else:
+        corr_expr = f"thetaIn_x - ({rdf_surface_expr})"
     
     df_corr = df.Define("thetaIn_x_corr", corr_expr)
     df_cut, _ = preliminary_cut_on_deltatheta(df_corr, parameters["deflection_peak"], tag=tag)
@@ -548,7 +552,8 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
     gr_eff.GetXaxis().SetRangeUser(-80,80)
     gr_eff.Draw("AP")
 
-    gaus_eff = ROOT.TF1(f"gaus_eff_{tag}", "gaus", -20, +20)
+    # gaus_eff = ROOT.TF1(f"gaus_eff_{tag}", "gaus", -20, +20)
+    gaus_eff = ROOT.TF1(f"gaus_eff_{tag}", "gaus", -60, +0)
     gaus_eff.SetLineColor(ROOT.kRed)
     gr_eff.Fit(gaus_eff, "RQ0")
     gaus_eff.Draw("SAME")
@@ -562,17 +567,20 @@ def plot_global_efficiency_curve(df, parameters, fit_params, rdf_surface_expr, t
     
     ax = pu.plot_graph_with_fit(gr_eff, gaus_eff, fit_range=(-20, 20),
         xlabel="Torsion-Corrected Incoming Angle [$\\mu$rad]",
+        # xlabel="Incoming Angle [$\\mu$rad]",
         ylabel="Channeling Efficiency [%]",
         title="Global Angular Acceptance (Torsion Corrected)",
-        # info_text=[f"Max Global Efficiency = ({max_eff:.1f} $\\pm$ {max_eff_err:.1f}) %",
-        #            f"Mean = {mean:.3f} $\\pm$ {mean_err:.3f}"],
-        info_loc="upper right")
+        # title="Global Angular Acceptance",
+        # info_text=[#f"Max Global Efficiency = ({max_eff:.1f} $\\pm$ {max_eff_err:.1f}) %",
+        #             f"$\\mu$ = {mean:.3f} $\\pm$ {gaus_eff.GetParError(1):.3f} $\\mu$rad",
+        #             f"$\\sigma$ = {sigma:.3f} $\\pm$ {gaus_eff.GetParError(2):.3f}"],
+        info_loc="upper left")
     ax.set_xlim(-80, 80)
     ax.axvspan(-0.5*parameters["theta_L"], 0.5*parameters["theta_L"], color="red", alpha=0.2, lw=1.5, ls="--")
-    plt.savefig(f"{PLOT_DIR}/global_eff_curve.pdf", bbox_inches='tight')
-    plt.savefig(f"{PLOT_DIR}/global_eff_curve.png", bbox_inches='tight')
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{label}.pdf", bbox_inches='tight')
+    plt.savefig(f"{PLOT_DIR}/global_eff_curve_{label}.png", bbox_inches='tight')
 
-    return max_eff, max_eff_err
+    # return max_eff, max_eff_err
 
 def plot_impact_vs_angle(df, parameters, axis="x", tag="nominal", xlim=None):
     # axis può essere "x" (d0_x) oppure "y" (d0_y)
@@ -879,33 +887,33 @@ def compute_efficiency_systematics(df_singletrack, df_phys, parameters, fit_para
     # --- 1. Torsion baseline (theta_0) fit uncertainty ---
     surface_expr_up = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] + fit_errors[0]}", 1)
     surface_expr_down = rdf_surface_expr.replace(f"({fit_params[0]}", f"({fit_params[0] - fit_errors[0]}", 1)
-    systematics["theta0_shift"], _, _ = shift_and_rerun_systematic(
-        "theta0 shift", df_singletrack, parameters, fit_params, nominal_kwargs,
-        up_overrides=dict(surface_expr=surface_expr_up),
-        down_overrides=dict(surface_expr=surface_expr_down))
+    # systematics["theta0_shift"], _, _ = shift_and_rerun_systematic(
+    #     "theta0 shift", df_singletrack, parameters, fit_params, nominal_kwargs,
+    #     up_overrides=dict(surface_expr=surface_expr_up),
+    #     down_overrides=dict(surface_expr=surface_expr_down))
 
     # --- 2. Angular (theta_in) resolution on the Lindhard window ---
-    mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
-    shift = min(mean_theta_res, parameters['theta_L'] / 4.0)
-    print(f"Mean theta resolution = {mean_theta_res:.3f} urad (applied shift = {shift:.3f} urad)")
-    systematics["theta_resolution"], _, _ = shift_and_rerun_systematic(
-        "theta resolution", df_singletrack, parameters, fit_params, nominal_kwargs,
-        up_overrides=dict(halfwidth_shift=+shift),
-        down_overrides=dict(halfwidth_shift=-shift))
+    # mean_theta_res = df_phys.Mean("Tracks.thetaInErr_x").GetValue() * 1e6  # urad
+    # shift = min(mean_theta_res, parameters['theta_L'] / 4.0)
+    # print(f"Mean theta resolution = {mean_theta_res:.3f} urad (applied shift = {shift:.3f} urad)")
+    # systematics["theta_resolution"], _, _ = shift_and_rerun_systematic(
+    #     "theta resolution", df_singletrack, parameters, fit_params, nominal_kwargs,
+    #     up_overrides=dict(halfwidth_shift=+shift),
+    #     down_overrides=dict(halfwidth_shift=-shift))
 
     # --- 3. Spatial box boundary (d0 resolution), x and y treated separately ---
     mean_d0err_x = df_phys.Mean("Tracks.d0Err_x").GetValue()
     mean_d0err_y = df_phys.Mean("Tracks.d0Err_y").GetValue()
 
-    systematics["spatial_box_x"], _, _ = shift_and_rerun_systematic(
-        "spatial box x", df_singletrack, parameters, fit_params, nominal_kwargs,
-        up_overrides=dict(x_bounds=(x_min - mean_d0err_x, x_max + mean_d0err_x)),
-        down_overrides=dict(x_bounds=(x_min + mean_d0err_x, x_max - mean_d0err_x)))
+    # systematics["spatial_box_x"], _, _ = shift_and_rerun_systematic(
+    #     "spatial box x", df_singletrack, parameters, fit_params, nominal_kwargs,
+    #     up_overrides=dict(x_bounds=(x_min - mean_d0err_x, x_max + mean_d0err_x)),
+    #     down_overrides=dict(x_bounds=(x_min + mean_d0err_x, x_max - mean_d0err_x)))
 
-    systematics["spatial_box_y"], _, _ = shift_and_rerun_systematic(
-        "spatial box y", df_singletrack, parameters, fit_params, nominal_kwargs,
-        up_overrides=dict(y_bounds=(y_min - mean_d0err_y, y_max + mean_d0err_y)),
-        down_overrides=dict(y_bounds=(y_min + mean_d0err_y, y_max - mean_d0err_y)))
+    # systematics["spatial_box_y"], _, _ = shift_and_rerun_systematic(
+    #     "spatial box y", df_singletrack, parameters, fit_params, nominal_kwargs,
+    #     up_overrides=dict(y_bounds=(y_min - mean_d0err_y, y_max + mean_d0err_y)),
+    #     down_overrides=dict(y_bounds=(y_min + mean_d0err_y, y_max - mean_d0err_y)))
 
     systematics["n_sigma_window"] = compute_nsigma_systematic(df_phys, parameters, fit_params)
 

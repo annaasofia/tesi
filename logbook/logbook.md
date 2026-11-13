@@ -1160,7 +1160,7 @@ possible backup slides:
 - how spin precession is measured
 - pixel detectors
 - are crystals baked out from radiation
-- 
+- clamps along $y$
 
 
 ([UP](#traineeship-al-cern))
