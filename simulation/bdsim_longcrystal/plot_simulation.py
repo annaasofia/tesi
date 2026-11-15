@@ -172,8 +172,8 @@ theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
-    'x_in':        x_in_meas_surv,
-    'y_in':        y_in_meas_surv,
+    #'x_in':        x_in_meas_surv,
+    #'y_in':        y_in_meas_surv,
     'theta_x_in':  theta_x_in_meas_surv,
     'theta_y_in':  theta_y_in_meas_surv,
     'theta_x_out': theta_x_out_meas_surv,
@@ -242,6 +242,7 @@ def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x
         (eff * 100, f'Channelling efficiency [%] - {ROUTINE.upper()}', axs[0]),
         (peak, rf'Deflection peak [${unit_str}$]', axs[1]),
     ]
+    axs[0].set_zlim(21,28)
     for M, title, ax in panels:
         pc = ax.pcolormesh(xe, ye, M.T, cmap='viridis')
         fig.colorbar(pc, ax=ax)

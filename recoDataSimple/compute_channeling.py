@@ -163,6 +163,7 @@ def main():
     print(f"Channeling peak = ({fit_efficiency[0]:.1f} +/- {fit_efficiency[1]:.1f}) urad, sigma = ({fit_efficiency[2]:.1f} +/- {fit_efficiency[3]:.1f}) urad")
     print(f"Torsion tau_x = {fit_params[1]:.2f} +/- {fit_errors[1]:.2f} urad/mm")
     print(f"Torsion tau_y = {fit_params[2]:.2f} +/- {fit_errors[2]:.2f} urad/mm")
+    print(f"c_yy = {fit_params[3]:.2f} +/- {fit_errors[3]:.2f}")
 
 
 if __name__ == "__main__":

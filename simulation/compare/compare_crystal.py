@@ -35,6 +35,7 @@ if CRYSTAL == 'long':
     bin_num = 6950
     eff1 = (0.224, 0.001)
     eff2 = (0.276, 0.001)
+    EFF3 = (0.195, 0.003)
     color1 = "#982916"
     color2 = "#68238B"
 elif CRYSTAL == 'short':
@@ -92,7 +93,8 @@ def comparison_plot(dtheta_1, dtheta_2, xrange, xrange_zoom, label1='Long 1', la
     graph[1].grid(alpha=0.3)
     if eff1 is not None and eff2 is not None:
             txt = (rf'$\epsilon$ ({label1[-5:]}) = ({eff1[0]*100:.1f} ± {eff1[1]*100:.1f}) %' '\n'
-                   rf'$\epsilon$ ({label2[-5:]}) = ({eff2[0]*100:.1f} ± {eff2[1]*100:.1f}) %')
+                   rf'$\epsilon$ ({label2[-5:]}) = ({eff2[0]*100:.1f} ± {eff2[1]*100:.1f}) %' '\n'
+                   rf'$\epsilon$ (data) = ({EFF3[0]*100:.1f} ± {EFF3[1]*100:.1f}) %')
             graph[1].text(0.97, 0.95, txt, transform=graph[1].transAxes,
                           ha='right', va='top', fontsize=12,
                           bbox=dict(boxstyle='round', facecolor='white', edgecolor='gray', alpha=0.85))
