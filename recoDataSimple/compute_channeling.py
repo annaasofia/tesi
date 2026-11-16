@@ -92,7 +92,7 @@ def main():
     # chfun.plot_impact(df_phys, parameters, variable="positions", tag="nominal", xlim=(x_min, x_max), ylim=(y_min, y_max))
     # chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="x", tag="nominal", xlim=(x_min, x_max))
     # chfun.plot_impact_vs_deltatheta(df_phys, parameters, axis="y", tag="nominal", xlim=(y_min, y_max))
-    chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min, y_max, nx_slices=5, ny_slices=7, tag="nominal")
+    chfun.plot_deflection_map(df_phys, parameters, x_min, x_max, y_min_grid, y_max_grid, nx_slices=5, ny_slices=7, tag="nominal")
     chfun.plot_angularscan(df_phys)
 
     df_phys = chfun.filter3_Lindhard_cut(df_phys, parameters, fit_params, rdf_surface_expr)

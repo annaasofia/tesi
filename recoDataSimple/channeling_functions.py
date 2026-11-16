@@ -745,38 +745,72 @@ def plot_deflection_map(df, parameters, x_min, x_max, y_min, y_max, nx_slices=5,
         ny_slices, y_min, y_max, 
         500, parameters["deflection_peak"] - 300, parameters["deflection_peak"] + 300
     ), "Tracks.d0_x", "Tracks.d0_y", "Deltatheta_x").GetValue()
+
+    kw = dict(nbinsx=nx_slices, xlow=x_min, xup=x_max, nbinsy=ny_slices, ylow=y_min, yup=y_max)
+    h2_mean = ROOT.TH2D(f"h2_deflection_map_{tag}", "Deflection Map; x [mm]; y [mm]; #theta_{b} [#murad]",
+                        nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+    h2_sigma = ROOT.TH2D(f"h2_sigma_map_{tag}", "Peak width map; x [mm]; y [mm]; #sigma [#murad]",
+                         nx_slices, x_min, x_max, ny_slices, y_min, y_max)
+
     
-    # 2. Mappa 2D vuota per ospitare il centro del fit (theta_b)
-    h2_deflection_map = ROOT.TH2D(
-        f"h2_deflection_map_{tag}", 
-        "Deflection Map; x [mm]; y [mm]; #theta_{b} [#murad]", 
-        nx_slices, x_min, x_max, ny_slices, y_min, y_max
-    )
+    # # 2. Mappa 2D vuota per ospitare il centro del fit (theta_b)
+    # h2_deflection_map = ROOT.TH2D(
+    #     f"h2_deflection_map_{tag}", 
+    #     "Deflection Map; x [mm]; y [mm]; #theta_{b} [#murad]", 
+    #     nx_slices, x_min, x_max, ny_slices, y_min, y_max
+    # )
+
+    fit_lo = parameters["deflection_peak"] - 20
+    fit_hi = parameters["deflection_peak"] + 100
+    means, sigmas, weights = [], [], []
     
     for ix in range(1, nx_slices + 1):
         for iy in range(1, ny_slices + 1):
-            h1_slice = h3_defl.ProjectionZ(f"proj_defl_z_{tag}_{ix}_{iy}", ix, ix, iy, iy)
-            
-            if h1_slice.GetEntries() > 20:  # Soglia minima di statistica
-                gaus_fit = ROOT.TF1(f"gaus_fit_defl_{ix}_{iy}", "gaus", 
-                                    parameters["deflection_peak"] - 30, 
-                                    parameters["deflection_peak"] + 150)
-                h1_slice.Fit(gaus_fit, "RQ0")
+            h1 = h3_defl.ProjectionZ(f"proj_defl_z_{tag}_{ix}_{iy}", ix, ix, iy, iy)
+            n_peak = h1.Integral(h1.FindBin(fit_lo), h1.FindBin(fit_hi))
+            if n_peak < 50:
+                continue
+            f = ROOT.TF1(f"gaus_fit_defl_{tag}_{ix}_{iy}", "gaus", fit_lo, fit_hi)
+            f.SetParameters(h1.GetMaximum(), parameters["deflection_peak"], 15.0)
+            h1.Fit(f, "RQ0")
+            mu, mu_err = f.GetParameter(1), f.GetParError(1)
+            sg, sg_err = abs(f.GetParameter(2)), f.GetParError(2)
+            h2_mean.SetBinContent(ix, iy, mu);  h2_mean.SetBinError(ix, iy, mu_err)
+            h2_sigma.SetBinContent(ix, iy, sg); h2_sigma.SetBinError(ix, iy, sg_err)
+            means.append(mu); sigmas.append(sg); weights.append(n_peak)
+
+    pu.plot_histo2d(h2_mean, xlabel="x [mm]", ylabel="y [mm]",
+                zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]",
+                title="Deflection Angle Map", cmap=cmap_white_bg,
+                save=f"{PLOT_DIR}/deflection_map.pdf", vmin=5900, vmax=6200,
+                show_values=True, value_fmt=".0f", value_fontsize=8)
+
+    pu.plot_histo2d(h2_sigma, xlabel="x [mm]", ylabel="y [mm]",
+                zlabel=r"$\sigma$ of the peak [$\mu$rad]",
+                title="Peak Width Map", cmap=cmap_white_bg,
+                save=f"{PLOT_DIR}/sigma_map.pdf",
+                show_values=True, value_fmt=".1f", value_fontsize=8)
                 
-                theta_b = gaus_fit.GetParameter(1)
-                theta_b_err = gaus_fit.GetParError(1)
-                
-                h2_deflection_map.SetBinContent(ix, iy, theta_b)
-                h2_deflection_map.SetBinError(ix, iy, theta_b_err)
-                
-    pu.plot_histo2d(h2_deflection_map, 
-        xlabel="x [mm]", 
-        ylabel="y [mm]", 
-        zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
-        title="Deflection Angle Map", cmap="viridis",
-        save=f"{PLOT_DIR}/deflection_map.pdf")
-    
-    return h2_deflection_map
+    # pu.plot_histo2d(h2_deflection_map, 
+    #     xlabel="x [mm]", 
+    #     ylabel="y [mm]", 
+    #     zlabel=r"$\theta_b$ (Deflection Peak) [$\mu$rad]", 
+    #     title="Deflection Angle Map", cmap="viridis",
+    #     save=f"{PLOT_DIR}/deflection_map.pdf")
+
+    # Does the spread of local centres explain the global width?
+    m, s, w = map(np.array, (means, sigmas, weights))
+    if len(m) > 1:
+        wm = np.average(m, weights=w)
+        rms_centres = np.sqrt(np.average((m - wm)**2, weights=w))
+        mean_sig_local = np.sqrt(np.average(s**2, weights=w))
+        print(f"\tLocal peak: <sigma_local> = {mean_sig_local:.1f} urad, "
+              f"RMS of local centres = {rms_centres:.1f} urad")
+        print(f"\tExpected global sigma = {np.sqrt(mean_sig_local**2 + rms_centres**2):.1f} urad "
+              f"({len(m)} cells)")
+        
+    return h2_mean, h2_sigma
+    # return h2_deflection_map
 
 def plot_angularscan(df):
     h2 = df.Histo2D(
