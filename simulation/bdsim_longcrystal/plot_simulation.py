@@ -242,9 +242,9 @@ def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x
         (eff * 100, f'Channelling efficiency [%] - {ROUTINE.upper()}', axs[0]),
         (peak, rf'Deflection peak [${unit_str}$]', axs[1]),
     ]
-    axs[0].set_zlim(21,28)
     for M, title, ax in panels:
-        pc = ax.pcolormesh(xe, ye, M.T, cmap='viridis')
+        if ax == axs[0]:
+            pc = ax.pcolormesh(xe, ye, M.T, cmap='viridis', vmin=21, vmax=28)
         fig.colorbar(pc, ax=ax)
         ax.set_xlabel(f'impact x [{distance_unit}]')
         ax.set_ylabel(f'impact y [{distance_unit}]')
