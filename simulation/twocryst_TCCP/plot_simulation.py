@@ -1,11 +1,12 @@
 import sys
+import os
+import csv
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.optimize import curve_fit
-import os
 
 plt.rcParams.update({
     'font.size': 16,          # Dimensione generale del font
@@ -24,6 +25,8 @@ viridis_blue = "#3b528b"
 viridis_purple = "#440154"
 
 ROUTINE = sys.argv[1] if len(sys.argv) > 1 else 'bdsim'
+SIGMA_THETA_IN = sys.argv[2] if len(sys.argv) > 2 else 4.5
+SIGMA_THETA_OUT = sys.argv[3] if len(sys.argv) > 3 else 7.2
 
 if ROUTINE == 'bdsim':
     filename = 'long_bdsim.npz'
@@ -40,6 +43,9 @@ else:
 
 data = np.load(filename)
 os.makedirs(output_folder, exist_ok=True)
+
+csv_file = "./eff_vs_smear/values_diff_xcoll.csv"
+nuovo = not os.path.exists(csv_file)
 
 # reconstruct the arrays from the saved data
 x_in = data['x_in']; theta_x_in = data['px_in']
@@ -148,20 +154,25 @@ L_down      = 0.0        # m aria tra cristallo e primo piano a valle
 sigma_track = 9e-6       # rad                                          
 p_GeV       = p0c / 1e9
 
-s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
-s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
+# sigma_track_in = 4.5e-6
+# sigma_track_out = 7.2e-6
+sigma_track_in = float(SIGMA_THETA_IN) * 1e-6
+sigma_track_out = float(SIGMA_THETA_OUT) * 1e-6
 
-# 1) θ_in misurato per TUTTE le particelle valide (un'estrazione sola)
-theta_x_in_meas_all = theta_x_in + rng_smear.standard_normal(theta_x_in.size, dtype=np.float32) * s_in
-theta_y_in_meas_all = theta_y_in + rng_smear.standard_normal(theta_y_in.size, dtype=np.float32) * s_in
+s_in_x = np.hypot(sigma_track_in, highland(p_GeV, L_up / X0_air))
+s_in_y = np.hypot(sigma_track_in, highland(p_GeV, L_up / X0_air))
+s_out_x = np.hypot(sigma_track_out, highland(p_GeV, L_down / X0_air))
+s_out_y = np.hypot(sigma_track_out, highland(p_GeV, L_down / X0_air))
 
-# 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
+theta_x_in_meas_all = theta_x_in + rng_smear.normal(0, s_in_x, theta_x_in.size)
+theta_y_in_meas_all = theta_y_in + rng_smear.normal(0, s_in_y, theta_y_in.size)
+
 theta_x_in_meas_surv = theta_x_in_meas_all[src]
 theta_y_in_meas_surv = theta_y_in_meas_all[src]
 
-# 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
-theta_x_out_meas_surv = theta_x_out_survived + rng_smear.standard_normal(theta_x_out_survived.size, dtype=np.float32) * s_out
-theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y_out_survived.size, dtype=np.float32) * s_out
+theta_x_out_meas_surv = theta_x_out_survived + rng_smear.normal(0, s_out_x, theta_x_out_survived.size)
+theta_y_out_meas_surv = theta_y_out_survived + rng_smear.normal(0, s_out_y, theta_y_out_survived.size)
+
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
@@ -250,8 +261,8 @@ def efficiency_maps(x_den, y_den, x_num, y_num, dtheta_num, mu, sigma, crystal_x
     plt.savefig(f'{output_folder}/efficiency_maps_{tag}.pdf')
     plt.close(fig)
  
-    print(f"[{tag}] map: {np.isfinite(eff).sum()}/{nx_bins * ny_bins} bins with den >= {min_den}; "
-          f"count-based global eff (±{n_sigma}σ) = {num.sum() / den.sum() * 100:.1f}%")
+    # print(f"[{tag}] map: {np.isfinite(eff).sum()}/{nx_bins * ny_bins} bins with den >= {min_den}; "
+    #       f"count-based global eff (±{n_sigma}σ) = {num.sum() / den.sum() * 100:.1f}%")
     return eff, peak, den, num
 
 
@@ -780,9 +791,9 @@ def efficiency_bootstrap(dtheta_final, n_tot, n_boot=200, seed=1234, verbose=Fal
             continue
         effs.append(n_ch_b / n_tot_b)
     effs = np.array(effs)
-    if verbose:
-        print(f"bootstrap: {len(effs)}/{n_boot} fit ok | eff = {effs.mean()*100:.2f}% | "
-              f"std = {effs.std(ddof=1)*100:.3f}%")
+    # if verbose:
+        # print(f"bootstrap: {len(effs)}/{n_boot} fit ok | eff = {effs.mean()*100:.2f}% | "
+            #   f"std = {effs.std(ddof=1)*100:.3f}%")
     return effs.std(ddof=1), effs
 
 
@@ -819,8 +830,8 @@ geom_data = apply_selection(survived_data, geometric_hit)
 geom_data_s = apply_selection(survived_data_smeared, geometric_hit)
 
 print('-'*50)
-print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()} = {geometric_hit.sum()/len(survived_data['x_in'])*100:.1f}%")
-print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()} = {(~geometric_hit).sum()/len(survived_data['x_in'])*100:.1f}%")
+# print(f"Sopravvissute che hanno colpito geometricamente il cristallo: {geometric_hit.sum()} = {geometric_hit.sum()/len(survived_data['x_in'])*100:.1f}%")
+# print(f"Sopravvissute che hanno mancato il cristallo: {(~geometric_hit).sum()} = {(~geometric_hit).sum()/len(survived_data['x_in'])*100:.1f}%")
 # beam_distribution_plot(geom_data['x_in'], geom_data['y_in'], geom_data['theta_x_in'], geom_data['theta_y_in'], label='- entered particles')
 
 vr_mask = (dtheta_x < -0.3*theta_L) & (dtheta_x > -3*theta_L)
@@ -850,7 +861,7 @@ n_geom = geometric_hit_all.sum()
 
 # f: frazione di fascio nella finestra di Lindhard (angoli veri, non smeared)
 f = attempted_mask.sum() / n_geom
-print(f"f = {attempted_mask.sum()}/{n_geom} = {f*100:.1f}%")
+# print(f"f = {attempted_mask.sum()}/{n_geom} = {f*100:.1f}%")
 
 # P_inel: frazione persa, sulle geometriche
 out_win = geometric_hit_all & ~lindhard_all
@@ -858,9 +869,9 @@ P_inel_all = lost_in[geometric_hit_all].sum() / n_geom
 P_inel_out = lost_in[out_win].sum() / out_win.sum()
 P_inel_in  = lost_in[attempted_mask].sum() / attempted_mask.sum()
 
-print(f"P_inel (tutte le geometriche)   = {P_inel_all*100:.1f}%")
-print(f"P_inel (fuori finestra Lindhard) = {P_inel_out*100:.1f}%")
-print(f"P_inel (dentro finestra)         = {P_inel_in*100:.1f}%")
+# print(f"P_inel (tutte le geometriche)   = {P_inel_all*100:.1f}%")
+# print(f"P_inel (fuori finestra Lindhard) = {P_inel_out*100:.1f}%")
+# print(f"P_inel (dentro finestra)         = {P_inel_in*100:.1f}%")
 
 # EFFICIENCY ========================================================================================
 n_channeled,   n_ch_err,   popt,   pcov,   fit_bin_width   = channeling_efficiency(final_data['theta_x_in'],   final_data['dtheta_x'])
@@ -869,18 +880,18 @@ n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficien
 eff_ns,   eff_s     = n_channeled / n_tot_correct,     n_channeled_s / n_tot_correct_s
 stat_ns,  stat_s    = n_ch_err / n_tot_correct,        n_ch_err_s / n_tot_correct_s       # errore statistico (fit)
 binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1-eff_s)/n_tot_correct_s)  # solo conteggio
-print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
-print(f"[smeared]     eff = ({eff_s*100:.2f} ± {stat_s*100:.2f} [fit]) %   (binomiale: ±{binom_s*100:.2f})")
+# print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
+print(f"[smeared]     eff = ({eff_s*100:.1f} ± {stat_s*100:.1f} [fit]) %   (binomiale: ±{binom_s*100:.1f})")
 
 eff3_ns, err3_ns = eff_3sigma(final_data,   popt,   n_tot_correct)
 eff3_s,  err3_s  = eff_3sigma(final_data_s, popt_s, n_tot_correct_s)
-print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.2f} ± {err3_ns*100:.2f}) %")
-print(f"[smeared]     eff(3σ) = ({eff3_s*100:.2f} ± {err3_s*100:.2f}) %")
+# print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.2f} ± {err3_ns*100:.2f}) %")
+print(f"[smeared]     eff(3σ) = ({eff3_s*100:.1f} ± {err3_s*100:.1f}) %")
 
 
 # controllo indipendente (opzionale, ~secondi)
-boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
-boot_s,  _ = efficiency_bootstrap(final_data_s['dtheta_x'], n_tot_correct_s)
+# boot_ns, _ = efficiency_bootstrap(final_data['dtheta_x'],   n_tot_correct)
+# boot_s,  _ = efficiency_bootstrap(final_data_s['dtheta_x'], n_tot_correct_s)
  
 
 
@@ -912,9 +923,9 @@ angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta
 smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x', eff=(eff3_ns, err3_ns), eff_s=(eff3_s, err3_s))
 smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta_x_in'], survived_data['theta_y_in'], survived_data_smeared['theta_y_in'])
 
-for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
-    print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
-          f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
+# for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
+#     print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
+#           f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
 
 # --- non smeared ---
 mu_ns, sig_ns = popt[1], abs(popt[2])
@@ -935,6 +946,12 @@ profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_al
 
 np.save(f'{output_folder}/dtheta_x_final_smeared_{ROUTINE}.npy', final_data_s['dtheta_x'])
 print(f"Salvato array dtheta_x per la routine {ROUTINE}")
+
+with open(csv_file, "a", newline="") as f:
+    w = csv.writer(f)
+    if nuovo:
+        w.writerow(["sigma_in", "sigma_out", "efficiency gaus", "efficiency_err", "efficiency 3σ", "efficiency_err_3"])
+    w.writerow([SIGMA_THETA_IN, SIGMA_THETA_OUT, round(eff_s*100, 1), round(stat_s*100, 1), round(eff3_s*100, 1), round(err3_s*100, 1)])
 
 print('='*50)
 print(f"Plot saved in {output_folder}")

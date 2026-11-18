@@ -1168,4 +1168,21 @@ possible backup slides:
 
 ## WEEK 20
 
+beam:
+$\sigma_{x,y} = 2~mm$  
+$\sigma_{\theta x,\theta y} = 60~urad$  
+
+detector resolution:
+incoming $\sigma_{theta} = 4.5~urad$  
+outgoing $\sigma_{theta} = 7.2~urad$  
+
+| crystal | simulation | efficiency without smear | efficiency with smear | (-3% mixed beam) | efficiency BEFORE (-3% mixed beam) |
+|---------|------------|--------------------------|-----------------------|------------------|------------------------------------|
+| TCCP    | BDSIM      |                          |                       |                  |                                    |
+|         | Xcoll      | 37.1%                    | 34.1%                 | 31.1%            | 36.6%                              |
+| TCCPA   | BDSIM      |                          |                       |                  |                                    |
+|         | Xcoll      | 33.1%                    | 30.5%                 | 27.5%            | 29.2%                              |
+
+### $\sigma$
+
 ([UP](#traineeship-al-cern))

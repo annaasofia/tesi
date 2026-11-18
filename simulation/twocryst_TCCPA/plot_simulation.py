@@ -148,20 +148,23 @@ L_down      = 0.0        # m aria tra cristallo e primo piano a valle
 sigma_track = 9e-6       # rad                                          
 p_GeV       = p0c / 1e9
 
-s_in  = np.hypot(sigma_track, highland(p_GeV, L_up   / X0_air))
-s_out = np.hypot(sigma_track, highland(p_GeV, L_down / X0_air))
+sigma_track_x = 4.5e-6
+sigma_track_y = 7.2e-6
 
-# 1) θ_in misurato per TUTTE le particelle valide (un'estrazione sola)
-theta_x_in_meas_all = theta_x_in + rng_smear.standard_normal(theta_x_in.size, dtype=np.float32) * s_in
-theta_y_in_meas_all = theta_y_in + rng_smear.standard_normal(theta_y_in.size, dtype=np.float32) * s_in
+s_in_x = np.hypot(sigma_track_x, highland(p_GeV, L_up / X0_air))
+s_in_y = np.hypot(sigma_track_y, highland(p_GeV, L_up / X0_air))
+s_out_x = np.hypot(sigma_track_x, highland(p_GeV, L_down / X0_air))
+s_out_y = np.hypot(sigma_track_y, highland(p_GeV, L_down / X0_air))
 
-# 2) stesso valore propagato alle sopravvissute (stessa mappatura già usata sopra)
+theta_x_in_meas_all = theta_x_in + rng_smear.normal(0, s_in_x, theta_x_in.size)
+theta_y_in_meas_all = theta_y_in + rng_smear.normal(0, s_in_y, theta_y_in.size)
+
 theta_x_in_meas_surv = theta_x_in_meas_all[src]
 theta_y_in_meas_surv = theta_y_in_meas_all[src]
 
-# 3) θ_out misurato (estrazioni indipendenti, solo sulle sopravvissute)
-theta_x_out_meas_surv = theta_x_out_survived + rng_smear.standard_normal(theta_x_out_survived.size, dtype=np.float32) * s_out
-theta_y_out_meas_surv = theta_y_out_survived + rng_smear.standard_normal(theta_y_out_survived.size, dtype=np.float32) * s_out
+theta_x_out_meas_surv = theta_x_out_survived + rng_smear.normal(0, s_out_x, theta_x_out_survived.size)
+theta_y_out_meas_surv = theta_y_out_survived + rng_smear.normal(0, s_out_y, theta_y_out_survived.size)
+
 
 survived_data_smeared = dict(survived_data)
 survived_data_smeared.update({
@@ -912,9 +915,9 @@ angular_scan_plot(final_data_s['theta_x_in'], final_data_s['theta_x_out'], theta
 smear_comparison_plot(final_data['dtheta_x'], final_data_s['dtheta_x'], label='final_x', eff=(eff3_ns, err3_ns), eff_s=(eff3_s, err3_s))
 smear_comparison_plot2(survived_data['theta_x_in'], survived_data_smeared['theta_x_in'], survived_data['theta_y_in'], survived_data_smeared['theta_y_in'])
 
-for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
-    print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
-          f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
+# for ax, th, th_m in [('x', theta_x_in, theta_x_in_meas_all), ('y', theta_y_in, theta_y_in_meas_all)]:
+#     print(f"theta_{ax}: sigma originale = {th.std()*1e6:.2f} urad, smeared = {th_m.std()*1e6:.2f} urad, "
+#           f"atteso = {np.hypot(th.std(), s_in)*1e6:.2f} urad")
 
 # --- non smeared ---
 mu_ns, sig_ns = popt[1], abs(popt[2])

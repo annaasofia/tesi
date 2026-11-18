@@ -3,7 +3,7 @@ from datetime import datetime
 import numpy as np
 # import matplotlib as mpl
 # import matplotlib.pyplot as plt
-import simulation_functions as simfun
+# import simulation_functions as simfun
 
 import xobjects as xo
 import xtrack as xt
@@ -16,24 +16,24 @@ context = xo.ContextCpu()         # For CPU
 # context = xo.ContextCupy()      # For CUDA GPUs
 # context = xo.ContextPyopencl()  # For OpenCL GPUs
 
-num_part = int(20e6)
+num_part = int(1e7)
 particle_ref = xt.Particles('proton', p0c=180e9)
 
 coll = xc.EverestCrystal(length=70e-3, material=xc.materials.Silicon, bending_angle=7e-3,
                          width=0.002, height=0.008, side='+', miscut=0., lattice='strip', jaw=-0.001,
                          _context=context)
 
-SIGMA_DET = 9e-6
-cov_avg, eigvals, n_list = simfun.cov_matrix(sigma_det_x=SIGMA_DET, sigma_det_y=SIGMA_DET)
-mu_avg = simfun.mean_vector()  # [mu_x, mu_y, mu_px, mu_py]
-rng = np.random.default_rng(seed=82)
-samples = rng.multivariate_normal(mean=mu_avg, cov=cov_avg, size=num_part)
-x_init  = samples[:, 0]
-y_init  = samples[:, 1]
-px_init = samples[:, 2]
-py_init = samples[:, 3]
+sigma_x = 2e-3
+sigma_y = 2e-3
+sigma_px = 60e-6
+sigma_py = 60e-6
+rng = np.random.default_rng(seed=17)
+x_impact  = rng.normal(0.0, sigma_x, num_part)
+y_impact  = rng.normal(0.0, sigma_y, num_part)
+px_impact = rng.normal(0.0, sigma_px, num_part)
+py_impact = rng.normal(0.0, sigma_py, num_part)
 
-part = xp.build_particles(x=x_init, px=px_init, y=y_init, py=py_init,
+part = xp.build_particles(x=x_impact, px=px_impact, y=y_impact, py=py_impact,
                           particle_ref=particle_ref, _context=context)
 part_init = part.copy()
 
@@ -44,20 +44,6 @@ print(f"Done in {time.time() - start:.2f} seconds.")
 
 # Sort particles to be able to compare to part_init
 part.sort(interleave_lost_particles=True)
-
-# # Select only surviving particles and only within the window of interest
-# mask = (part.state > 0 ) & ( part.px - part_init.px < 250.e-6) & ( part.px - part_init.px > -50.e-6)
-
-# plt.figure(figsize=(12,8))
-# plt.hist2d(part_init.px[mask]*1.e6, part.px[mask]*1.e6 - part_init.px[mask]*1.e6, 500, norm=mpl.colors.LogNorm())
-# plt.xlim(-30, 180)
-# plt.ylim(-55, 205)
-# plt.ylabel(r'$\Delta\theta$ [$\mu$rad]')
-# plt.xlabel(r'$\theta_{in}$ [$\mu$rad]')
-# plt.tight_layout()
-# plt.show()
-
-
 
 outfile = f'long_xcoll.npz'
 
@@ -92,8 +78,12 @@ np.savez(outfile,
     # metadata simulation
     npart=num_part,
     label='cry2',
-    cov_avg=cov_avg,
-    mu_avg=mu_avg,
+    # cov_avg=cov_avg,
+    # mu_avg=mu_avg,
+    sigma_x = sigma_x,
+    sigma_y = sigma_y,
+    sigma_px = sigma_px,
+    sigma_py = sigma_py,
 )
 
 print(f"Data saved in: {outfile}")
