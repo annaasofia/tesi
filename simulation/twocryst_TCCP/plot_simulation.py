@@ -880,12 +880,12 @@ n_channeled_s, n_ch_err_s, popt_s, pcov_s, fit_bin_width_s = channeling_efficien
 eff_ns,   eff_s     = n_channeled / n_tot_correct,     n_channeled_s / n_tot_correct_s
 stat_ns,  stat_s    = n_ch_err / n_tot_correct,        n_ch_err_s / n_tot_correct_s       # errore statistico (fit)
 binom_ns, binom_s   = np.sqrt(eff_ns*(1-eff_ns)/n_tot_correct), np.sqrt(eff_s*(1-eff_s)/n_tot_correct_s)  # solo conteggio
-# print(f"[not smeared] eff = ({eff_ns*100:.2f} ± {stat_ns*100:.2f} [fit]) %   (binomiale: ±{binom_ns*100:.2f})")
+print(f"[not smeared] eff = ({eff_ns*100:.1f} ± {stat_ns*100:.1f} [fit]) %   (binomiale: ±{binom_ns*100:.1f})")
 print(f"[smeared]     eff = ({eff_s*100:.1f} ± {stat_s*100:.1f} [fit]) %   (binomiale: ±{binom_s*100:.1f})")
 
 eff3_ns, err3_ns = eff_3sigma(final_data,   popt,   n_tot_correct)
 eff3_s,  err3_s  = eff_3sigma(final_data_s, popt_s, n_tot_correct_s)
-# print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.2f} ± {err3_ns*100:.2f}) %")
+print(f"[not smeared] eff(3σ) = ({eff3_ns*100:.1f} ± {err3_ns*100:.1f}) %")
 print(f"[smeared]     eff(3σ) = ({eff3_s*100:.1f} ± {err3_s*100:.1f}) %")
 
 
@@ -947,11 +947,11 @@ profiles_plot(x_in[attempted_mask_s], y_in[attempted_mask_s], theta_x_in_meas_al
 np.save(f'{output_folder}/dtheta_x_final_smeared_{ROUTINE}.npy', final_data_s['dtheta_x'])
 print(f"Salvato array dtheta_x per la routine {ROUTINE}")
 
-with open(csv_file, "a", newline="") as f:
-    w = csv.writer(f)
-    if nuovo:
-        w.writerow(["sigma_in", "sigma_out", "efficiency gaus", "efficiency_err", "efficiency 3σ", "efficiency_err_3"])
-    w.writerow([SIGMA_THETA_IN, SIGMA_THETA_OUT, round(eff_s*100, 1), round(stat_s*100, 1), round(eff3_s*100, 1), round(err3_s*100, 1)])
+# with open(csv_file, "a", newline="") as f:
+#     w = csv.writer(f)
+#     if nuovo:
+#         w.writerow(["sigma_in", "sigma_out", "efficiency gaus", "efficiency_err", "efficiency 3σ", "efficiency_err_3"])
+#     w.writerow([SIGMA_THETA_IN, SIGMA_THETA_OUT, round(eff_s*100, 1), round(stat_s*100, 1), round(eff3_s*100, 1), round(err3_s*100, 1)])
 
 print('='*50)
 print(f"Plot saved in {output_folder}")

@@ -1180,10 +1180,12 @@ outgoing $\sigma_{theta} = 7.2~urad$
 
 | crystal | simulation | efficiency without smear | efficiency with smear | (-3% mixed beam) | efficiency BEFORE (-3% mixed beam) |
 |---------|------------|--------------------------|-----------------------|------------------|------------------------------------|
-| TCCP    | BDSIM      |                          |                       |                  |                                    |
+| TCCP    | BDSIM      | 35.4%                    | 30.1%                 | 27.1%            |                                    |
 |         | Xcoll      | 37.1%                    | 34.1%                 | 31.1%            | 36.6%                              |
-| TCCPA   | BDSIM      |                          |                       |                  |                                    |
+| TCCPA   | BDSIM      | 31.9%                    | 26.9%                 | 23.9%            |                                    |
 |         | Xcoll      | 33.1%                    | 30.5%                 | 27.5%            | 29.2%                              |
+
+
 
 ### $\sigma$
 
