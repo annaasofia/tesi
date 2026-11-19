@@ -51,6 +51,8 @@
 18. [WEEK 18 (NOV 02)](#week-18)
 19. [WEEK 19 (NOV 09)](#week-19)
 20. [WEEK 20 (NOV 16)](#week-20)
+21. [WEEK 21 (NOV 23)](#week-21)
+22. [WEEK 22 (NOV 30)](#week-22)
 
 ## WEEK 1  
 
@@ -1186,3 +1188,17 @@ outgoing $\sigma_{theta} = 7.2~urad$
 ### $\sigma$
 
 ([UP](#traineeship-al-cern))
+
+
+## WEEK 21
+
+
+([UP](#traineeship-al-cern))
+
+## WEEK 22
+
+
+([UP](#traineeship-al-cern))
+
+
+

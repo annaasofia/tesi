@@ -24,11 +24,22 @@ x, y, _, _, z, _ = np.loadtxt("values_diff_xcoll.csv", delimiter=",", unpack=Tru
 plt.figure(2, figsize=(7,6))
 eff_map = plt.scatter(x, y, c=z, cmap='plasma', marker='s', s=350)
 plt.colorbar(eff_map, label="Channeling efficiency [%]")
-plt.title(r"Efficiency map $\sigma_{in}$ - $\sigma_{out}$")
-plt.xlabel(r"$\sigma_{in}$ [$\mu$rad]", fontsize=14)
-plt.ylabel(r"$\sigma_{out}$ [$\mu$rad]", fontsize=14)
-plt.xticks(range(16))
-plt.yticks(range(16))
+plt.title(r"Efficiency map $\sigma_{in}$ & $\sigma_{out}$", fontsize=16)
+plt.xlabel(r"$\sigma_{in}$ [$\mu$rad]", fontsize=16)
+plt.ylabel(r"$\sigma_{out}$ [$\mu$rad]", fontsize=16)
+plt.xticks(range(16), fontsize=12)
+plt.yticks(range(16), fontsize=12)
+
+z_mid = (z.min() + z.max()) / 2
+for xi, yi, zi in zip(x, y, z):
+    if xi == yi:
+        color = "white" if zi < z_mid else "black"
+        plt.text(
+            xi, yi, f"{zi:.1f}",
+            color=color,
+            ha="center", va="center",
+            fontsize=8, fontweight="bold"
+        )
 plt.savefig("eff_vs_sigma_diff.png", dpi=200)
 
 # plt.show()
